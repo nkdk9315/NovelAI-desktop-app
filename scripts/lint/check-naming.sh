@@ -32,7 +32,7 @@ if [[ -d "$ROOT/src" ]]; then
     case "$basename" in
       index.ts|index.css|vite-env.d.ts) continue ;;
     esac
-    if [[ ! "$basename" =~ ^[a-z][a-z0-9-]*\.ts$ ]]; then
+    if [[ ! "$basename" =~ ^[a-z][a-z0-9-]*(\.(test|spec))?\.ts$ ]]; then
       rel="${file#"$ROOT/"}"
       echo "NAMING (TS): $rel — expected kebab-case"
       errors=$((errors + 1))
