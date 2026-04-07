@@ -82,8 +82,8 @@ pub struct AppState {
     pub db: Mutex<Connection>,
 
     /// APIクライアント。APIキー未設定時はNone。
-    /// キー変更時にSwap可能。
-    pub api_client: Mutex<Option<NovelAIClient>>,
+    /// キー変更時にSwap可能。async context で .await 越しにロック保持するため tokio::sync::Mutex を使用。
+    pub api_client: tokio::sync::Mutex<Option<NovelAIClient>>,
 
     /// システムプロンプトDB。起動時にCSVからロード。
     /// immutableなのでMutex不要。
@@ -94,7 +94,7 @@ pub struct AppState {
 | フィールド | 型 | 理由 |
 |-----------|-----|------|
 | db | `Mutex<Connection>` | SQLiteはsingle-writer。シングルユーザーアプリにpool不要 |
-| api_client | `Mutex<Option<NovelAIClient>>` | APIキー未設定時None。変更時にSwap |
+| api_client | `tokio::sync::Mutex<Option<NovelAIClient>>` | APIキー未設定時None。変更時にSwap。async context で .await 越しにロック保持が必要なため tokio::sync::Mutex |
 | system_tags | `SystemPromptDB` | 起動時ロード、以後immutable。ロック不要 |
 
 ---

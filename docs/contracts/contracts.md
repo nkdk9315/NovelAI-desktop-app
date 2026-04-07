@@ -668,7 +668,7 @@ pub fn set_setting(conn: &Connection, key: &str, value: &str) -> Result<(), AppE
 /// 3. settings_repo::set(conn, "api_key", api_key) で永続化
 pub fn initialize_client(
     conn: &Connection,
-    api_client: &Mutex<Option<NovelAIClient>>,
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     api_key: &str,
 ) -> Result<(), AppError>;
 
@@ -677,7 +677,7 @@ pub fn initialize_client(
 /// 2. client.get_anlas_balance().await
 /// 3. AnlasBalanceDto に変換
 pub async fn get_anlas_balance(
-    api_client: &Mutex<Option<NovelAIClient>>,
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
 ) -> Result<AnlasBalanceDto, AppError>;
 ```
 
@@ -740,7 +740,7 @@ pub fn delete_project(conn: &Connection, id: &str) -> Result<(), AppError>;
 ///   7. GenerateImageResponse 返却 (image_data → base64)
 pub async fn generate_image(
     db: &Mutex<Connection>,
-    api_client: &Mutex<Option<NovelAIClient>>,
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     req: GenerateImageRequest,
 ) -> Result<GenerateImageResponse, AppError>;
 
@@ -886,7 +886,7 @@ pub fn delete_vibe(conn: &Connection, id: &str) -> Result<(), AppError>;
 /// 4. vibe_repo::insert
 pub async fn encode_vibe(
     conn: &Connection,
-    api_client: &Mutex<Option<NovelAIClient>>,
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     app_data_dir: &Path,
     req: EncodeVibeRequest,
 ) -> Result<VibeDto, AppError>;

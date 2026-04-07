@@ -13,7 +13,7 @@ pub async fn generate_image(
 ) -> Result<GenerateImageResponse, AppError> {
     use base64::Engine;
     use novelai_api::schemas::{
-        CharacterConfig, GenerateAction, GenerateParams, ImageInput, SaveTarget, VibeConfig,
+        CharacterConfig, GenerateAction, GenerateParams, ImageInput, VibeConfig,
         VibeItem,
     };
     use std::path::PathBuf;
@@ -133,7 +133,11 @@ pub async fn generate_image(
     // Save file
     let image_id = uuid::Uuid::new_v4().to_string();
     let relative_path = format!("images/{}.png", image_id);
-    let full_path = std::path::Path::new(&project_dir).join(&relative_path);
+    let project_path = std::path::Path::new(&project_dir);
+    let full_path = project_path.join(&relative_path);
+    if !full_path.starts_with(project_path) {
+        return Err(AppError::Validation("invalid file path".to_string()));
+    }
     std::fs::write(&full_path, &result.image_data)?;
 
     // Base64 encode for frontend

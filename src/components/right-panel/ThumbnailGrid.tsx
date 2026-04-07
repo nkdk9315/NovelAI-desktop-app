@@ -14,6 +14,7 @@ export default function ThumbnailGrid() {
   const loadImages = useHistoryStore((s) => s.loadImages);
   const currentProject = useProjectStore((s) => s.currentProject);
   const lastResult = useGenerationStore((s) => s.lastResult);
+  const selectImage = useGenerationStore((s) => s.selectImage);
 
   useEffect(() => {
     if (projectId) {
@@ -47,13 +48,10 @@ export default function ThumbnailGrid() {
                 : "border-border hover:border-muted-foreground"
             }`}
             onClick={() => {
-              useGenerationStore.setState({
-                lastResult: {
-                  id: img.id,
-                  base64Image: "",
-                  seed: img.seed,
-                  filePath: img.filePath,
-                },
+              selectImage({
+                id: img.id,
+                seed: img.seed,
+                filePath: img.filePath,
               });
             }}
           >
