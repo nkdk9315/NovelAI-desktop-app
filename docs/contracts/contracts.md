@@ -239,7 +239,7 @@ pub struct GenerateImageRequest {
     pub action: GenerateActionRequest,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CharacterRequest {
     pub prompt: String,

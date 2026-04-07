@@ -48,7 +48,7 @@ if [[ -d "$ROOT/src" ]]; then
     case "$basename" in
       main.tsx) continue ;;
     esac
-    if [[ ! "$basename" =~ ^[A-Z][A-Za-z0-9]*\.tsx$ ]]; then
+    if [[ ! "$basename" =~ ^[A-Z][A-Za-z0-9]*(\.(test|spec))?\.tsx$ ]]; then
       rel="${file#"$ROOT/"}"
       echo "NAMING (TSX): $rel — expected PascalCase"
       errors=$((errors + 1))

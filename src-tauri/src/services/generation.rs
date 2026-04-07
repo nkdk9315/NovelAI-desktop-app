@@ -6,11 +6,78 @@ use crate::models::dto::{
     CostEstimateRequest, CostResultDto, GenerateImageRequest, GenerateImageResponse,
 };
 
+pub const MAX_CHARACTERS: usize = 6;
+
+pub fn validate_generate_request(req: &GenerateImageRequest) -> Result<(), AppError> {
+    if let Some(ref chars) = req.characters {
+        if chars.len() > MAX_CHARACTERS {
+            return Err(AppError::Validation(format!(
+                "too many characters: {} (max {})",
+                chars.len(),
+                MAX_CHARACTERS
+            )));
+        }
+    }
+    Ok(())
+}
+
+pub struct PromptSnapshotInput {
+    pub prompt: String,
+    pub width: u32,
+    pub height: u32,
+    pub steps: u32,
+    pub scale: f64,
+    pub cfg_rescale: f64,
+    pub sampler: String,
+    pub noise_schedule: String,
+    pub model: String,
+    pub characters: Option<serde_json::Value>,
+}
+
+impl PromptSnapshotInput {
+    fn from_request(req: &GenerateImageRequest) -> Self {
+        let characters = req
+            .characters
+            .as_ref()
+            .map(|chars| serde_json::to_value(chars).unwrap_or(serde_json::Value::Null));
+        Self {
+            prompt: req.prompt.clone(),
+            width: req.width,
+            height: req.height,
+            steps: req.steps,
+            scale: req.scale,
+            cfg_rescale: req.cfg_rescale,
+            sampler: req.sampler.clone(),
+            noise_schedule: req.noise_schedule.clone(),
+            model: req.model.clone(),
+            characters,
+        }
+    }
+
+    fn build(self, seed: u64) -> serde_json::Value {
+        serde_json::json!({
+            "prompt": self.prompt,
+            "width": self.width,
+            "height": self.height,
+            "steps": self.steps,
+            "scale": self.scale,
+            "cfg_rescale": self.cfg_rescale,
+            "sampler": self.sampler,
+            "noise_schedule": self.noise_schedule,
+            "model": self.model,
+            "seed": seed,
+            "characters": self.characters,
+        })
+    }
+}
+
 pub async fn generate_image(
     db: &std::sync::Mutex<Connection>,
     api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     req: GenerateImageRequest,
 ) -> Result<GenerateImageResponse, AppError> {
+    validate_generate_request(&req)?;
+
     use base64::Engine;
     use novelai_api::schemas::{
         CharacterConfig, GenerateAction, GenerateParams, ImageInput, VibeConfig,
@@ -40,6 +107,9 @@ pub async fn generate_image(
         .map_err(|_| {
             AppError::Validation(format!("invalid noise_schedule: {}", req.noise_schedule))
         })?;
+
+    // Capture snapshot data before action matching moves fields
+    let snapshot_input = PromptSnapshotInput::from_request(&req);
 
     // Map action
     let action = match req.action {
@@ -145,18 +215,7 @@ pub async fn generate_image(
         base64::engine::general_purpose::STANDARD.encode(&result.image_data);
 
     // Build prompt snapshot
-    let prompt_snapshot = serde_json::json!({
-        "prompt": req.prompt,
-        "width": req.width,
-        "height": req.height,
-        "steps": req.steps,
-        "scale": req.scale,
-        "cfg_rescale": req.cfg_rescale,
-        "sampler": req.sampler,
-        "noise_schedule": req.noise_schedule,
-        "model": req.model,
-        "seed": result.seed,
-    });
+    let prompt_snapshot = snapshot_input.build(result.seed);
 
     // Insert DB record
     let now = chrono::Utc::now().to_rfc3339();
@@ -214,54 +273,5 @@ pub fn estimate_cost(req: CostEstimateRequest) -> Result<CostResultDto, AppError
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn make_req(
-        width: u32,
-        height: u32,
-        steps: u32,
-        vibe_count: u64,
-        has_character_reference: bool,
-        tier: u32,
-    ) -> CostEstimateRequest {
-        CostEstimateRequest {
-            width,
-            height,
-            steps,
-            vibe_count,
-            has_character_reference,
-            tier,
-        }
-    }
-
-    #[test]
-    fn test_txt2img_basic() {
-        let result = estimate_cost(make_req(832, 1216, 23, 0, false, 0)).unwrap();
-        assert_eq!(result.total_cost, 17);
-        assert!(!result.is_opus_free);
-    }
-
-    #[test]
-    fn test_opus_free() {
-        let result = estimate_cost(make_req(1024, 1024, 28, 0, false, 3)).unwrap();
-        assert_eq!(result.total_cost, 0);
-        assert!(result.is_opus_free);
-    }
-
-    #[test]
-    fn test_with_vibes() {
-        let result = estimate_cost(make_req(832, 1216, 23, 5, false, 0)).unwrap();
-        // 17 (base) + max(0, 5-4)*2 = 19
-        assert_eq!(result.total_cost, 19);
-        assert!(!result.is_opus_free);
-    }
-
-    #[test]
-    fn test_with_char_ref() {
-        let result = estimate_cost(make_req(832, 1216, 23, 0, true, 0)).unwrap();
-        // 17 (base) + 5*1*1 = 22
-        assert_eq!(result.total_cost, 22);
-        assert!(!result.is_opus_free);
-    }
-}
+#[path = "generation_tests.rs"]
+mod tests;

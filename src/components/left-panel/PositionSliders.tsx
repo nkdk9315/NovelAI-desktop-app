@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next";
+import { Slider } from "@/components/ui/slider";
+
 interface PositionSlidersProps {
   centerX: number;
   centerY: number;
@@ -6,14 +9,35 @@ interface PositionSlidersProps {
 }
 
 export default function PositionSliders({ centerX, centerY, onChangeX, onChangeY }: PositionSlidersProps) {
+  const { t } = useTranslation();
+
   return (
-    <div className="space-y-1">
-      {/* TODO: implement X/Y position sliders */}
+    <div className="space-y-2">
       <p className="text-xs text-muted-foreground">
-        Position: {centerX.toFixed(2)}, {centerY.toFixed(2)}
+        {t("character.position")}: {centerX.toFixed(2)}, {centerY.toFixed(2)}
       </p>
-      <input type="range" min={0} max={1} step={0.01} value={centerX} onChange={(e) => onChangeX(Number(e.target.value))} className="w-full" />
-      <input type="range" min={0} max={1} step={0.01} value={centerY} onChange={(e) => onChangeY(Number(e.target.value))} className="w-full" />
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground w-4">{t("character.positionX")}</span>
+        <Slider
+          min={0}
+          max={1}
+          step={0.01}
+          value={[centerX]}
+          onValueChange={([v]) => onChangeX(v)}
+          aria-label={t("character.positionX")}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground w-4">{t("character.positionY")}</span>
+        <Slider
+          min={0}
+          max={1}
+          step={0.01}
+          value={[centerY]}
+          onValueChange={([v]) => onChangeY(v)}
+          aria-label={t("character.positionY")}
+        />
+      </div>
     </div>
   );
 }

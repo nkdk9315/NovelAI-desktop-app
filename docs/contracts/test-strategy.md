@@ -9,7 +9,8 @@
 | Service (API系) | しない | — | novelai-api crate側でテスト済み |
 | Command | しない | — | thin wrapper、Service テストでカバー |
 | Frontend (`lib/cost.ts`) | する | Vitest | 純粋関数、コスト計算の正確性 |
-| Frontend (Stores/UI) | しない | — | IPC依存、手動確認で十分 |
+| Frontend (Stores) | する | Vitest | Zustand storeの状態管理ロジック検証 |
+| Frontend (UI) | する | Vitest + Testing Library | コンポーネントの描画・操作の検証 |
 
 ---
 
@@ -290,6 +291,14 @@ src/
 │   ├── cost.ts
 │   └── __tests__/
 │       └── cost.test.ts       # Vitest
+├── stores/
+│   └── __tests__/
+│       └── generation-params-store.test.ts  # Vitest
+├── components/
+│   └── left-panel/
+│       └── __tests__/
+│           ├── CharacterAddButtons.test.tsx  # Vitest + Testing Library
+│           └── CharacterSection.test.tsx     # Vitest + Testing Library
 ```
 
 ### 命名規則
@@ -324,6 +333,8 @@ src/
 ### Phase 3: フロントエンド
 
 6. `lib/cost.ts` テスト
+7. Store テスト: generation-params-store (characters CRUD)
+8. UI テスト: CharacterAddButtons, CharacterSection (描画・操作)
 
 ---
 
@@ -334,7 +345,7 @@ src/
 | Command 層 | thin wrapper。Service テストでカバー |
 | novelai-api crate | 独自テストスイートあり |
 | Row → DTO 変換 | トリビアルなマッピング |
-| Frontend Stores / UI | IPC依存。手動テストで十分 |
+| Frontend Stores / UI (IPC依存部分) | IPC呼び出し部分は手動テストで十分。状態管理ロジック・描画・操作はVitest + Testing Library |
 | 並行アクセス | シングルユーザーデスクトップアプリ |
 | generate_image / encode_vibe | API呼び出し含む。crate側でカバー |
 
@@ -360,3 +371,4 @@ npx vitest run src/lib/__tests__/cost.test.ts
 | 日付 | 内容 |
 |------|------|
 | 2026-04-07 | 初版作成 |
+| 2026-04-07 | Frontend Stores/UIテスト方針追加 (Phase 3対応) |
