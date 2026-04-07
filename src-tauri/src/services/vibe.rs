@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::sync::Mutex;
 
 use novelai_api::client::NovelAIClient;
 use rusqlite::Connection;
@@ -25,8 +24,8 @@ pub fn delete_vibe(_conn: &Connection, _id: &str) -> Result<(), AppError> {
 }
 
 pub async fn encode_vibe(
-    _db: &Mutex<Connection>,
-    _api_client: &Mutex<Option<NovelAIClient>>,
+    _db: &std::sync::Mutex<Connection>,
+    _api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     _app_data_dir: &Path,
     _req: EncodeVibeRequest,
 ) -> Result<VibeDto, AppError> {

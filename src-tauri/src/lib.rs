@@ -44,7 +44,7 @@ pub fn run() {
 
             let app_state = AppState {
                 db: Mutex::new(conn),
-                api_client: Mutex::new(api_client_val),
+                api_client: tokio::sync::Mutex::new(api_client_val),
                 system_tags: SystemPromptDB {
                     tags: Vec::new(),
                     by_category: HashMap::new(),

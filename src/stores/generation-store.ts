@@ -7,6 +7,7 @@ interface GenerationState {
   lastResult: GenerateImageResponse | null;
   error: string | null;
   generate: (req: GenerateImageRequest) => Promise<void>;
+  selectImage: (img: { id: string; seed: number; filePath: string }) => void;
 }
 
 export const useGenerationStore = create<GenerationState>()((set) => ({
@@ -21,5 +22,15 @@ export const useGenerationStore = create<GenerationState>()((set) => ({
     } catch (e) {
       set({ error: String(e), isGenerating: false });
     }
+  },
+  selectImage: (img) => {
+    set({
+      lastResult: {
+        id: img.id,
+        base64Image: "",
+        seed: img.seed,
+        filePath: img.filePath,
+      },
+    });
   },
 }));

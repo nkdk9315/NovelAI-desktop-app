@@ -17,6 +17,7 @@ tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 novelai-api = { path = "../novelai_api_client/rust-api" }
 chrono = "0.4"
+base64 = "0.22"
 
 [dev-dependencies]
 tempfile = "3"

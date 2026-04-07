@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Mutex;
 
 use novelai_api::client::NovelAIClient;
 use rusqlite::Connection;
@@ -17,15 +16,14 @@ pub fn set_setting(conn: &Connection, key: &str, value: &str) -> Result<(), AppE
 
 pub fn initialize_client(
     conn: &Connection,
-    api_client: &Mutex<Option<NovelAIClient>>,
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     api_key: &str,
 ) -> Result<(), AppError> {
     let mut client = NovelAIClient::new(Some(api_key), None)?;
     client.set_track_balance(false);
+    // Use blocking_lock since this is called from a sync context with db lock held
     {
-        let mut guard = api_client.lock().map_err(|e| {
-            AppError::NotInitialized(format!("Failed to acquire lock: {}", e))
-        })?;
+        let mut guard = api_client.blocking_lock();
         *guard = Some(client);
     }
     crate::repositories::settings::set(conn, "api_key", api_key)?;
@@ -33,26 +31,13 @@ pub fn initialize_client(
 }
 
 pub async fn get_anlas_balance(
-    api_client: &Mutex<Option<NovelAIClient>>,
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
 ) -> Result<AnlasBalanceDto, AppError> {
-    // Take client out of Mutex to avoid holding guard across .await
-    let client = {
-        let mut guard = api_client.lock().map_err(|e| {
-            AppError::NotInitialized(format!("Failed to acquire lock: {}", e))
-        })?;
-        guard.take().ok_or_else(|| {
-            AppError::NotInitialized("API client not initialized".to_string())
-        })?
-    };
-    let balance = client.get_anlas_balance().await;
-    // Put client back regardless of result
-    {
-        let mut guard = api_client.lock().map_err(|e| {
-            AppError::NotInitialized(format!("Failed to acquire lock: {}", e))
-        })?;
-        *guard = Some(client);
-    }
-    let balance = balance?;
+    let guard = api_client.lock().await;
+    let client = guard
+        .as_ref()
+        .ok_or_else(|| AppError::NotInitialized("API client not initialized".to_string()))?;
+    let balance = client.get_anlas_balance().await?;
     Ok(AnlasBalanceDto {
         anlas: balance.total,
         tier: balance.tier,

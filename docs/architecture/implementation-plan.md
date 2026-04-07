@@ -161,42 +161,42 @@ src/
 - [x] CLAUDE.md に UI 関連情報追記
 - [x] ビルド・lint・カスタムリンター全通過確認
 
-### Phase 1: プロジェクト基盤 (F1, F11, F10)
+### Phase 1: プロジェクト基盤 (F1, F11, F10) ✅ 完了
 
 Tauri 2 + React初期化から、設定管理・API接続・Anlas表示まで。
 
-- [ ] Tauri 2 + React プロジェクト初期化 (`create-tauri-app`)
-- [ ] `Cargo.toml` に `novelai-api` path dependency追加
-- [ ] `main.rs`: Tauri bootstrap, AppState登録
-- [ ] `state.rs`: AppState定義
-- [ ] `error.rs`: AppError定義 + From実装
-- [ ] `db.rs`: SQLite接続, WAL, FK有効化, マイグレーション実行
-- [ ] `migrations/001_init.sql`: 全9テーブル作成 + システムジャンルシード
-- [ ] Settings: commands/services/repositories
-- [ ] `initialize_client`: APIキー → NovelAIClient生成
-- [ ] `get_anlas_balance`: subscription API呼出 → 残高取得
-- [ ] Project: commands/services/repositories (CRUD + cleanup)
-- [ ] Frontend: types, lib/ipc, lib/constants
-- [ ] Frontend: settings-store, project-store
-- [ ] Frontend: ProjectListPage, ProjectCreateDialog, SettingsDialog
-- [ ] Frontend: Header (AnlasDisplay, ModelSelector, SizeSelector, ParamControls)
+- [x] Tauri 2 + React プロジェクト初期化 (`create-tauri-app`)
+- [x] `Cargo.toml` に `novelai-api` path dependency追加
+- [x] `main.rs`: Tauri bootstrap, AppState登録
+- [x] `state.rs`: AppState定義
+- [x] `error.rs`: AppError定義 + From実装
+- [x] `db.rs`: SQLite接続, WAL, FK有効化, マイグレーション実行
+- [x] `migrations/001_init.sql`: 全9テーブル作成 + システムジャンルシード
+- [x] Settings: commands/services/repositories
+- [x] `initialize_client`: APIキー → NovelAIClient生成
+- [x] `get_anlas_balance`: subscription API呼出 → 残高取得
+- [x] Project: commands/services/repositories (CRUD + cleanup)
+- [x] Frontend: types, lib/ipc, lib/constants
+- [x] Frontend: settings-store, project-store
+- [x] Frontend: ProjectListPage, ProjectCreateDialog, SettingsDialog
+- [x] Frontend: Header (AnlasDisplay, ModelSelector, SizeSelector, ParamControls)
 
-### Phase 2: コア生成機能 (F2, F3)
+### Phase 2: コア生成機能 (F2, F3) ✅ 完了
 
 メインプロンプト入力 → 画像生成 → 表示 → 履歴。フルスタック垂直スライス。
 
-- [ ] models/dto: GenerateRequestDto, GenerateResultDto
-- [ ] services/generation: パラメータ組立, API呼出, ファイル書込, DB挿入
-- [ ] commands/images: generate_image, save/delete/get/cleanup
-- [ ] repositories/image: generated_images CRUD
-- [ ] Frontend: generation-store, history-store
-- [ ] Frontend: lib/cost (Anlasコスト計算pure function)
-- [ ] Frontend: hooks (use-cost-estimate)
-- [ ] Frontend: GenerationPage (3パネルレイアウト)
-- [ ] Frontend: LeftPanel (MainPromptSection, PromptTextarea)
-- [ ] Frontend: CenterPanel (ImageViewer, GenerateButton, SaveControls)
-- [ ] Frontend: RightPanel (HistoryItem)
-- [ ] Frontend: Header CostEstimate
+- [x] models/dto: GenerateRequestDto, GenerateResultDto
+- [x] services/generation: パラメータ組立, API呼出, ファイル書込, DB挿入
+- [x] commands/images: generate_image, save/delete/get/cleanup
+- [x] repositories/image: generated_images CRUD
+- [x] Frontend: generation-store, history-store
+- [x] Frontend: lib/cost (Anlasコスト計算pure function)
+- [x] Frontend: hooks (use-cost-estimate)
+- [x] Frontend: GenerationPage (3パネルレイアウト)
+- [x] Frontend: LeftPanel (MainPromptSection, PromptTextarea)
+- [x] Frontend: CenterPanel (ImageViewer, GenerateButton, SaveControls)
+- [x] Frontend: RightPanel (HistoryItem)
+- [x] Frontend: Header CostEstimate
 
 ### Phase 3: キャラクターシステム (F6)
 
@@ -243,3 +243,4 @@ Vibeインポート/管理、スタイルプリセット。
 |------|------|
 | 2026-04-07 | 初版作成 |
 | 2026-04-07 | Phase 0 (UI Scaffold) 追加・完了 |
+| 2026-04-07 | Phase 1, 2 完了マーク |

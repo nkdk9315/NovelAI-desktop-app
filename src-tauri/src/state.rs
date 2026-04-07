@@ -18,6 +18,6 @@ pub struct SystemPromptDB {
 
 pub struct AppState {
     pub db: Mutex<Connection>,
-    pub api_client: Mutex<Option<NovelAIClient>>,
+    pub api_client: tokio::sync::Mutex<Option<NovelAIClient>>,
     pub system_tags: SystemPromptDB,
 }
