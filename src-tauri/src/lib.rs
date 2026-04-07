@@ -10,23 +10,48 @@ use state::{AppState, SystemPromptDB};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use novelai_api::client::NovelAIClient;
+use tauri::Manager;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let db_path = "novelai-desktop.db"; // TODO: use app_data_dir
-    let conn = db::init_db(db_path).expect("Failed to initialize database");
-
-    let app_state = AppState {
-        db: Mutex::new(conn),
-        api_client: Mutex::new(None),
-        system_tags: SystemPromptDB {
-            tags: Vec::new(),
-            by_category: HashMap::new(),
-        },
-    };
-
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .manage(app_state)
+        .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            let data_dir = app
+                .path()
+                .app_data_dir()
+                .expect("Failed to resolve app data dir");
+            std::fs::create_dir_all(&data_dir)?;
+            let db_path = data_dir.join("novelai-desktop.db");
+
+            let conn =
+                db::init_db(db_path.to_str().unwrap()).expect("Failed to initialize database");
+
+            // Restore API client from saved key
+            let mut api_client_val: Option<NovelAIClient> = None;
+            let mut api_key_val: Option<String> = None;
+            if let Ok(Some(key)) = repositories::settings::get_by_key(&conn, "api_key") {
+                if let Ok(mut client) = NovelAIClient::new(Some(&key), None) {
+                    client.set_track_balance(false);
+                    api_client_val = Some(client);
+                    api_key_val = Some(key);
+                }
+            }
+
+            let app_state = AppState {
+                db: Mutex::new(conn),
+                api_client: Mutex::new(api_client_val),
+                api_key: Mutex::new(api_key_val),
+                system_tags: SystemPromptDB {
+                    tags: Vec::new(),
+                    by_category: HashMap::new(),
+                },
+            };
+            app.manage(app_state);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::settings::get_settings,
             commands::settings::set_setting,

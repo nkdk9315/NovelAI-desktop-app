@@ -20,13 +20,18 @@ pub fn set_setting(state: State<'_, AppState>, key: String, value: String) -> Re
 #[tauri::command]
 pub fn initialize_client(state: State<'_, AppState>, api_key: String) -> Result<(), String> {
     let conn = state.db.lock().unwrap();
-    crate::services::settings::initialize_client(&conn, &state.api_client, &api_key)
-        .map_err(|e| e.into())
+    crate::services::settings::initialize_client(
+        &conn,
+        &state.api_client,
+        &state.api_key,
+        &api_key,
+    )
+    .map_err(|e| e.into())
 }
 
 #[tauri::command]
 pub async fn get_anlas_balance(state: State<'_, AppState>) -> Result<AnlasBalanceDto, String> {
-    crate::services::settings::get_anlas_balance(&state.api_client)
+    crate::services::settings::get_anlas_balance(&state.api_key)
         .await
         .map_err(|e| e.into())
 }

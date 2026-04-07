@@ -18,7 +18,14 @@
     "open": "Open",
     "deleteConfirm": "Are you sure you want to delete this project?",
     "emptyState": "No projects",
-    "emptyStateAction": "Create a new project"
+    "emptyStateAction": "Create a new project",
+    "name": "Project Name",
+    "namePlaceholder": "Enter project name",
+    "type": "Type",
+    "directory": "Directory",
+    "directoryPlaceholder": "Select a directory",
+    "browse": "Browse",
+    "createdAt": "Created"
   },
   "generation": {
     "generate": "Generate",
@@ -44,7 +51,8 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light",
-    "language": "Language"
+    "language": "Language",
+    "apiKeySaved": "API key saved"
   },
   "history": {
     "title": "History",
