@@ -198,14 +198,16 @@ Tauri 2 + React初期化から、設定管理・API接続・Anlas表示まで。
 - [x] Frontend: RightPanel (HistoryItem)
 - [x] Frontend: Header CostEstimate
 
-### Phase 3: キャラクターシステム (F6)
+### Phase 3: キャラクターシステム (F6) ✅ 完了
 
 マルチキャラクター対応。Phase 2の拡張。
 
-- [ ] generation-store: characters配列管理 (add/remove/update)
-- [ ] CharacterAddButtons, CharacterSection (プロンプト, ネガティブ, 位置スライダー)
-- [ ] services/generation: マルチキャラクターのv4_prompt構築
-- [ ] 6キャラクター上限バリデーション
+- [x] generation-params-store: characters配列管理 (add/remove/update) + ID付与
+- [x] CharacterAddButtons, CharacterSection (プロンプト, ネガティブ, 位置スライダー)
+- [x] PositionSliders: shadcn/ui Slider使用, aria-label対応
+- [x] services/generation: マルチキャラクターのv4_prompt構築
+- [x] 6キャラクター上限バリデーション (Rust service + Frontend)
+- [x] Frontend テスト: Store CRUD + コンポーネント描画・操作
 
 ### Phase 4: プロンプトグループ (F4, F5, F7)
 
@@ -244,3 +246,4 @@ Vibeインポート/管理、スタイルプリセット。
 | 2026-04-07 | 初版作成 |
 | 2026-04-07 | Phase 0 (UI Scaffold) 追加・完了 |
 | 2026-04-07 | Phase 1, 2 完了マーク |
+| 2026-04-07 | Phase 3 完了マーク |

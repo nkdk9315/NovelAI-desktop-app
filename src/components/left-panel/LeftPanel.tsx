@@ -13,8 +13,8 @@ export default function LeftPanel() {
       <MainPromptSection />
       <hr className="border-border" />
       <CharacterAddButtons />
-      {characters.map((_, index) => (
-        <CharacterSection key={index} index={index} />
+      {characters.map((char, index) => (
+        <CharacterSection key={char.id} index={index} />
       ))}
       <hr className="border-border" />
       <ArtistStyleSection />

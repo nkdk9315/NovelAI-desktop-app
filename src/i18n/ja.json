@@ -62,9 +62,10 @@
   },
   "character": {
     "add": "キャラクター追加",
+    "label": "キャラクター {{number}} ({{genre}})",
     "position": "ポジション",
-    "positionX": "X",
-    "positionY": "Y",
+    "positionX": "X ポジション",
+    "positionY": "Y ポジション",
     "male": "男性",
     "female": "女性",
     "other": "その他",

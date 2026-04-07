@@ -32,7 +32,8 @@ describe("CharacterAddButtons", () => {
 
   it("buttons are disabled at max characters", () => {
     useGenerationParamsStore.setState({
-      characters: Array.from({ length: 6 }, () => ({
+      characters: Array.from({ length: 6 }, (_, i) => ({
+        id: `test-id-${i}`,
         prompt: "",
         negativePrompt: "",
         centerX: 0.5,

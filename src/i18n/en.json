@@ -62,9 +62,10 @@
   },
   "character": {
     "add": "Add Character",
+    "label": "Character {{number}} ({{genre}})",
     "position": "Position",
-    "positionX": "X",
-    "positionY": "Y",
+    "positionX": "X Position",
+    "positionY": "Y Position",
     "male": "Male",
     "female": "Female",
     "other": "Other",

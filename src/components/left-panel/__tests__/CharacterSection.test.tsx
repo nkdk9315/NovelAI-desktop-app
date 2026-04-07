@@ -11,6 +11,7 @@ vi.mock("react-i18next", () => ({
 }));
 
 const defaultCharacter = {
+  id: "test-char-id",
   prompt: "",
   negativePrompt: "",
   centerX: 0.5,
@@ -27,7 +28,7 @@ beforeEach(() => {
 describe("CharacterSection", () => {
   it("displays genre name in header", () => {
     render(<CharacterSection index={0} />);
-    expect(screen.getByText(/Female/)).toBeInTheDocument();
+    expect(screen.getByText("character.label")).toBeInTheDocument();
   });
 
   it("updates prompt via store", () => {

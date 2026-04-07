@@ -13,6 +13,7 @@ import {
 } from "@/lib/constants";
 
 export interface Character {
+  id: string;
   prompt: string;
   negativePrompt: string;
   centerX: number;
@@ -61,7 +62,7 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set) =>
       return {
         characters: [
           ...state.characters,
-          { prompt: "", negativePrompt: "", centerX: 0.5, centerY: 0.5, genreName },
+          { id: crypto.randomUUID(), prompt: "", negativePrompt: "", centerX: 0.5, centerY: 0.5, genreName },
         ],
       };
     }),
@@ -70,10 +71,13 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set) =>
       characters: state.characters.filter((_, i) => i !== index),
     })),
   updateCharacter: (index, partial) =>
-    set((state) => ({
-      characters: state.characters.map((c, i) =>
-        i === index ? { ...c, ...partial } : c,
-      ),
-    })),
+    set((state) => {
+      if (index < 0 || index >= state.characters.length) return state;
+      return {
+        characters: state.characters.map((c, i) =>
+          i === index ? { ...c, ...partial } : c,
+        ),
+      };
+    }),
   clearCharacters: () => set({ characters: [] }),
 }));

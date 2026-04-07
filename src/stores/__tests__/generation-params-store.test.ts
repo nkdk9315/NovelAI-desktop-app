@@ -10,13 +10,14 @@ describe("characters CRUD", () => {
     useGenerationParamsStore.getState().addCharacter("Female");
     const chars = useGenerationParamsStore.getState().characters;
     expect(chars).toHaveLength(1);
-    expect(chars[0]).toEqual({
+    expect(chars[0]).toMatchObject({
       prompt: "",
       negativePrompt: "",
       centerX: 0.5,
       centerY: 0.5,
       genreName: "Female",
     });
+    expect(chars[0].id).toBeDefined();
   });
 
   it("addCharacter respects MAX_CHARACTERS limit", () => {

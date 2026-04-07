@@ -22,13 +22,13 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
     <div className="space-y-2 rounded-md border border-border p-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium">
-          Character {index + 1} ({character.genreName})
+          {t("character.label", { number: index + 1, genre: character.genreName })}
         </span>
         <button
           type="button"
           onClick={() => removeCharacter(index)}
           className="text-muted-foreground hover:text-destructive"
-          aria-label={`${t("common.delete")} Character ${index + 1}`}
+          aria-label={`${t("common.delete")} ${t("character.label", { number: index + 1, genre: character.genreName })}`}
         >
           <X className="h-4 w-4" />
         </button>
