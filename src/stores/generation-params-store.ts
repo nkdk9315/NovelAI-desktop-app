@@ -9,9 +9,18 @@ import {
   DEFAULT_WIDTH,
   DEFAULT_HEIGHT,
   DEFAULT_NEGATIVE_PROMPT,
+  MAX_CHARACTERS,
 } from "@/lib/constants";
 
-interface GenerationParamsState {
+export interface Character {
+  prompt: string;
+  negativePrompt: string;
+  centerX: number;
+  centerY: number;
+  genreName: string;
+}
+
+interface GenerationParamsData {
   prompt: string;
   negativePrompt: string;
   model: string;
@@ -22,7 +31,15 @@ interface GenerationParamsState {
   cfgRescale: number;
   width: number;
   height: number;
-  setParam: <K extends keyof GenerationParamsState>(key: K, value: GenerationParamsState[K]) => void;
+}
+
+interface GenerationParamsState extends GenerationParamsData {
+  characters: Character[];
+  setParam: <K extends keyof GenerationParamsData>(key: K, value: GenerationParamsData[K]) => void;
+  addCharacter: (genreName: string) => void;
+  removeCharacter: (index: number) => void;
+  updateCharacter: (index: number, partial: Partial<Character>) => void;
+  clearCharacters: () => void;
 }
 
 export const useGenerationParamsStore = create<GenerationParamsState>()((set) => ({
@@ -36,5 +53,27 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set) =>
   cfgRescale: DEFAULT_CFG_RESCALE,
   width: DEFAULT_WIDTH,
   height: DEFAULT_HEIGHT,
+  characters: [],
   setParam: (key, value) => set({ [key]: value }),
+  addCharacter: (genreName) =>
+    set((state) => {
+      if (state.characters.length >= MAX_CHARACTERS) return state;
+      return {
+        characters: [
+          ...state.characters,
+          { prompt: "", negativePrompt: "", centerX: 0.5, centerY: 0.5, genreName },
+        ],
+      };
+    }),
+  removeCharacter: (index) =>
+    set((state) => ({
+      characters: state.characters.filter((_, i) => i !== index),
+    })),
+  updateCharacter: (index, partial) =>
+    set((state) => ({
+      characters: state.characters.map((c, i) =>
+        i === index ? { ...c, ...partial } : c,
+      ),
+    })),
+  clearCharacters: () => set({ characters: [] }),
 }));

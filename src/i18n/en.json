@@ -64,7 +64,11 @@
     "add": "Add Character",
     "position": "Position",
     "positionX": "X",
-    "positionY": "Y"
+    "positionY": "Y",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "maxReached": "Maximum 6 characters reached"
   },
   "vibe": {
     "title": "Vibe",

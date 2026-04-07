@@ -6,11 +6,78 @@ use crate::models::dto::{
     CostEstimateRequest, CostResultDto, GenerateImageRequest, GenerateImageResponse,
 };
 
+pub const MAX_CHARACTERS: usize = 6;
+
+pub fn validate_generate_request(req: &GenerateImageRequest) -> Result<(), AppError> {
+    if let Some(ref chars) = req.characters {
+        if chars.len() > MAX_CHARACTERS {
+            return Err(AppError::Validation(format!(
+                "too many characters: {} (max {})",
+                chars.len(),
+                MAX_CHARACTERS
+            )));
+        }
+    }
+    Ok(())
+}
+
+pub struct PromptSnapshotInput {
+    pub prompt: String,
+    pub width: u32,
+    pub height: u32,
+    pub steps: u32,
+    pub scale: f64,
+    pub cfg_rescale: f64,
+    pub sampler: String,
+    pub noise_schedule: String,
+    pub model: String,
+    pub characters: Option<serde_json::Value>,
+}
+
+impl PromptSnapshotInput {
+    fn from_request(req: &GenerateImageRequest) -> Self {
+        let characters = req
+            .characters
+            .as_ref()
+            .map(|chars| serde_json::to_value(chars).unwrap_or(serde_json::Value::Null));
+        Self {
+            prompt: req.prompt.clone(),
+            width: req.width,
+            height: req.height,
+            steps: req.steps,
+            scale: req.scale,
+            cfg_rescale: req.cfg_rescale,
+            sampler: req.sampler.clone(),
+            noise_schedule: req.noise_schedule.clone(),
+            model: req.model.clone(),
+            characters,
+        }
+    }
+
+    fn build(self, seed: u64) -> serde_json::Value {
+        serde_json::json!({
+            "prompt": self.prompt,
+            "width": self.width,
+            "height": self.height,
+            "steps": self.steps,
+            "scale": self.scale,
+            "cfg_rescale": self.cfg_rescale,
+            "sampler": self.sampler,
+            "noise_schedule": self.noise_schedule,
+            "model": self.model,
+            "seed": seed,
+            "characters": self.characters,
+        })
+    }
+}
+
 pub async fn generate_image(
     db: &std::sync::Mutex<Connection>,
     api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     req: GenerateImageRequest,
 ) -> Result<GenerateImageResponse, AppError> {
+    validate_generate_request(&req)?;
+
     use base64::Engine;
     use novelai_api::schemas::{
         CharacterConfig, GenerateAction, GenerateParams, ImageInput, VibeConfig,
@@ -40,6 +107,9 @@ pub async fn generate_image(
         .map_err(|_| {
             AppError::Validation(format!("invalid noise_schedule: {}", req.noise_schedule))
         })?;
+
+    // Capture snapshot data before action matching moves fields
+    let snapshot_input = PromptSnapshotInput::from_request(&req);
 
     // Map action
     let action = match req.action {
@@ -145,18 +215,7 @@ pub async fn generate_image(
         base64::engine::general_purpose::STANDARD.encode(&result.image_data);
 
     // Build prompt snapshot
-    let prompt_snapshot = serde_json::json!({
-        "prompt": req.prompt,
-        "width": req.width,
-        "height": req.height,
-        "steps": req.steps,
-        "scale": req.scale,
-        "cfg_rescale": req.cfg_rescale,
-        "sampler": req.sampler,
-        "noise_schedule": req.noise_schedule,
-        "model": req.model,
-        "seed": result.seed,
-    });
+    let prompt_snapshot = snapshot_input.build(result.seed);
 
     // Insert DB record
     let now = chrono::Utc::now().to_rfc3339();
@@ -216,6 +275,80 @@ pub fn estimate_cost(req: CostEstimateRequest) -> Result<CostResultDto, AppError
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::dto::{CharacterRequest, GenerateActionRequest};
+
+    fn make_generate_req(char_count: usize) -> GenerateImageRequest {
+        GenerateImageRequest {
+            project_id: "test".to_string(),
+            prompt: "test".to_string(),
+            negative_prompt: None,
+            characters: if char_count == 0 {
+                None
+            } else {
+                Some(
+                    (0..char_count)
+                        .map(|_| CharacterRequest {
+                            prompt: "char".to_string(),
+                            center_x: 0.5,
+                            center_y: 0.5,
+                            negative_prompt: String::new(),
+                        })
+                        .collect(),
+                )
+            },
+            vibes: None,
+            width: 832,
+            height: 1216,
+            steps: 28,
+            scale: 5.0,
+            cfg_rescale: 0.0,
+            seed: None,
+            sampler: "k_euler".to_string(),
+            noise_schedule: "native".to_string(),
+            model: "nai-diffusion-4-5-full".to_string(),
+            action: GenerateActionRequest::Generate,
+        }
+    }
+
+    #[test]
+    fn test_max_characters_exceeded() {
+        let req = make_generate_req(7);
+        let result = validate_generate_request(&req);
+        assert!(matches!(result, Err(AppError::Validation(_))));
+    }
+
+    #[test]
+    fn test_zero_characters_ok() {
+        let req = make_generate_req(0);
+        assert!(validate_generate_request(&req).is_ok());
+    }
+
+    #[test]
+    fn test_six_characters_ok() {
+        let req = make_generate_req(6);
+        assert!(validate_generate_request(&req).is_ok());
+    }
+
+    #[test]
+    fn test_prompt_snapshot_includes_characters() {
+        let req = make_generate_req(2);
+        let input = PromptSnapshotInput::from_request(&req);
+        let snapshot = input.build(42);
+        let chars = snapshot.get("characters").unwrap();
+        assert!(chars.is_array());
+        assert_eq!(chars.as_array().unwrap().len(), 2);
+        assert_eq!(chars[0]["prompt"], "char");
+        assert_eq!(chars[0]["centerX"], 0.5);
+        assert_eq!(chars[0]["centerY"], 0.5);
+    }
+
+    #[test]
+    fn test_prompt_snapshot_no_characters() {
+        let req = make_generate_req(0);
+        let input = PromptSnapshotInput::from_request(&req);
+        let snapshot = input.build(42);
+        assert!(snapshot.get("characters").unwrap().is_null());
+    }
 
     fn make_req(
         width: u32,

@@ -25,6 +25,15 @@ export default function ActionBar() {
       projectId,
       prompt: params.prompt,
       negativePrompt: params.negativePrompt || undefined,
+      characters:
+        params.characters.length > 0
+          ? params.characters.map((c) => ({
+              prompt: c.prompt,
+              centerX: c.centerX,
+              centerY: c.centerY,
+              negativePrompt: c.negativePrompt,
+            }))
+          : undefined,
       width: params.width,
       height: params.height,
       steps: params.steps,
