@@ -91,3 +91,83 @@ pub fn delete_unsaved(conn: &Connection, project_id: &str) -> Result<Vec<String>
     )?;
     Ok(paths)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{create_test_image, create_test_project, setup_test_db};
+
+    #[test]
+    fn test_insert_and_list_by_project() {
+        let conn = setup_test_db();
+        let project = create_test_project(&conn);
+        create_test_image(&conn, &project.id, 0);
+        create_test_image(&conn, &project.id, 1);
+
+        let images = list_by_project(&conn, &project.id, None).unwrap();
+        assert_eq!(images.len(), 2);
+    }
+
+    #[test]
+    fn test_list_by_project_saved_only() {
+        let conn = setup_test_db();
+        let project = create_test_project(&conn);
+        create_test_image(&conn, &project.id, 0);
+        create_test_image(&conn, &project.id, 1);
+
+        let saved = list_by_project(&conn, &project.id, Some(true)).unwrap();
+        assert_eq!(saved.len(), 1);
+        assert_eq!(saved[0].is_saved, 1);
+    }
+
+    #[test]
+    fn test_update_is_saved() {
+        let conn = setup_test_db();
+        let project = create_test_project(&conn);
+        let img = create_test_image(&conn, &project.id, 0);
+        assert_eq!(find_by_id(&conn, &img.id).unwrap().is_saved, 0);
+
+        update_is_saved(&conn, &img.id).unwrap();
+        assert_eq!(find_by_id(&conn, &img.id).unwrap().is_saved, 1);
+    }
+
+    #[test]
+    fn test_update_all_is_saved() {
+        let conn = setup_test_db();
+        let project = create_test_project(&conn);
+        create_test_image(&conn, &project.id, 0);
+        create_test_image(&conn, &project.id, 0);
+
+        update_all_is_saved(&conn, &project.id).unwrap();
+
+        let all = list_by_project(&conn, &project.id, Some(true)).unwrap();
+        assert_eq!(all.len(), 2);
+    }
+
+    #[test]
+    fn test_delete() {
+        let conn = setup_test_db();
+        let project = create_test_project(&conn);
+        let img = create_test_image(&conn, &project.id, 0);
+
+        delete(&conn, &img.id).unwrap();
+        assert!(find_by_id(&conn, &img.id).is_err());
+    }
+
+    #[test]
+    fn test_delete_unsaved() {
+        let conn = setup_test_db();
+        let project = create_test_project(&conn);
+        let unsaved = create_test_image(&conn, &project.id, 0);
+        let saved = create_test_image(&conn, &project.id, 1);
+
+        let paths = delete_unsaved(&conn, &project.id).unwrap();
+        assert_eq!(paths.len(), 1);
+        assert_eq!(paths[0], unsaved.file_path);
+
+        // Saved image remains
+        assert!(find_by_id(&conn, &saved.id).is_ok());
+        // Unsaved image deleted
+        assert!(find_by_id(&conn, &unsaved.id).is_err());
+    }
+}

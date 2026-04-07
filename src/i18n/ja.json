@@ -18,7 +18,14 @@
     "open": "開く",
     "deleteConfirm": "このプロジェクトを削除しますか？",
     "emptyState": "プロジェクトがありません",
-    "emptyStateAction": "新しいプロジェクトを作成"
+    "emptyStateAction": "新しいプロジェクトを作成",
+    "name": "プロジェクト名",
+    "namePlaceholder": "プロジェクト名を入力",
+    "type": "タイプ",
+    "directory": "保存先ディレクトリ",
+    "directoryPlaceholder": "ディレクトリを選択",
+    "browse": "参照",
+    "createdAt": "作成日"
   },
   "generation": {
     "generate": "生成",
@@ -44,7 +51,8 @@
     "theme": "テーマ",
     "dark": "ダーク",
     "light": "ライト",
-    "language": "言語"
+    "language": "言語",
+    "apiKeySaved": "API キーを保存しました"
   },
   "history": {
     "title": "履歴",

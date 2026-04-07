@@ -51,3 +51,68 @@ pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError> {
     conn.execute("DELETE FROM projects WHERE id = ?1", [id])?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{create_test_image, create_test_project, setup_test_db};
+
+    #[test]
+    fn test_insert_and_list_all() {
+        let conn = setup_test_db();
+        let p1 = ProjectRow {
+            id: "p1".to_string(),
+            name: "Project A".to_string(),
+            project_type: "simple".to_string(),
+            directory_path: "/tmp/a".to_string(),
+            created_at: "2026-01-02T00:00:00Z".to_string(),
+            updated_at: "2026-01-02T00:00:00Z".to_string(),
+        };
+        let p2 = ProjectRow {
+            id: "p2".to_string(),
+            name: "Project B".to_string(),
+            project_type: "manga".to_string(),
+            directory_path: "/tmp/b".to_string(),
+            created_at: "2026-01-03T00:00:00Z".to_string(),
+            updated_at: "2026-01-03T00:00:00Z".to_string(),
+        };
+        insert(&conn, &p1).unwrap();
+        insert(&conn, &p2).unwrap();
+        let list = list_all(&conn).unwrap();
+        assert_eq!(list.len(), 2);
+        // DESC order: p2 first
+        assert_eq!(list[0].id, "p2");
+        assert_eq!(list[1].id, "p1");
+    }
+
+    #[test]
+    fn test_find_by_id() {
+        let conn = setup_test_db();
+        let project = create_test_project(&conn);
+        let found = find_by_id(&conn, &project.id).unwrap();
+        assert_eq!(found.name, "Test Project");
+    }
+
+    #[test]
+    fn test_find_by_id_not_found() {
+        let conn = setup_test_db();
+        let result = find_by_id(&conn, "nonexistent");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_delete_cascades_images() {
+        let conn = setup_test_db();
+        let project = create_test_project(&conn);
+        create_test_image(&conn, &project.id, 0);
+        create_test_image(&conn, &project.id, 1);
+
+        let images = crate::repositories::image::list_by_project(&conn, &project.id, None).unwrap();
+        assert_eq!(images.len(), 2);
+
+        delete(&conn, &project.id).unwrap();
+
+        let images = crate::repositories::image::list_by_project(&conn, &project.id, None).unwrap();
+        assert_eq!(images.len(), 0);
+    }
+}

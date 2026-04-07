@@ -37,3 +37,43 @@ pub fn set(conn: &Connection, key: &str, value: &str) -> Result<(), AppError> {
     )?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::setup_test_db;
+
+    #[test]
+    fn test_set_and_get_by_key() {
+        let conn = setup_test_db();
+        set(&conn, "theme", "dark").unwrap();
+        let val = get_by_key(&conn, "theme").unwrap();
+        assert_eq!(val, Some("dark".to_string()));
+    }
+
+    #[test]
+    fn test_set_upsert() {
+        let conn = setup_test_db();
+        set(&conn, "theme", "dark").unwrap();
+        set(&conn, "theme", "light").unwrap();
+        let val = get_by_key(&conn, "theme").unwrap();
+        assert_eq!(val, Some("light".to_string()));
+    }
+
+    #[test]
+    fn test_get_all() {
+        let conn = setup_test_db();
+        set(&conn, "theme", "dark").unwrap();
+        set(&conn, "locale", "ja").unwrap();
+        let all = get_all(&conn).unwrap();
+        assert_eq!(all.get("theme"), Some(&"dark".to_string()));
+        assert_eq!(all.get("locale"), Some(&"ja".to_string()));
+    }
+
+    #[test]
+    fn test_get_by_key_not_found() {
+        let conn = setup_test_db();
+        let val = get_by_key(&conn, "nonexistent").unwrap();
+        assert_eq!(val, None);
+    }
+}

@@ -32,7 +32,7 @@
 
 ## ステップ
 
-### Step 1: Rust services/settings.rs — initialize_client 実装 ⬜
+### Step 1: Rust services/settings.rs — initialize_client 実装 ✅
 - **内容**: NovelAIClient を API キーから生成し、AppState.api_client にセットする。API キーを DB の settings テーブルに保存する
 - **受け入れ基準**:
   - `initialize_client` が SecretString を使って NovelAIClient を生成
@@ -42,7 +42,7 @@
 - **依存**: なし
 - **対象ファイル**: `src-tauri/src/services/settings.rs`
 
-### Step 2: Rust services/settings.rs — get_anlas_balance 実装 ⬜
+### Step 2: Rust services/settings.rs — get_anlas_balance 実装 ✅
 - **内容**: AppState.api_client から NovelAIClient を取得し、subscription API を呼び出して Anlas 残高 + サブスクリプション tier を返す
 - **受け入れ基準**:
   - api_client が None の場合 NotInitialized エラーを返す
@@ -52,7 +52,7 @@
 - **依存**: Step 1
 - **対象ファイル**: `src-tauri/src/services/settings.rs`, `src-tauri/src/models/dto.rs`（AnlasBalanceDto に tier 追加が必要な場合）
 
-### Step 3: Rust services/project.rs — CRUD 完成 ⬜
+### Step 3: Rust services/project.rs — CRUD 完成 ✅
 - **内容**: create_project / open_project / delete_project の 3 関数を実装する
 - **受け入れ基準**:
   - `create_project`: UUID 生成、directory_path のディレクトリ作成（存在しなければ）、DB 挿入、ProjectDto 返却
@@ -62,7 +62,7 @@
 - **依存**: なし
 - **対象ファイル**: `src-tauri/src/services/project.rs`
 
-### Step 4: Rust — lib.rs の DB パス修正 + 起動時 API キー復元 ⬜
+### Step 4: Rust — lib.rs の DB パス修正 + 起動時 API キー復元 ✅
 - **内容**: DB パスを Tauri の app_data_dir に変更する。起動時に settings テーブルから api_key を読み込み、存在すれば NovelAIClient を自動初期化する
 - **受け入れ基準**:
   - `app_data_dir` を使った適切なパスで DB を開く
@@ -71,7 +71,7 @@
 - **依存**: Step 1
 - **対象ファイル**: `src-tauri/src/lib.rs`
 
-### Step 5: Frontend — SettingsDialog 実装 ⬜
+### Step 5: Frontend — SettingsDialog 実装 ✅
 - **内容**: shadcn/ui の Dialog を使って API キー入力・保存・テスト接続の UI を実装する
 - **受け入れ基準**:
   - API キー入力フィールド（パスワードマスク、表示切替ボタン）
@@ -82,7 +82,7 @@
 - **依存**: Step 1, Step 2
 - **対象ファイル**: `src/components/modals/SettingsDialog.tsx`
 
-### Step 6: Frontend — ProjectListPage + CreateProjectDialog 実装 ⬜
+### Step 6: Frontend — ProjectListPage + CreateProjectDialog 実装 ✅
 - **内容**: プロジェクト一覧表示、新規作成ダイアログ、プロジェクト削除、プロジェクトを開く機能を実装する
 - **受け入れ基準**:
   - マウント時に loadProjects() でプロジェクト一覧取得
@@ -96,7 +96,7 @@
 - **依存**: Step 3, Step 5
 - **対象ファイル**: `src/pages/ProjectListPage.tsx`, `src/components/modals/CreateProjectDialog.tsx`
 
-### Step 7: Frontend — Header 機能実装 ⬜
+### Step 7: Frontend — Header 機能実装 ✅
 - **内容**: Header にプロジェクト名表示、AnlasDisplay の実データ連携（**プラン名表示含む**）、GenerationParams（モデル・サイズ・サンプラー等）の操作を実装する
 - **受け入れ基準**:
   - currentProject.name を表示
@@ -109,7 +109,7 @@
 - **依存**: Step 5, Step 6
 - **対象ファイル**: `src/components/header/Header.tsx`, `src/components/header/AnlasDisplay.tsx`, `src/components/header/GenerationParams.tsx`, `src/components/header/CostDisplay.tsx`, `src/stores/generation-store.ts`, `src/stores/settings-store.ts`
 
-### Step 8: 統合テスト + ビルド確認 ⬜
+### Step 8: 統合テスト + ビルド確認 ✅
 - **内容**: cargo test / cargo clippy / npm run build / npm run lint を全通過させる。フロントエンドから Rust バックエンドへの IPC が正常に動作することを確認する
 - **受け入れ基準**:
   - `cargo test` 全テストパス
@@ -129,7 +129,10 @@
 | 2026-04-07 | プラン表示を Phase 1 Step 7 に追加、コスト計算本実装は Phase 2 | tier は get_anlas_balance が既に返す。コスト計算は生成パラメータ（SMEA 等）が揃う Phase 2 が自然 |
 
 ## チェックポイント（最終更新: 2026-04-07）
-- **現在のステップ**: Step 1（未着手）
+- **現在のステップ**: 全ステップ完了 + レビュー修正 + テスト追加
 - **作業中のファイル**: なし
-- **次にやること**: novelai-api crate の NovelAIClient コンストラクタと balance() メソッドの API を確認し、services/settings.rs の initialize_client を実装する
+- **完了事項**: Step 1-8 すべて実装完了。cargo check / cargo clippy / npm run build / eslint すべてパス
+- **追加対応**: tauri-plugin-dialog 追加。generation-params-store 新規作成
+- **レビュー修正**: AppState から api_key フィールド削除（api_client 経由で take/put back パターンに変更）。get_anlas_balance が api_client を再利用するよう修正。open_project を image_service::cleanup_unsaved_images 経由に修正。create_project で images/ サブディレクトリ作成追加。全コマンドの lock().unwrap() を map_err に置換。cleanup_unsaved_images を contracts.md 通りに実装
+- **テスト追加**: test_utils.rs 新規作成。Repository テスト (settings 4件, project 4件, image 6件) + Service テスト (settings 2件, project 5件) = 計21件。tempfile dev-dependency 追加
 - **ブロッカー**: なし
