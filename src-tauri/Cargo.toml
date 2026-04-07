@@ -18,6 +18,9 @@ tracing = "0.1"
 novelai-api = { path = "../novelai_api_client/rust-api" }
 chrono = "0.4"
 
+[dev-dependencies]
+tempfile = "3"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 

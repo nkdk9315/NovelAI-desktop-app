@@ -28,6 +28,10 @@ pub fn create_project(
     if !dir.exists() {
         std::fs::create_dir_all(dir)?;
     }
+    let images_dir = dir.join("images");
+    if !images_dir.exists() {
+        std::fs::create_dir_all(&images_dir)?;
+    }
 
     let now = chrono::Utc::now().to_rfc3339();
     let row = ProjectRow {
@@ -43,16 +47,84 @@ pub fn create_project(
 }
 
 pub fn open_project(conn: &Connection, id: &str) -> Result<ProjectDto, AppError> {
+    crate::services::image::cleanup_unsaved_images(conn, id)?;
     let row = crate::repositories::project::find_by_id(conn, id)?;
-    // Clean up unsaved images
-    let paths = crate::repositories::image::delete_unsaved(conn, id)?;
-    for path in paths {
-        let _ = std::fs::remove_file(&path);
-    }
     Ok(ProjectDto::from(row))
 }
 
 pub fn delete_project(conn: &Connection, id: &str) -> Result<(), AppError> {
     crate::repositories::project::delete(conn, id)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{create_test_image, setup_test_db};
+
+    #[test]
+    fn test_create_project() {
+        let conn = setup_test_db();
+        let tmp = tempfile::TempDir::new().unwrap();
+        let dir = tmp.path().join("test-project");
+
+        let req = CreateProjectRequest {
+            name: "My Project".to_string(),
+            project_type: "simple".to_string(),
+            directory_path: dir.to_str().unwrap().to_string(),
+        };
+        let dto = create_project(&conn, req).unwrap();
+        assert_eq!(dto.name, "My Project");
+        assert!(dir.exists());
+        assert!(dir.join("images").exists());
+    }
+
+    #[test]
+    fn test_create_project_empty_name() {
+        let conn = setup_test_db();
+        let req = CreateProjectRequest {
+            name: "  ".to_string(),
+            project_type: "simple".to_string(),
+            directory_path: "/tmp/x".to_string(),
+        };
+        assert!(create_project(&conn, req).is_err());
+    }
+
+    #[test]
+    fn test_create_project_invalid_type() {
+        let conn = setup_test_db();
+        let req = CreateProjectRequest {
+            name: "Test".to_string(),
+            project_type: "invalid".to_string(),
+            directory_path: "/tmp/x".to_string(),
+        };
+        assert!(create_project(&conn, req).is_err());
+    }
+
+    #[test]
+    fn test_open_project_cleans_unsaved() {
+        let conn = setup_test_db();
+        let project = crate::test_utils::create_test_project(&conn);
+        let saved = create_test_image(&conn, &project.id, 1);
+        create_test_image(&conn, &project.id, 0);
+
+        let dto = open_project(&conn, &project.id).unwrap();
+        assert_eq!(dto.id, project.id);
+
+        // Unsaved images should be cleaned from DB
+        let remaining =
+            crate::repositories::image::list_by_project(&conn, &project.id, None).unwrap();
+        assert_eq!(remaining.len(), 1);
+        assert_eq!(remaining[0].id, saved.id);
+    }
+
+    #[test]
+    fn test_delete_project() {
+        let conn = setup_test_db();
+        let project = crate::test_utils::create_test_project(&conn);
+        delete_project(&conn, &project.id).unwrap();
+
+        let list = list_projects(&conn).unwrap();
+        assert!(list.is_empty());
+    }
 }

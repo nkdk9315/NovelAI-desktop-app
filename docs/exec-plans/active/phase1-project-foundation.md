@@ -129,8 +129,10 @@
 | 2026-04-07 | プラン表示を Phase 1 Step 7 に追加、コスト計算本実装は Phase 2 | tier は get_anlas_balance が既に返す。コスト計算は生成パラメータ（SMEA 等）が揃う Phase 2 が自然 |
 
 ## チェックポイント（最終更新: 2026-04-07）
-- **現在のステップ**: 全ステップ完了
+- **現在のステップ**: 全ステップ完了 + レビュー修正 + テスト追加
 - **作業中のファイル**: なし
 - **完了事項**: Step 1-8 すべて実装完了。cargo check / cargo clippy / npm run build / eslint すべてパス
-- **追加対応**: AppState に api_key: Mutex<Option<String>> を追加（NovelAIClient が Clone 不可のため async 処理で直接使用できないため）。tauri-plugin-dialog 追加。generation-params-store 新規作成
+- **追加対応**: tauri-plugin-dialog 追加。generation-params-store 新規作成
+- **レビュー修正**: AppState から api_key フィールド削除（api_client 経由で take/put back パターンに変更）。get_anlas_balance が api_client を再利用するよう修正。open_project を image_service::cleanup_unsaved_images 経由に修正。create_project で images/ サブディレクトリ作成追加。全コマンドの lock().unwrap() を map_err に置換。cleanup_unsaved_images を contracts.md 通りに実装
+- **テスト追加**: test_utils.rs 新規作成。Repository テスト (settings 4件, project 4件, image 6件) + Service テスト (settings 2件, project 5件) = 計21件。tempfile dev-dependency 追加
 - **ブロッカー**: なし

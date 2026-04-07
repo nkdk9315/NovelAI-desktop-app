@@ -47,6 +47,9 @@ use rusqlite::Connection;
 pub fn setup_test_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
     conn.execute_batch("PRAGMA foreign_keys = ON;").unwrap();
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+    ).unwrap();
     conn.execute_batch(include_str!("../migrations/001_init.sql")).unwrap();
     conn
 }
@@ -54,19 +57,19 @@ pub fn setup_test_db() -> Connection {
 /// テスト用Projectを挿入して返す
 pub fn create_test_project(conn: &Connection) -> ProjectRow { ... }
 
-/// テスト用Genre (非システム) を挿入して返す
+/// テスト用Genre (非システム) を挿入して返す (Phase 2+)
 pub fn create_test_genre(conn: &Connection) -> GenreRow { ... }
 
-/// テスト用PromptGroupを挿入して返す
+/// テスト用PromptGroupを挿入して返す (Phase 2+)
 pub fn create_test_prompt_group(conn: &Connection, genre_id: &str) -> PromptGroupRow { ... }
 
-/// テスト用Vibeを挿入して返す
+/// テスト用Vibeを挿入して返す (Phase 2+)
 pub fn create_test_vibe(conn: &Connection) -> VibeRow { ... }
 
-/// テスト用GeneratedImageを挿入して返す
-pub fn create_test_image(conn: &Connection, project_id: &str) -> GeneratedImageRow { ... }
+/// テスト用GeneratedImageを挿入して返す (is_saved: 0=未保存, 1=保存済み)
+pub fn create_test_image(conn: &Connection, project_id: &str, is_saved: i32) -> GeneratedImageRow { ... }
 
-/// テスト用StylePresetを挿入して返す
+/// テスト用StylePresetを挿入して返す (Phase 2+)
 pub fn create_test_style_preset(conn: &Connection) -> StylePresetRow { ... }
 ```
 

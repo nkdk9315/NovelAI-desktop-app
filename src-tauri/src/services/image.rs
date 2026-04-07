@@ -23,6 +23,15 @@ pub fn get_project_images(
     todo!()
 }
 
-pub fn cleanup_unsaved_images(_conn: &Connection, _project_id: &str) -> Result<(), AppError> {
-    todo!()
+pub fn cleanup_unsaved_images(conn: &Connection, project_id: &str) -> Result<(), AppError> {
+    let project = crate::repositories::project::find_by_id(conn, project_id)?;
+    let paths = crate::repositories::image::delete_unsaved(conn, project_id)?;
+    let base_dir = std::path::Path::new(&project.directory_path);
+    for path in paths {
+        let full_path = base_dir.join(&path);
+        if full_path.exists() {
+            let _ = std::fs::remove_file(&full_path);
+        }
+    }
+    Ok(())
 }
