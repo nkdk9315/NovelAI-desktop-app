@@ -1,0 +1,29 @@
+{
+  "productName": "NovelAI Desktop",
+  "version": "0.1.0",
+  "identifier": "com.novelai-desktop.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: https://image.novelai.net; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    },
+    "windows": [
+      {
+        "title": "NovelAI Desktop",
+        "width": 1400,
+        "height": 900,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "resources": ["resources/*"]
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "common": {
+    "appName": "NovelAI Desktop",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "close": "Close",
+    "back": "Back",
+    "settings": "Settings",
+    "loading": "Loading...",
+    "error": "Error",
+    "confirm": "Confirm"
+  },
+  "project": {
+    "title": "Projects",
+    "newProject": "New Project",
+    "open": "Open",
+    "deleteConfirm": "Are you sure you want to delete this project?",
+    "emptyState": "No projects",
+    "emptyStateAction": "Create a new project"
+  },
+  "generation": {
+    "generate": "Generate",
+    "save": "Save",
+    "saveAll": "Save All",
+    "model": "Model",
+    "width": "Width",
+    "height": "Height",
+    "count": "Count",
+    "sampler": "Sampler",
+    "steps": "Steps",
+    "scale": "Scale",
+    "seed": "Seed",
+    "prompt": "Prompt",
+    "negativePrompt": "Negative Prompt",
+    "cost": "Cost",
+    "anlas": "Anlas"
+  },
+  "settings": {
+    "title": "Settings",
+    "apiKey": "API Key",
+    "defaultParams": "Default Parameters",
+    "theme": "Theme",
+    "dark": "Dark",
+    "light": "Light",
+    "language": "Language"
+  },
+  "history": {
+    "title": "History",
+    "all": "All",
+    "saved": "Saved",
+    "emptyState": "No history"
+  },
+  "character": {
+    "add": "Add Character",
+    "position": "Position",
+    "positionX": "X",
+    "positionY": "Y"
+  },
+  "vibe": {
+    "title": "Vibe",
+    "import": "Import",
+    "strength": "Strength",
+    "infoExtracted": "Info Extracted"
+  },
+  "style": {
+    "title": "Style Presets",
+    "artist": "Artist",
+    "manage": "Manage"
+  },
+  "promptGroup": {
+    "title": "Prompt Groups",
+    "genre": "Genre",
+    "usage": "Usage"
+  }
+}

@@ -1,0 +1,236 @@
+{
+  "project_name": "NovelAI Desktop App",
+  "description": "NovelAI画像生成APIを利用したデスクトップアプリ。プロジェクト単位で画像を生成・管理し、プロンプトグループで効率的にプロンプトを組み立てる。",
+  "tech_stack": {
+    "desktop_shell": "Tauri 2",
+    "backend": "Rust",
+    "frontend": "React + TypeScript",
+    "ui_library": "Tailwind CSS + shadcn/ui",
+    "state_management": "Zustand",
+    "database": "SQLite (rusqlite, bundled)",
+    "api_client": "novelai-api crate (path: novelai_api_client/rust-api)",
+    "platforms": ["macOS", "Windows", "Linux"]
+  },
+  "features": [
+    {
+      "id": "F1",
+      "name": "プロジェクト管理",
+      "priority": "high",
+      "dependencies": [],
+      "requirements": ["F1.1", "F1.2", "F1.3", "F1.4", "F1.5", "F1.6"],
+      "summary": "プロジェクトの作成・一覧・オープン・削除。未保存画像のクリーンアップ。"
+    },
+    {
+      "id": "F2",
+      "name": "画像生成",
+      "priority": "high",
+      "dependencies": ["F1", "F3", "F11"],
+      "requirements": ["F2.1", "F2.2", "F2.3", "F2.4", "F2.5", "F2.6", "F2.7"],
+      "summary": "txt2img生成、画像表示、履歴管理、パラメータ設定。"
+    },
+    {
+      "id": "F3",
+      "name": "プロンプトシステム",
+      "priority": "high",
+      "dependencies": [],
+      "requirements": ["F3.1", "F3.2", "F3.3", "F3.4", "F3.5", "F3.6"],
+      "summary": "メイン/キャラクター/ネガティブの二層プロンプト構造。v4_prompt形式でAPI送信。"
+    },
+    {
+      "id": "F4",
+      "name": "プロンプトグループ管理",
+      "priority": "high",
+      "dependencies": ["F5"],
+      "requirements": ["F4.1", "F4.2", "F4.3", "F4.4", "F4.5", "F4.6"],
+      "summary": "再利用可能なタグ集合のCRUD。ジャンル分類、デフォルト設定、使用タイプ管理。"
+    },
+    {
+      "id": "F5",
+      "name": "ジャンル管理",
+      "priority": "high",
+      "dependencies": [],
+      "requirements": ["F5.1", "F5.2", "F5.3", "F5.4"],
+      "summary": "システムジャンル（男/女/その他）+ カスタムジャンル作成。"
+    },
+    {
+      "id": "F6",
+      "name": "キャラクター管理",
+      "priority": "high",
+      "dependencies": ["F3", "F4", "F5"],
+      "requirements": ["F6.1", "F6.2", "F6.3", "F6.4", "F6.5", "F6.6"],
+      "summary": "最大6キャラクターの追加/削除。ジャンル別デフォルトグループ自動適用。"
+    },
+    {
+      "id": "F7",
+      "name": "システムプロンプト",
+      "priority": "medium",
+      "dependencies": [],
+      "requirements": ["F7.1", "F7.2", "F7.3", "F7.4", "F7.5"],
+      "summary": "danbooruタグDB（167,907件）のバンドル。予測変換/オートコンプリート。"
+    },
+    {
+      "id": "F8",
+      "name": "Vibe管理",
+      "priority": "medium",
+      "dependencies": ["F2"],
+      "requirements": ["F8.1", "F8.2", "F8.3", "F8.4", "F8.5", "F8.6", "F8.7"],
+      "summary": ".naiv4vibeファイルのインポート・一覧・削除・選択。最大10個同時使用。"
+    },
+    {
+      "id": "F9",
+      "name": "スタイルプリセット",
+      "priority": "medium",
+      "dependencies": ["F7", "F8"],
+      "requirements": ["F9.1", "F9.2", "F9.3", "F9.4", "F9.5"],
+      "summary": "アーティストタグ + Vibeの組み合わせを保存・呼び出し。"
+    },
+    {
+      "id": "F10",
+      "name": "Anlas管理",
+      "priority": "high",
+      "dependencies": ["F11"],
+      "requirements": ["F10.1", "F10.2", "F10.3", "F10.4", "F10.5", "F10.6"],
+      "summary": "Anlas残高表示、コスト予測、プラン表示。"
+    },
+    {
+      "id": "F11",
+      "name": "設定",
+      "priority": "high",
+      "dependencies": [],
+      "requirements": ["F11.1", "F11.2", "F11.3", "F11.4", "F11.5", "F11.6", "F11.7", "F11.8"],
+      "summary": "APIキー、デフォルトパラメータの設定・永続化。"
+    }
+  ],
+  "entities": [
+    {
+      "name": "Project",
+      "fields": ["id (UUID PK)", "name", "project_type", "directory_path", "created_at", "updated_at"]
+    },
+    {
+      "name": "Genre",
+      "fields": ["id (UUID PK)", "name (UNIQUE)", "is_system", "sort_order", "created_at"]
+    },
+    {
+      "name": "PromptGroup",
+      "fields": ["id (UUID PK)", "name", "genre_id (FK→Genre)", "is_default_for_genre", "is_system", "usage_type", "created_at", "updated_at"]
+    },
+    {
+      "name": "PromptGroupTag",
+      "fields": ["id (UUID PK)", "prompt_group_id (FK→PromptGroup)", "tag", "sort_order"]
+    },
+    {
+      "name": "GeneratedImage",
+      "fields": ["id (UUID PK)", "project_id (FK→Project)", "file_path", "seed", "prompt_snapshot (JSON)", "width", "height", "model", "is_saved", "created_at"]
+    },
+    {
+      "name": "Vibe",
+      "fields": ["id (UUID PK)", "name", "file_path", "model", "created_at"]
+    },
+    {
+      "name": "StylePreset",
+      "fields": ["id (UUID PK)", "name", "artist_tags (JSON Array)", "created_at"]
+    },
+    {
+      "name": "StylePresetVibe",
+      "fields": ["style_preset_id (FK→StylePreset)", "vibe_id (FK→Vibe)"],
+      "note": "複合PK"
+    },
+    {
+      "name": "Settings",
+      "fields": ["key (PK)", "value"]
+    }
+  ],
+  "ui_sections": [
+    {
+      "name": "Header",
+      "components": ["AnlasDisplay", "ModelSelector", "SizeSelector", "GenerationCount", "CostEstimate", "SamplerSelector", "StepsInput", "ScaleInput"]
+    },
+    {
+      "name": "LeftPanel",
+      "components": ["MainPromptSection", "NegativePromptInput", "PromptGroupPicker", "CharacterAddButtons", "CharacterSection (0-6)", "ArtistGroupSection", "VibeSelector"]
+    },
+    {
+      "name": "CenterPanel",
+      "components": ["ImageViewer", "GenerateButton", "ImageSaveControls"]
+    },
+    {
+      "name": "RightPanel",
+      "components": ["HistoryGrid", "HistoryItem"]
+    },
+    {
+      "name": "Modals",
+      "components": ["SettingsDialog", "PromptGroupManager", "VibeManager", "StylePresetManager", "ProjectCreateDialog"]
+    }
+  ],
+  "api_constraints": {
+    "max_tokens": 512,
+    "max_pixels": 3145728,
+    "min_dimension": 64,
+    "max_dimension": 2048,
+    "max_characters": 6,
+    "max_vibes": 10,
+    "min_steps": 1,
+    "max_steps": 50,
+    "min_scale": 0.0,
+    "max_scale": 10.0,
+    "max_seed": 4294967295,
+    "default_model": "nai-diffusion-4-5-full",
+    "default_width": 832,
+    "default_height": 1216,
+    "default_steps": 23,
+    "default_scale": 5.0,
+    "default_sampler": "k_euler_ancestral",
+    "default_noise_schedule": "karras",
+    "default_vibe_strength": 0.7,
+    "default_vibe_info_extracted": 0.7,
+    "default_negative_prompt": "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone"
+  },
+  "system_prompt_data": {
+    "source_file": "novelai_api_client/danbooru_content/ChenkinNoob-XL-V0.3_underscore.csv",
+    "format": "tag_name,category,post_count,aliases",
+    "total_tags": 167907,
+    "categories": {
+      "0": { "name": "General", "count": 47756 },
+      "1": { "name": "Artist", "count": 60631 },
+      "2": { "name": "Other", "count": 166 },
+      "3": { "name": "Copyright", "count": 10207 },
+      "4": { "name": "Character", "count": 43729 },
+      "5": { "name": "Meta", "count": 4879 },
+      "6": { "name": "Other", "count": 2 },
+      "7": { "name": "Other", "count": 437 },
+      "8": { "name": "Other", "count": 100 }
+    }
+  },
+  "implementation_phases": [
+    {
+      "phase": 1,
+      "name": "プロジェクト基盤",
+      "description": "Tauri 2 + React プロジェクト初期化、SQLiteセットアップ、設定管理、APIキー認証、Anlas残高表示",
+      "features": ["F1", "F11", "F10"]
+    },
+    {
+      "phase": 2,
+      "name": "コア生成機能",
+      "description": "メインプロンプト入力、txt2img生成、画像表示、履歴、画像保存/クリーンアップ",
+      "features": ["F2", "F3"]
+    },
+    {
+      "phase": 3,
+      "name": "キャラクターシステム",
+      "description": "キャラクター追加/削除、キャラクタープロンプト、位置指定、マルチキャラ生成",
+      "features": ["F6"]
+    },
+    {
+      "phase": 4,
+      "name": "プロンプトグループ",
+      "description": "ジャンル管理、プロンプトグループCRUD、デフォルト設定、グループ適用、システムプロンプトバンドル、オートコンプリート",
+      "features": ["F4", "F5", "F7"]
+    },
+    {
+      "phase": 5,
+      "name": "Vibe・スタイル",
+      "description": "Vibeインポート/管理/選択、スタイルプリセット（アーティスト+Vibe組み合わせ）",
+      "features": ["F8", "F9"]
+    }
+  ]
+}

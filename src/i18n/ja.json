@@ -1,0 +1,77 @@
+{
+  "common": {
+    "appName": "NovelAI Desktop",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "create": "作成",
+    "close": "閉じる",
+    "back": "戻る",
+    "settings": "設定",
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "confirm": "確認"
+  },
+  "project": {
+    "title": "プロジェクト",
+    "newProject": "新規プロジェクト",
+    "open": "開く",
+    "deleteConfirm": "このプロジェクトを削除しますか？",
+    "emptyState": "プロジェクトがありません",
+    "emptyStateAction": "新しいプロジェクトを作成"
+  },
+  "generation": {
+    "generate": "生成",
+    "save": "保存",
+    "saveAll": "すべて保存",
+    "model": "モデル",
+    "width": "幅",
+    "height": "高さ",
+    "count": "枚数",
+    "sampler": "サンプラー",
+    "steps": "ステップ",
+    "scale": "スケール",
+    "seed": "シード",
+    "prompt": "プロンプト",
+    "negativePrompt": "ネガティブプロンプト",
+    "cost": "コスト",
+    "anlas": "Anlas"
+  },
+  "settings": {
+    "title": "設定",
+    "apiKey": "API キー",
+    "defaultParams": "デフォルトパラメータ",
+    "theme": "テーマ",
+    "dark": "ダーク",
+    "light": "ライト",
+    "language": "言語"
+  },
+  "history": {
+    "title": "履歴",
+    "all": "すべて",
+    "saved": "保存済み",
+    "emptyState": "履歴がありません"
+  },
+  "character": {
+    "add": "キャラクター追加",
+    "position": "ポジション",
+    "positionX": "X",
+    "positionY": "Y"
+  },
+  "vibe": {
+    "title": "Vibe",
+    "import": "インポート",
+    "strength": "強度",
+    "infoExtracted": "情報抽出"
+  },
+  "style": {
+    "title": "スタイルプリセット",
+    "artist": "アーティスト",
+    "manage": "管理"
+  },
+  "promptGroup": {
+    "title": "プロンプトグループ",
+    "genre": "ジャンル",
+    "usage": "用途"
+  }
+}
