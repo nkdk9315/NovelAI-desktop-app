@@ -88,14 +88,13 @@ pub fn find_tags_by_group(
     prompt_group_id: &str,
 ) -> Result<Vec<PromptGroupTagRow>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, prompt_group_id, tag, sort_order FROM prompt_group_tags WHERE prompt_group_id = ?1 ORDER BY sort_order ASC",
+        "SELECT id, tag, sort_order FROM prompt_group_tags WHERE prompt_group_id = ?1 ORDER BY sort_order ASC",
     )?;
     let rows = stmt.query_map([prompt_group_id], |row| {
         Ok(PromptGroupTagRow {
             id: row.get(0)?,
-            prompt_group_id: row.get(1)?,
-            tag: row.get(2)?,
-            sort_order: row.get(3)?,
+            tag: row.get(1)?,
+            sort_order: row.get(2)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())

@@ -32,7 +32,6 @@ pub struct PromptGroupRow {
 
 pub struct PromptGroupTagRow {
     pub id: String,
-    pub prompt_group_id: String,
     pub tag: String,
     pub sort_order: i32,
 }
@@ -67,15 +66,6 @@ pub struct StylePresetRow {
     pub created_at: String,
 }
 
-pub struct StylePresetVibeRow {
-    pub style_preset_id: String,
-    pub vibe_id: String,
-}
-
-pub struct SettingRow {
-    pub key: String,
-    pub value: String,
-}
 
 // ---- Response DTOs (sent to frontend via IPC) ----
 
@@ -309,6 +299,7 @@ pub struct AddVibeRequest {
     pub name: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EncodeVibeRequest {

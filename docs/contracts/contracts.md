@@ -39,7 +39,6 @@ pub struct PromptGroupRow {
 
 pub struct PromptGroupTagRow {
     pub id: String,
-    pub prompt_group_id: String,
     pub tag: String,
     pub sort_order: i32,
 }
@@ -72,15 +71,6 @@ pub struct StylePresetRow {
     pub created_at: String,
 }
 
-pub struct StylePresetVibeRow {
-    pub style_preset_id: String,
-    pub vibe_id: String,
-}
-
-pub struct SettingRow {
-    pub key: String,
-    pub value: String,
-}
 ```
 
 ### 1.2 IPC DTOs
