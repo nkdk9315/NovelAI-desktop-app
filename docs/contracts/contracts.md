@@ -1285,9 +1285,9 @@ export interface VibeReference {
 }
 
 export type GenerateActionRequest =
-  | { type: "Generate" }
-  | { type: "Img2Img"; sourceImageBase64: string; strength: number; noise: number }
-  | { type: "Infill"; sourceImageBase64: string; maskBase64: string; maskStrength: number; colorCorrect: boolean };
+  | { type: "generate" }
+  | { type: "img2Img"; sourceImageBase64: string; strength: number; noise: number }
+  | { type: "infill"; sourceImageBase64: string; maskBase64: string; maskStrength: number; colorCorrect: boolean };
 
 export interface GenerateImageResponse {
   id: string;
