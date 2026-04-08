@@ -118,3 +118,173 @@ pub fn replace_tags(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{create_test_genre, create_test_prompt_group, setup_test_db};
+
+    #[test]
+    fn test_list_filter_genre_id() {
+        let conn = setup_test_db();
+        let g1 = create_test_genre(&conn);
+        let g2 = create_test_genre(&conn);
+        create_test_prompt_group(&conn, &g1.id);
+        create_test_prompt_group(&conn, &g1.id);
+        create_test_prompt_group(&conn, &g2.id);
+
+        let filtered = list(&conn, Some(&g1.id), None, None).unwrap();
+        assert_eq!(filtered.len(), 2);
+    }
+
+    #[test]
+    fn test_list_filter_usage_type() {
+        let conn = setup_test_db();
+        let genre = create_test_genre(&conn);
+        let mut pg = create_test_prompt_group(&conn, &genre.id);
+        // Update to "positive" usage_type
+        pg.usage_type = "positive".to_string();
+        update(&conn, &pg).unwrap();
+
+        let filtered = list(&conn, None, Some("positive"), None).unwrap();
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].usage_type, "positive");
+    }
+
+    #[test]
+    fn test_list_filter_search() {
+        let conn = setup_test_db();
+        let genre = create_test_genre(&conn);
+        let mut pg = create_test_prompt_group(&conn, &genre.id);
+        pg.name = "Unique Searchable Name".to_string();
+        // Need to re-insert with the correct name, or update
+        conn.execute(
+            "UPDATE prompt_groups SET name = ?2 WHERE id = ?1",
+            rusqlite::params![pg.id, pg.name],
+        )
+        .unwrap();
+
+        let found = list(&conn, None, None, Some("Searchable")).unwrap();
+        assert_eq!(found.len(), 1);
+
+        let not_found = list(&conn, None, None, Some("NonExistent")).unwrap();
+        assert!(not_found.is_empty());
+    }
+
+    #[test]
+    fn test_list_filter_combined() {
+        let conn = setup_test_db();
+        let g1 = create_test_genre(&conn);
+        let g2 = create_test_genre(&conn);
+        let mut pg1 = create_test_prompt_group(&conn, &g1.id);
+        pg1.usage_type = "positive".to_string();
+        update(&conn, &pg1).unwrap();
+        let mut pg2 = create_test_prompt_group(&conn, &g1.id);
+        pg2.usage_type = "negative".to_string();
+        update(&conn, &pg2).unwrap();
+        create_test_prompt_group(&conn, &g2.id);
+
+        let filtered = list(&conn, Some(&g1.id), Some("positive"), None).unwrap();
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].id, pg1.id);
+    }
+
+    #[test]
+    fn test_insert_and_find_by_id() {
+        let conn = setup_test_db();
+        let genre = create_test_genre(&conn);
+        let pg = create_test_prompt_group(&conn, &genre.id);
+
+        let found = find_by_id(&conn, &pg.id).unwrap();
+        assert_eq!(found.name, pg.name);
+        assert_eq!(found.genre_id, Some(genre.id));
+        assert_eq!(found.is_system, 0);
+    }
+
+    #[test]
+    fn test_update() {
+        let conn = setup_test_db();
+        let genre = create_test_genre(&conn);
+        let mut pg = create_test_prompt_group(&conn, &genre.id);
+
+        pg.name = "Updated Name".to_string();
+        pg.usage_type = "negative".to_string();
+        pg.is_default_for_genre = 1;
+        update(&conn, &pg).unwrap();
+
+        let found = find_by_id(&conn, &pg.id).unwrap();
+        assert_eq!(found.name, "Updated Name");
+        assert_eq!(found.usage_type, "negative");
+        assert_eq!(found.is_default_for_genre, 1);
+    }
+
+    #[test]
+    fn test_delete() {
+        let conn = setup_test_db();
+        let genre = create_test_genre(&conn);
+        let pg = create_test_prompt_group(&conn, &genre.id);
+
+        // Add tags to verify CASCADE
+        let tags = vec![(
+            uuid::Uuid::new_v4().to_string(),
+            "tag1".to_string(),
+            0,
+        )];
+        replace_tags(&conn, &pg.id, &tags).unwrap();
+
+        delete(&conn, &pg.id).unwrap();
+        assert!(find_by_id(&conn, &pg.id).is_err());
+        // Tags should also be deleted (CASCADE)
+        let remaining = find_tags_by_group(&conn, &pg.id).unwrap();
+        assert!(remaining.is_empty());
+    }
+
+    #[test]
+    fn test_clear_default_for_genre() {
+        let conn = setup_test_db();
+        let genre = create_test_genre(&conn);
+        let mut pg1 = create_test_prompt_group(&conn, &genre.id);
+        let mut pg2 = create_test_prompt_group(&conn, &genre.id);
+
+        // Set both as default
+        pg1.is_default_for_genre = 1;
+        update(&conn, &pg1).unwrap();
+        pg2.is_default_for_genre = 1;
+        update(&conn, &pg2).unwrap();
+
+        // Clear default except pg2
+        clear_default_for_genre(&conn, &genre.id, &pg2.id).unwrap();
+
+        let found1 = find_by_id(&conn, &pg1.id).unwrap();
+        let found2 = find_by_id(&conn, &pg2.id).unwrap();
+        assert_eq!(found1.is_default_for_genre, 0);
+        assert_eq!(found2.is_default_for_genre, 1);
+    }
+
+    #[test]
+    fn test_replace_tags() {
+        let conn = setup_test_db();
+        let genre = create_test_genre(&conn);
+        let pg = create_test_prompt_group(&conn, &genre.id);
+
+        // Insert initial tags
+        let tags1 = vec![
+            (uuid::Uuid::new_v4().to_string(), "tag_a".to_string(), 0),
+            (uuid::Uuid::new_v4().to_string(), "tag_b".to_string(), 1),
+        ];
+        replace_tags(&conn, &pg.id, &tags1).unwrap();
+        let found = find_tags_by_group(&conn, &pg.id).unwrap();
+        assert_eq!(found.len(), 2);
+        assert_eq!(found[0].tag, "tag_a");
+        assert_eq!(found[1].tag, "tag_b");
+
+        // Replace with new tags
+        let tags2 = vec![
+            (uuid::Uuid::new_v4().to_string(), "tag_x".to_string(), 0),
+        ];
+        replace_tags(&conn, &pg.id, &tags2).unwrap();
+        let found = find_tags_by_group(&conn, &pg.id).unwrap();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].tag, "tag_x");
+    }
+}

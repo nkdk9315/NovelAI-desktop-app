@@ -8,8 +8,7 @@ mod state;
 #[cfg(test)]
 mod test_utils;
 
-use state::{AppState, SystemPromptDB};
-use std::collections::HashMap;
+use state::AppState;
 use std::sync::Mutex;
 
 use novelai_api::client::NovelAIClient;
@@ -42,13 +41,32 @@ pub fn run() {
                 }
             }
 
+            // Load system prompt tags from bundled CSV
+            let system_tags = {
+                let csv_path = app
+                    .path()
+                    .resource_dir()
+                    .expect("Failed to resolve resource dir")
+                    .join("resources")
+                    .join("danbooru_tags.csv");
+                if csv_path.exists() {
+                    let file = std::fs::File::open(&csv_path)
+                        .expect("Failed to open danbooru_tags.csv");
+                    let reader = std::io::BufReader::new(file);
+                    services::system_prompt::load_system_prompt_db(reader)
+                } else {
+                    eprintln!("Warning: danbooru_tags.csv not found at {:?}", csv_path);
+                    state::SystemPromptDB {
+                        tags: Vec::new(),
+                        by_category: std::collections::HashMap::new(),
+                    }
+                }
+            };
+
             let app_state = AppState {
                 db: Mutex::new(conn),
                 api_client: tokio::sync::Mutex::new(api_client_val),
-                system_tags: SystemPromptDB {
-                    tags: Vec::new(),
-                    by_category: HashMap::new(),
-                },
+                system_tags,
             };
             app.manage(app_state);
             Ok(())

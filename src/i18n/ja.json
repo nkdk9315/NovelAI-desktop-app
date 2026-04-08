@@ -85,6 +85,27 @@
   "promptGroup": {
     "title": "プロンプトグループ",
     "genre": "ジャンル",
-    "usage": "用途"
+    "usage": "用途",
+    "selectGroup": "グループ選択",
+    "manage": "管理",
+    "name": "グループ名",
+    "namePlaceholder": "グループ名を入力",
+    "tags": "タグ",
+    "addTag": "タグを追加",
+    "tagPlaceholder": "タグを入力",
+    "newGroup": "新規グループ",
+    "editGroup": "グループ編集",
+    "deleteConfirm": "このプロンプトグループを削除しますか？",
+    "noGroups": "グループがありません",
+    "all": "すべて",
+    "usageMain": "メイン",
+    "usageCharacter": "キャラクター",
+    "usageBoth": "両方",
+    "defaultForGenre": "デフォルト",
+    "newGenre": "新規ジャンル",
+    "genreNamePlaceholder": "ジャンル名を入力",
+    "deleteGenreConfirm": "このジャンルを削除しますか？",
+    "systemCannotDelete": "システムデータは削除できません",
+    "insertTags": "タグを挿入"
   }
 }
