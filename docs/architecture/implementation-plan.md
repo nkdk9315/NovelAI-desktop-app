@@ -213,16 +213,16 @@ Tauri 2 + React初期化から、設定管理・API接続・Anlas表示まで。
 
 ジャンル管理、グループCRUD、システムプロンプト。
 
-- [ ] services/system_prompt: CSV読込, インメモリ検索
-- [ ] resources/danbooru_tags.csv バンドル
-- [ ] commands/system_prompts: get_categories, search
-- [ ] repositories/genre, services/genre, commands/genres
-- [ ] repositories/prompt_group, services/prompt_group, commands/prompt_groups
-- [ ] Frontend: prompt-group-store
-- [ ] Frontend: PromptGroupPicker, PromptGroupManager modal
-- [ ] Frontend: hooks/use-autocomplete (デバウンス付き検索)
-- [ ] PromptTextareaにオートコンプリート統合
-- [ ] キャラクター追加時のデフォルトグループ自動適用
+- [x] services/system_prompt: CSV読込, インメモリ検索
+- [x] resources/danbooru_tags.csv バンドル
+- [x] commands/system_prompts: get_categories, search
+- [x] repositories/genre, services/genre, commands/genres
+- [x] repositories/prompt_group, services/prompt_group, commands/prompt_groups
+- [x] Frontend: prompt-group-store
+- [x] Frontend: PromptGroupPicker, PromptGroupManager modal
+- [x] Frontend: hooks/use-autocomplete (デバウンス付き検索)
+- [x] PromptTextareaにオートコンプリート統合
+- [x] キャラクター追加時のデフォルトグループ自動適用
 
 ### Phase 5: Vibe & スタイル (F8, F9)
 

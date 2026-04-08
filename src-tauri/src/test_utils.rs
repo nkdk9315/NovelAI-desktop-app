@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-use crate::models::dto::{GeneratedImageRow, ProjectRow};
+use crate::models::dto::{GeneratedImageRow, GenreRow, PromptGroupRow, ProjectRow};
 
 const MIGRATION_001: &str = include_str!("../migrations/001_init.sql");
 
@@ -25,6 +25,33 @@ pub fn create_test_project(conn: &Connection) -> ProjectRow {
         updated_at: "2026-01-01T00:00:00Z".to_string(),
     };
     crate::repositories::project::insert(conn, &row).unwrap();
+    row
+}
+
+pub fn create_test_genre(conn: &Connection) -> GenreRow {
+    let row = GenreRow {
+        id: uuid::Uuid::new_v4().to_string(),
+        name: format!("Test Genre {}", &uuid::Uuid::new_v4().to_string()[..8]),
+        is_system: 0,
+        sort_order: 10,
+        created_at: "2026-01-01T00:00:00Z".to_string(),
+    };
+    crate::repositories::genre::insert(conn, &row).unwrap();
+    row
+}
+
+pub fn create_test_prompt_group(conn: &Connection, genre_id: &str) -> PromptGroupRow {
+    let row = PromptGroupRow {
+        id: uuid::Uuid::new_v4().to_string(),
+        name: format!("Test Group {}", &uuid::Uuid::new_v4().to_string()[..8]),
+        genre_id: Some(genre_id.to_string()),
+        is_default_for_genre: 0,
+        is_system: 0,
+        usage_type: "both".to_string(),
+        created_at: "2026-01-01T00:00:00Z".to_string(),
+        updated_at: "2026-01-01T00:00:00Z".to_string(),
+    };
+    crate::repositories::prompt_group::insert(conn, &row).unwrap();
     row
 }
 
