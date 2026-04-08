@@ -84,3 +84,89 @@ pub fn replace_vibe_ids(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{create_test_style_preset, create_test_vibe, setup_test_db};
+
+    #[test]
+    fn test_insert_and_list_all() {
+        let conn = setup_test_db();
+
+        let p1 = create_test_style_preset(&conn, &[]);
+        let p2 = create_test_style_preset(&conn, &[]);
+
+        let all = list_all(&conn).unwrap();
+        assert_eq!(all.len(), 2);
+        let ids: Vec<&str> = all.iter().map(|p| p.id.as_str()).collect();
+        assert!(ids.contains(&p1.id.as_str()));
+        assert!(ids.contains(&p2.id.as_str()));
+    }
+
+    #[test]
+    fn test_update() {
+        let conn = setup_test_db();
+        let mut preset = create_test_style_preset(&conn, &[]);
+
+        preset.name = "Updated Name".to_string();
+        preset.artist_tags = serde_json::to_string(&["new_artist"]).unwrap();
+        update(&conn, &preset).unwrap();
+
+        let found = find_by_id(&conn, &preset.id).unwrap();
+        assert_eq!(found.name, "Updated Name");
+        assert_eq!(found.artist_tags, r#"["new_artist"]"#);
+    }
+
+    #[test]
+    fn test_delete() {
+        let conn = setup_test_db();
+        let vibe = create_test_vibe(&conn);
+        let preset = create_test_style_preset(&conn, std::slice::from_ref(&vibe.id));
+
+        delete(&conn, &preset.id).unwrap();
+
+        // Preset should be gone
+        let err = find_by_id(&conn, &preset.id).unwrap_err();
+        assert!(matches!(err, AppError::NotFound(_)));
+
+        // Junction rows should be gone (CASCADE)
+        let vibe_ids = find_vibe_ids_by_preset(&conn, &preset.id).unwrap();
+        assert!(vibe_ids.is_empty());
+
+        // Vibe itself should still exist
+        let vibe_found = crate::repositories::vibe::find_by_id(&conn, &vibe.id).unwrap();
+        assert_eq!(vibe_found.id, vibe.id);
+    }
+
+    #[test]
+    fn test_replace_vibe_ids() {
+        let conn = setup_test_db();
+        let v1 = create_test_vibe(&conn);
+        let v2 = create_test_vibe(&conn);
+        let v3 = create_test_vibe(&conn);
+        let preset = create_test_style_preset(&conn, &[v1.id.clone(), v2.id.clone()]);
+
+        // Replace with v2, v3
+        replace_vibe_ids(&conn, &preset.id, &[v2.id.clone(), v3.id.clone()]).unwrap();
+
+        let ids = find_vibe_ids_by_preset(&conn, &preset.id).unwrap();
+        assert_eq!(ids.len(), 2);
+        assert!(ids.contains(&v2.id));
+        assert!(ids.contains(&v3.id));
+        assert!(!ids.contains(&v1.id));
+    }
+
+    #[test]
+    fn test_find_vibe_ids_by_preset() {
+        let conn = setup_test_db();
+        let v1 = create_test_vibe(&conn);
+        let v2 = create_test_vibe(&conn);
+        let preset = create_test_style_preset(&conn, &[v1.id.clone(), v2.id.clone()]);
+
+        let ids = find_vibe_ids_by_preset(&conn, &preset.id).unwrap();
+        assert_eq!(ids.len(), 2);
+        assert!(ids.contains(&v1.id));
+        assert!(ids.contains(&v2.id));
+    }
+}

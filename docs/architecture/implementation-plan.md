@@ -224,18 +224,18 @@ Tauri 2 + React初期化から、設定管理・API接続・Anlas表示まで。
 - [x] PromptTextareaにオートコンプリート統合
 - [x] キャラクター追加時のデフォルトグループ自動適用
 
-### Phase 5: Vibe & スタイル (F8, F9)
+### Phase 5: Vibe & スタイル (F8, F9) ✅
 
 Vibeインポート/管理、スタイルプリセット。
 
-- [ ] repositories/vibe, services/vibe, commands/vibes
-- [ ] repositories/style_preset, services/style_preset, commands/style_presets
-- [ ] services/vibe: .naiv4vibeパース, ファイルコピー, encode_vibe (API呼出)
-- [ ] Frontend: VibeSection (ON/OFF, strength/info_extracted スライダー)
-- [ ] Frontend: VibeManager modal
-- [ ] Frontend: ArtistStyleSection, StylePresetManager modal
-- [ ] generation-store: selectedVibes, artistTags, selectedStylePreset
-- [ ] services/generation: Vibeエンコーディング取得 + GenerateParams統合
+- [x] repositories/vibe, services/vibe, commands/vibes
+- [x] repositories/style_preset, services/style_preset, commands/style_presets
+- [x] services/vibe: .naiv4vibeパース, ファイルコピー, encode_vibe (API呼出 → todo!())
+- [x] Frontend: VibeSection (ON/OFF, strength/info_extracted スライダー)
+- [x] Frontend: VibeModal (インポート/削除)
+- [x] Frontend: ArtistStyleSection, StylePresetModal
+- [x] generation-params-store: selectedVibes, artistTags, selectedStylePresetId
+- [x] ActionBar: Vibe統合 + artistTags → プロンプトプレフィックス
 
 ---
 

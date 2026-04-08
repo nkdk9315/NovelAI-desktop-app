@@ -1,6 +1,8 @@
 use rusqlite::Connection;
 
-use crate::models::dto::{GeneratedImageRow, GenreRow, PromptGroupRow, ProjectRow};
+use crate::models::dto::{
+    GeneratedImageRow, GenreRow, PromptGroupRow, ProjectRow, StylePresetRow, VibeRow,
+};
 
 const MIGRATION_001: &str = include_str!("../migrations/001_init.sql");
 
@@ -69,5 +71,31 @@ pub fn create_test_image(conn: &Connection, project_id: &str, is_saved: i32) -> 
         created_at: "2026-01-01T00:00:00Z".to_string(),
     };
     crate::repositories::image::insert(conn, &row).unwrap();
+    row
+}
+
+pub fn create_test_vibe(conn: &Connection) -> VibeRow {
+    let row = VibeRow {
+        id: uuid::Uuid::new_v4().to_string(),
+        name: format!("Test Vibe {}", &uuid::Uuid::new_v4().to_string()[..8]),
+        file_path: format!("/tmp/vibes/{}.naiv4vibe", uuid::Uuid::new_v4()),
+        model: "nai-diffusion-4-curated-preview".to_string(),
+        created_at: "2026-01-01T00:00:00Z".to_string(),
+    };
+    crate::repositories::vibe::insert(conn, &row).unwrap();
+    row
+}
+
+pub fn create_test_style_preset(conn: &Connection, vibe_ids: &[String]) -> StylePresetRow {
+    let row = StylePresetRow {
+        id: uuid::Uuid::new_v4().to_string(),
+        name: format!("Test Preset {}", &uuid::Uuid::new_v4().to_string()[..8]),
+        artist_tags: serde_json::to_string(&["artist1", "artist2"]).unwrap(),
+        created_at: "2026-01-01T00:00:00Z".to_string(),
+    };
+    crate::repositories::style_preset::insert(conn, &row).unwrap();
+    if !vibe_ids.is_empty() {
+        crate::repositories::style_preset::replace_vibe_ids(conn, &row.id, vibe_ids).unwrap();
+    }
     row
 }

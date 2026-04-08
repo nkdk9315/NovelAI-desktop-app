@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { useGenerationParamsStore } from "../generation-params-store";
 
 beforeEach(() => {
-  useGenerationParamsStore.setState({ characters: [] });
+  useGenerationParamsStore.setState({
+    characters: [],
+    selectedVibes: [],
+    artistTags: [],
+    selectedStylePresetId: null,
+  });
 });
 
 describe("characters CRUD", () => {
@@ -56,5 +61,97 @@ describe("characters CRUD", () => {
     addCharacter("Female");
     useGenerationParamsStore.getState().clearCharacters();
     expect(useGenerationParamsStore.getState().characters).toHaveLength(0);
+  });
+});
+
+describe("vibes CRUD", () => {
+  it("addVibe adds with defaults", () => {
+    useGenerationParamsStore.getState().addVibe("vibe-1");
+    const vibes = useGenerationParamsStore.getState().selectedVibes;
+    expect(vibes).toHaveLength(1);
+    expect(vibes[0]).toMatchObject({
+      vibeId: "vibe-1",
+      strength: 0.7,
+      infoExtracted: 0.7,
+      enabled: true,
+    });
+  });
+
+  it("addVibe prevents duplicates", () => {
+    const { addVibe } = useGenerationParamsStore.getState();
+    addVibe("vibe-1");
+    useGenerationParamsStore.getState().addVibe("vibe-1");
+    expect(useGenerationParamsStore.getState().selectedVibes).toHaveLength(1);
+  });
+
+  it("addVibe respects MAX_VIBES limit", () => {
+    for (let i = 0; i < 12; i++) {
+      useGenerationParamsStore.getState().addVibe(`vibe-${i}`);
+    }
+    expect(useGenerationParamsStore.getState().selectedVibes).toHaveLength(10);
+  });
+
+  it("removeVibe removes by vibeId", () => {
+    const s = useGenerationParamsStore.getState();
+    s.addVibe("vibe-1");
+    useGenerationParamsStore.getState().addVibe("vibe-2");
+    useGenerationParamsStore.getState().removeVibe("vibe-1");
+    const vibes = useGenerationParamsStore.getState().selectedVibes;
+    expect(vibes).toHaveLength(1);
+    expect(vibes[0].vibeId).toBe("vibe-2");
+  });
+
+  it("toggleVibe toggles enabled", () => {
+    useGenerationParamsStore.getState().addVibe("vibe-1");
+    useGenerationParamsStore.getState().toggleVibe("vibe-1");
+    expect(useGenerationParamsStore.getState().selectedVibes[0].enabled).toBe(false);
+    useGenerationParamsStore.getState().toggleVibe("vibe-1");
+    expect(useGenerationParamsStore.getState().selectedVibes[0].enabled).toBe(true);
+  });
+
+  it("updateVibeStrength updates strength", () => {
+    useGenerationParamsStore.getState().addVibe("vibe-1");
+    useGenerationParamsStore.getState().updateVibeStrength("vibe-1", 0.5);
+    expect(useGenerationParamsStore.getState().selectedVibes[0].strength).toBe(0.5);
+  });
+
+  it("updateVibeInfoExtracted updates infoExtracted", () => {
+    useGenerationParamsStore.getState().addVibe("vibe-1");
+    useGenerationParamsStore.getState().updateVibeInfoExtracted("vibe-1", 0.3);
+    expect(useGenerationParamsStore.getState().selectedVibes[0].infoExtracted).toBe(0.3);
+  });
+});
+
+describe("style preset", () => {
+  it("applyStylePreset sets artistTags and selectedVibes", () => {
+    const preset = {
+      id: "preset-1",
+      name: "My Preset",
+      artistTags: ["artist_a", "artist_b"],
+      vibeIds: ["vibe-1", "vibe-2"],
+      createdAt: "2026-01-01",
+    };
+    const vibes = [
+      { id: "vibe-1", name: "V1", filePath: "/a", model: "m", createdAt: "2026-01-01" },
+      { id: "vibe-2", name: "V2", filePath: "/b", model: "m", createdAt: "2026-01-01" },
+      { id: "vibe-3", name: "V3", filePath: "/c", model: "m", createdAt: "2026-01-01" },
+    ];
+    useGenerationParamsStore.getState().applyStylePreset(preset, vibes);
+    const state = useGenerationParamsStore.getState();
+    expect(state.selectedStylePresetId).toBe("preset-1");
+    expect(state.artistTags).toEqual(["artist_a", "artist_b"]);
+    expect(state.selectedVibes).toHaveLength(2);
+    expect(state.selectedVibes.map((v) => v.vibeId)).toEqual(["vibe-1", "vibe-2"]);
+  });
+
+  it("clearStylePreset resets all preset state", () => {
+    useGenerationParamsStore.getState().addVibe("vibe-1");
+    useGenerationParamsStore.getState().setArtistTags(["x"]);
+    useGenerationParamsStore.getState().setStylePreset("preset-1");
+    useGenerationParamsStore.getState().clearStylePreset();
+    const state = useGenerationParamsStore.getState();
+    expect(state.selectedStylePresetId).toBeNull();
+    expect(state.artistTags).toEqual([]);
+    expect(state.selectedVibes).toEqual([]);
   });
 });

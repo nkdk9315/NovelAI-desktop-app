@@ -10,7 +10,9 @@ import {
   DEFAULT_HEIGHT,
   DEFAULT_NEGATIVE_PROMPT,
   MAX_CHARACTERS,
+  MAX_VIBES,
 } from "@/lib/constants";
+import type { StylePresetDto, VibeDto } from "@/types";
 
 export interface Character {
   id: string;
@@ -19,6 +21,13 @@ export interface Character {
   centerX: number;
   centerY: number;
   genreName: string;
+}
+
+export interface SelectedVibe {
+  vibeId: string;
+  strength: number;
+  infoExtracted: number;
+  enabled: boolean;
 }
 
 interface GenerationParamsData {
@@ -36,11 +45,23 @@ interface GenerationParamsData {
 
 interface GenerationParamsState extends GenerationParamsData {
   characters: Character[];
+  selectedVibes: SelectedVibe[];
+  artistTags: string[];
+  selectedStylePresetId: string | null;
   setParam: <K extends keyof GenerationParamsData>(key: K, value: GenerationParamsData[K]) => void;
   addCharacter: (genreName: string) => void;
   removeCharacter: (index: number) => void;
   updateCharacter: (index: number, partial: Partial<Character>) => void;
   clearCharacters: () => void;
+  addVibe: (vibeId: string) => void;
+  removeVibe: (vibeId: string) => void;
+  toggleVibe: (vibeId: string) => void;
+  updateVibeStrength: (vibeId: string, strength: number) => void;
+  updateVibeInfoExtracted: (vibeId: string, infoExtracted: number) => void;
+  setArtistTags: (tags: string[]) => void;
+  setStylePreset: (presetId: string) => void;
+  clearStylePreset: () => void;
+  applyStylePreset: (preset: StylePresetDto, vibes: VibeDto[]) => void;
 }
 
 export const useGenerationParamsStore = create<GenerationParamsState>()((set) => ({
@@ -55,6 +76,9 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set) =>
   width: DEFAULT_WIDTH,
   height: DEFAULT_HEIGHT,
   characters: [],
+  selectedVibes: [],
+  artistTags: [],
+  selectedStylePresetId: null,
   setParam: (key, value) => set({ [key]: value }),
   addCharacter: (genreName) =>
     set((state) => {
@@ -80,4 +104,55 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set) =>
       };
     }),
   clearCharacters: () => set({ characters: [] }),
+  addVibe: (vibeId) =>
+    set((state) => {
+      if (state.selectedVibes.length >= MAX_VIBES) return state;
+      if (state.selectedVibes.some((v) => v.vibeId === vibeId)) return state;
+      return {
+        selectedVibes: [
+          ...state.selectedVibes,
+          { vibeId, strength: 0.7, infoExtracted: 0.7, enabled: true },
+        ],
+      };
+    }),
+  removeVibe: (vibeId) =>
+    set((state) => ({
+      selectedVibes: state.selectedVibes.filter((v) => v.vibeId !== vibeId),
+    })),
+  toggleVibe: (vibeId) =>
+    set((state) => ({
+      selectedVibes: state.selectedVibes.map((v) =>
+        v.vibeId === vibeId ? { ...v, enabled: !v.enabled } : v,
+      ),
+    })),
+  updateVibeStrength: (vibeId, strength) =>
+    set((state) => ({
+      selectedVibes: state.selectedVibes.map((v) =>
+        v.vibeId === vibeId ? { ...v, strength } : v,
+      ),
+    })),
+  updateVibeInfoExtracted: (vibeId, infoExtracted) =>
+    set((state) => ({
+      selectedVibes: state.selectedVibes.map((v) =>
+        v.vibeId === vibeId ? { ...v, infoExtracted } : v,
+      ),
+    })),
+  setArtistTags: (tags) => set({ artistTags: tags }),
+  setStylePreset: (presetId) => set({ selectedStylePresetId: presetId }),
+  clearStylePreset: () =>
+    set({ selectedStylePresetId: null, artistTags: [], selectedVibes: [] }),
+  applyStylePreset: (preset, vibes) =>
+    set({
+      selectedStylePresetId: preset.id,
+      artistTags: preset.artistTags,
+      selectedVibes: vibes
+        .filter((v) => preset.vibeIds.includes(v.id))
+        .slice(0, MAX_VIBES)
+        .map((v) => ({
+          vibeId: v.id,
+          strength: 0.7,
+          infoExtracted: 0.7,
+          enabled: true,
+        })),
+    }),
 }));
