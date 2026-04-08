@@ -932,6 +932,9 @@ pub fn delete_style_preset(conn: &Connection, id: &str) -> Result<(), AppError>;
 ```rust
 // --- services/system_prompt.rs ---
 
+/// CSV読込 → SystemPromptDB構築
+pub fn load_system_prompt_db<R: BufRead>(reader: R) -> SystemPromptDB;
+
 /// カテゴリ一覧
 /// SystemPromptDB.by_category のキー → CategoryDto 変換
 pub fn get_categories(db: &SystemPromptDB) -> Vec<CategoryDto>;

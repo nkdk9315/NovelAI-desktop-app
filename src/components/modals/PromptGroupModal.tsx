@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -9,20 +9,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { usePromptStore } from "@/stores/prompt-store";
 import type { PromptGroupDto } from "@/types";
+import GenreTabs from "./prompt-group/GenreTabs";
+import PromptGroupForm from "./prompt-group/PromptGroupForm";
 
 interface PromptGroupModalProps {
   open: boolean;
@@ -159,58 +152,15 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
           <DialogTitle>{t("promptGroup.title")}</DialogTitle>
         </DialogHeader>
 
-        {/* Genre tabs */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Label className="text-xs">{t("promptGroup.genre")}:</Label>
-            <div className="flex flex-wrap gap-1">
-              <Button
-                variant={selectedGenreId === undefined ? "secondary" : "ghost"}
-                size="sm"
-                className="h-6 px-2 text-xs"
-                onClick={() => setSelectedGenreId(undefined)}
-              >
-                {t("promptGroup.all")}
-              </Button>
-              {genres.map((genre) => (
-                <div key={genre.id} className="group relative">
-                  <Button
-                    variant={selectedGenreId === genre.id ? "secondary" : "ghost"}
-                    size="sm"
-                    className="h-6 px-2 text-xs"
-                    onClick={() => setSelectedGenreId(genre.id)}
-                  >
-                    {genre.name}
-                  </Button>
-                  {!genre.isSystem && (
-                    <button
-                      type="button"
-                      className="absolute -right-1 -top-1 hidden rounded-full bg-destructive p-0.5 text-destructive-foreground group-hover:block"
-                      onClick={() => handleDeleteGenre(genre.id, genre.isSystem)}
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Add genre */}
-          <div className="flex gap-2">
-            <Input
-              value={newGenreName}
-              onChange={(e) => setNewGenreName(e.target.value)}
-              placeholder={t("promptGroup.genreNamePlaceholder")}
-              className="h-7 text-xs"
-              onKeyDown={(e) => e.key === "Enter" && handleCreateGenre()}
-            />
-            <Button size="sm" className="h-7 text-xs" onClick={handleCreateGenre}>
-              <Plus className="mr-1 h-3 w-3" />
-              {t("promptGroup.newGenre")}
-            </Button>
-          </div>
-        </div>
+        <GenreTabs
+          genres={genres}
+          selectedGenreId={selectedGenreId}
+          onSelectGenre={setSelectedGenreId}
+          newGenreName={newGenreName}
+          onNewGenreNameChange={setNewGenreName}
+          onCreateGenre={handleCreateGenre}
+          onDeleteGenre={handleDeleteGenre}
+        />
 
         <Separator />
 
@@ -272,97 +222,24 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
 
           {/* Editor */}
           <div className="w-1/2 space-y-3">
-            {showCreateForm ? (
-              <>
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("promptGroup.name")}</Label>
-                  <Input
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    placeholder={t("promptGroup.namePlaceholder")}
-                    className="h-8 text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("promptGroup.genre")}</Label>
-                  <Select
-                    value={formGenreId ?? "none"}
-                    onValueChange={(v) => setFormGenreId(v === "none" ? null : v)}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">—</SelectItem>
-                      {genres.map((g) => (
-                        <SelectItem key={g.id} value={g.id}>
-                          {g.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("promptGroup.usage")}</Label>
-                  <Select value={formUsageType} onValueChange={setFormUsageType}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="both">{t("promptGroup.usageBoth")}</SelectItem>
-                      <SelectItem value="main">{t("promptGroup.usageMain")}</SelectItem>
-                      <SelectItem value="character">{t("promptGroup.usageCharacter")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">{t("promptGroup.tags")}</Label>
-                  <div className="flex flex-wrap gap-1">
-                    {formTags.map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="gap-1 text-xs">
-                        {tag}
-                        <button type="button" onClick={() => handleRemoveTag(i)}>
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex gap-1">
-                    <Input
-                      value={formTagInput}
-                      onChange={(e) => setFormTagInput(e.target.value)}
-                      placeholder={t("promptGroup.tagPlaceholder")}
-                      className="h-7 text-xs"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddTag();
-                        }
-                      }}
-                    />
-                    <Button size="sm" variant="ghost" className="h-7 px-2" onClick={handleAddTag}>
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" className="text-xs" onClick={handleSave} disabled={!formName.trim()}>
-                    {t("common.save")}
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-xs" onClick={resetForm}>
-                    {t("common.cancel")}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <p className="py-8 text-center text-xs text-muted-foreground">
-                {t("promptGroup.noGroups")}
-              </p>
-            )}
+            <PromptGroupForm
+              editing={editing}
+              showCreateForm={showCreateForm}
+              formName={formName}
+              onFormNameChange={setFormName}
+              formGenreId={formGenreId}
+              onFormGenreIdChange={setFormGenreId}
+              formUsageType={formUsageType}
+              onFormUsageTypeChange={setFormUsageType}
+              formTags={formTags}
+              formTagInput={formTagInput}
+              onFormTagInputChange={setFormTagInput}
+              onAddTag={handleAddTag}
+              onRemoveTag={handleRemoveTag}
+              onSave={handleSave}
+              onCancel={resetForm}
+              genres={genres}
+            />
           </div>
         </div>
       </DialogContent>

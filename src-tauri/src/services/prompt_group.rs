@@ -245,4 +245,38 @@ mod tests {
         delete_prompt_group(&conn, &pg.id).unwrap();
         assert!(get_prompt_group(&conn, &pg.id).is_err());
     }
+
+    #[test]
+    fn test_update_genre_id_null_clear() {
+        let conn = setup_test_db();
+        let genre = create_test_genre(&conn);
+
+        let pg = create_prompt_group(
+            &conn,
+            CreatePromptGroupRequest {
+                name: "Has Genre".to_string(),
+                genre_id: Some(genre.id.clone()),
+                usage_type: "both".to_string(),
+                tags: vec![],
+            },
+        )
+        .unwrap();
+        assert_eq!(pg.genre_id, Some(genre.id));
+
+        // Update with Some(None) → should clear genre_id to NULL
+        update_prompt_group(
+            &conn,
+            UpdatePromptGroupRequest {
+                id: pg.id.clone(),
+                name: None,
+                genre_id: Some(None),
+                tags: None,
+                is_default_for_genre: None,
+            },
+        )
+        .unwrap();
+
+        let updated = get_prompt_group(&conn, &pg.id).unwrap();
+        assert_eq!(updated.genre_id, None);
+    }
 }

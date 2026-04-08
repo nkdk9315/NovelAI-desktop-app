@@ -10,14 +10,7 @@ pub fn list_genres(conn: &Connection) -> Result<Vec<GenreDto>, AppError> {
 }
 
 pub fn create_genre(conn: &Connection, req: CreateGenreRequest) -> Result<GenreDto, AppError> {
-    // Calculate sort_order = max existing + 1
-    let max_sort: i32 = conn
-        .query_row(
-            "SELECT COALESCE(MAX(sort_order), -1) FROM genres",
-            [],
-            |row| row.get(0),
-        )
-        .unwrap_or(-1);
+    let max_sort = genre_repo::get_max_sort_order(conn)?;
 
     let row = GenreRow {
         id: uuid::Uuid::new_v4().to_string(),

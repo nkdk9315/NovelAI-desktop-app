@@ -45,6 +45,16 @@ pub fn insert(conn: &Connection, row: &GenreRow) -> Result<(), AppError> {
     Ok(())
 }
 
+pub fn get_max_sort_order(conn: &Connection) -> Result<i32, AppError> {
+    Ok(conn
+        .query_row(
+            "SELECT COALESCE(MAX(sort_order), -1) FROM genres",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or(-1))
+}
+
 pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError> {
     conn.execute("DELETE FROM genres WHERE id = ?1", [id])?;
     Ok(())
