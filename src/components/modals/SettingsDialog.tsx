@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-error";
 import {
   Dialog,
   DialogContent,
@@ -43,7 +44,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
       toast.success(t("settings.apiKeySaved"));
       setApiKey("");
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     } finally {
       setIsSaving(false);
     }

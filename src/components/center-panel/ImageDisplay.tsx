@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ImageIcon, Loader2 } from "lucide-react";
+import { Check, Copy, ImageIcon, Loader2 } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useProjectStore } from "@/stores/project-store";
 
 export default function ImageDisplay() {
   const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
   const isGenerating = useGenerationStore((s) => s.isGenerating);
   const lastResult = useGenerationStore((s) => s.lastResult);
   const error = useGenerationStore((s) => s.error);
@@ -43,8 +45,20 @@ export default function ImageDisplay() {
       )}
 
       {error && (
-        <div className="absolute bottom-4 left-4 right-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
+        <div className="absolute bottom-4 left-4 right-4 flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          <span className="flex-1">{error}</span>
+          <button
+            type="button"
+            onClick={() => {
+              navigator.clipboard.writeText(error);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="shrink-0 rounded p-1 hover:bg-destructive/20"
+            aria-label={copied ? t("common.copied") : t("common.copy")}
+          >
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
         </div>
       )}
     </div>

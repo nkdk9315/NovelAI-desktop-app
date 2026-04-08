@@ -10,7 +10,9 @@
     "settings": "Settings",
     "loading": "Loading...",
     "error": "Error",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "copy": "Copy",
+    "copied": "Copied!"
   },
   "project": {
     "title": "Projects",

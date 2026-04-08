@@ -1536,7 +1536,23 @@ export function searchSystemPrompts(
 
 ---
 
-## 6. 設計上の重要な決定
+## 6. Frontend Utilities
+
+### 6.1 toastError (`src/lib/toast-error.ts`)
+
+```typescript
+export function toastError(message: string): void
+```
+
+`toast.error()` を Sonner の `action` オプション付きでラップするヘルパー。
+
+- アクションボタン: `lucide-react` の Copy アイコン（`React.createElement` で生成）
+- クリック時: `navigator.clipboard.writeText(message)` → `toast.success(i18n.t("common.copied"))`
+- 全モーダル・ページで `toast.error()` の代わりに使用する
+
+---
+
+## 7. 設計上の重要な決定
 
 ### 6.1 UpdatePromptGroupRequest の genre_id 3状態
 
