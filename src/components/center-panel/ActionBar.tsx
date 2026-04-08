@@ -59,7 +59,7 @@ export default function ActionBar() {
       sampler: params.sampler,
       noiseSchedule: params.noiseSchedule,
       model: params.model,
-      action: { type: "Generate" },
+      action: { type: "generate" },
     };
     await generate(req);
     await loadImages(projectId);

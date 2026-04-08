@@ -79,7 +79,7 @@ NovelAI APIを通じた画像生成の中核機能。
 | Scale (CFG) | f64 | 5.0 | 0.0-10.0 |
 | CFG Rescale | f64 | 0.0 | - |
 | Sampler | enum | `k_euler_ancestral` | 6種（下記参照） |
-| Noise Schedule | enum | `karras` | 3種（下記参照） |
+| Noise Schedule | enum | `karras` | 4種（下記参照） |
 | Seed | u64 | ランダム | 0 - 4,294,967,295 |
 | 生成枚数 | u32 | 1 | - |
 
@@ -98,7 +98,7 @@ NovelAI APIを通じた画像生成の中核機能。
 
 #### ノイズスケジュール
 
-`karras`, `exponential`, `polyexponential`
+`native`, `karras`, `exponential`, `polyexponential`
 
 ### F3: プロンプトシステム
 
