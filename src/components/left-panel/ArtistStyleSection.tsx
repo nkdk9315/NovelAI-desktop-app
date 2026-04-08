@@ -101,7 +101,7 @@ export default function ArtistStyleSection() {
           className="h-7 text-xs"
         />
         {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-popover shadow-md">
+          <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md">
             {suggestions
               .filter((s) => s.category === 1)
               .slice(0, 8)
