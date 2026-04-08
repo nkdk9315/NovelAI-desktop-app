@@ -50,6 +50,7 @@ pub struct GeneratedImageRow {
     pub created_at: String,
 }
 
+#[derive(Debug)]
 pub struct VibeRow {
     pub id: String,
     pub name: String,
@@ -58,6 +59,7 @@ pub struct VibeRow {
     pub created_at: String,
 }
 
+#[derive(Debug)]
 pub struct StylePresetRow {
     pub id: String,
     pub name: String,

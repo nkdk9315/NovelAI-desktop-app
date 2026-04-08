@@ -75,12 +75,30 @@
     "title": "Vibe",
     "import": "Import",
     "strength": "Strength",
-    "infoExtracted": "Info Extracted"
+    "infoExtracted": "Info Extracted",
+    "manage": "Manage Vibes",
+    "empty": "No vibes imported",
+    "importSuccess": "Vibe imported successfully",
+    "deleteConfirm": "Delete this vibe?"
   },
   "style": {
-    "title": "Style Presets",
-    "artist": "Artist",
-    "manage": "Manage"
+    "title": "Artist / Style",
+    "artist": "Artist Tags",
+    "artistPlaceholder": "Search artist tags...",
+    "manage": "Manage Presets",
+    "presetName": "Preset Name",
+    "presetNamePlaceholder": "Enter preset name",
+    "selectPreset": "Select preset",
+    "noPreset": "No preset selected",
+    "newPreset": "New Preset",
+    "editPreset": "Edit Preset",
+    "deleteConfirm": "Delete this style preset?",
+    "noPresets": "No presets",
+    "vibes": "Vibes",
+    "applyPreset": "Apply",
+    "clearPreset": "Clear",
+    "saveSuccess": "Preset saved",
+    "deleteSuccess": "Preset deleted"
   },
   "promptGroup": {
     "title": "Prompt Groups",

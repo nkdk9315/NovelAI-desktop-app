@@ -1,4 +1,4 @@
-use tauri::State;
+use tauri::{Manager, State};
 
 use crate::models::dto::{AddVibeRequest, EncodeVibeRequest, VibeDto};
 use crate::state::AppState;
@@ -12,11 +12,14 @@ pub fn list_vibes(state: State<'_, AppState>) -> Result<Vec<VibeDto>, String> {
 #[tauri::command]
 pub fn add_vibe(
     state: State<'_, AppState>,
-    _app_handle: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
     req: AddVibeRequest,
 ) -> Result<VibeDto, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
-    let app_data_dir = std::path::PathBuf::from(".");  // TODO: use app_handle.path().app_data_dir()
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?;
     crate::services::vibe::add_vibe(&conn, &app_data_dir, req).map_err(|e| e.into())
 }
 
@@ -29,10 +32,13 @@ pub fn delete_vibe(state: State<'_, AppState>, id: String) -> Result<(), String>
 #[tauri::command]
 pub async fn encode_vibe(
     state: State<'_, AppState>,
-    _app_handle: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
     req: EncodeVibeRequest,
 ) -> Result<VibeDto, String> {
-    let app_data_dir = std::path::PathBuf::from(".");  // TODO: use app_handle.path().app_data_dir()
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?;
     crate::services::vibe::encode_vibe(&state.db, &state.api_client, &app_data_dir, req)
         .await
         .map_err(|e| e.into())

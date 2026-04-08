@@ -21,9 +21,25 @@ export default function ActionBar() {
 
   const handleGenerate = async () => {
     if (!projectId || isGenerating) return;
+
+    // Prepend artist tags to prompt
+    const artistPrefix = params.artistTags.length > 0
+      ? params.artistTags.join(", ") + ", "
+      : "";
+    const fullPrompt = artistPrefix + params.prompt;
+
+    // Collect enabled vibes
+    const enabledVibes = params.selectedVibes
+      .filter((v) => v.enabled)
+      .map((v) => ({
+        vibeId: v.vibeId,
+        strength: v.strength,
+        infoExtracted: v.infoExtracted,
+      }));
+
     const req: GenerateImageRequest = {
       projectId,
-      prompt: params.prompt,
+      prompt: fullPrompt,
       negativePrompt: params.negativePrompt || undefined,
       characters:
         params.characters.length > 0
@@ -34,6 +50,7 @@ export default function ActionBar() {
               negativePrompt: c.negativePrompt,
             }))
           : undefined,
+      vibes: enabledVibes.length > 0 ? enabledVibes : undefined,
       width: params.width,
       height: params.height,
       steps: params.steps,

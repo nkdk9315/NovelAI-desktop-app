@@ -75,12 +75,30 @@
     "title": "Vibe",
     "import": "インポート",
     "strength": "強度",
-    "infoExtracted": "情報抽出"
+    "infoExtracted": "情報抽出",
+    "manage": "Vibe 管理",
+    "empty": "Vibe がインポートされていません",
+    "importSuccess": "Vibe をインポートしました",
+    "deleteConfirm": "この Vibe を削除しますか？"
   },
   "style": {
-    "title": "スタイルプリセット",
-    "artist": "アーティスト",
-    "manage": "管理"
+    "title": "アーティスト / スタイル",
+    "artist": "アーティストタグ",
+    "artistPlaceholder": "アーティストタグを検索...",
+    "manage": "プリセット管理",
+    "presetName": "プリセット名",
+    "presetNamePlaceholder": "プリセット名を入力",
+    "selectPreset": "プリセット選択",
+    "noPreset": "プリセット未選択",
+    "newPreset": "新規プリセット",
+    "editPreset": "プリセット編集",
+    "deleteConfirm": "このスタイルプリセットを削除しますか？",
+    "noPresets": "プリセットがありません",
+    "vibes": "Vibe",
+    "applyPreset": "適用",
+    "clearPreset": "クリア",
+    "saveSuccess": "プリセットを保存しました",
+    "deleteSuccess": "プリセットを削除しました"
   },
   "promptGroup": {
     "title": "プロンプトグループ",
