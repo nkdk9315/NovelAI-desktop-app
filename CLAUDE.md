@@ -124,6 +124,29 @@ npm run build                       # プロダクションビルド
 git submodule update --init --recursive
 ```
 
+## アプリアイコン
+
+- **ソースファイル**: `src-tauri/icons/source_icon.png`（1024x1024, RGBA, オリジナル）
+- **macOS 用ソース**: `src-tauri/icons/source_icon_filled.png`（1024x1024, RGB, 透明部分をグラデーションで埋めた版）
+- **バンドル設定**: `src-tauri/tauri.conf.json` の `bundle.icon` で指定
+- **注意**: `cargo tauri dev` は `.app` バンドルを生成しないため、macOS の squircle マスクは適用されない。アイコン表示の確認は `cargo tauri build --debug` で `.app` を生成して行う
+
+### macOS アイコン再生成
+
+macOS ネイティブツール（`sips` + `iconutil`）を使用:
+
+```bash
+# source_icon_filled.png から icon.icns を再生成
+ICONSET=src-tauri/icons/icon.iconset
+mkdir -p "$ICONSET"
+for size in 16,16x16 32,16x16@2x 32,32x32 64,32x32@2x 128,128x128 256,128x128@2x 256,256x256 512,256x256@2x 512,512x512 1024,512x512@2x; do
+  IFS=',' read -r px name <<< "$size"
+  sips -z $px $px src-tauri/icons/source_icon_filled.png --out "$ICONSET/icon_${name}.png"
+done
+iconutil -c icns "$ICONSET" -o src-tauri/icons/icon.icns
+rm -rf "$ICONSET"
+```
+
 ## UI 関連
 
 ### shadcn/ui コンポーネント追加
