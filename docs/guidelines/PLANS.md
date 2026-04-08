@@ -75,7 +75,7 @@
 
 実装順序:
 
-1. **models/dto.rs**: `SettingRow`, `SettingDto` 定義
+1. **models/dto.rs**: `SettingDto` 定義
 2. **repositories/settings.rs**: `get_all`, `get_by_key`, `set`（UPSERT）+ テスト
 3. **services/settings.rs**: `get_all_settings`, `set_setting`, `initialize_client` + テスト
 4. **commands/settings.rs**: `get_settings`, `set_setting` コマンド登録
