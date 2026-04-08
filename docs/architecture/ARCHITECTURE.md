@@ -166,7 +166,18 @@ interface AppError {
 }
 ```
 
-各Store actionでtry/catch → kindに基づくトースト通知。`NotInitialized` は設定ダイアログ誘導。
+各Store actionでtry/catch → `toastError(String(e))` で通知。`NotInitialized` は設定ダイアログ誘導。
+
+**`toastError()` ヘルパー** (`src/lib/toast-error.ts`):
+
+- `toast.error()` を Sonner の `action` オプション付きでラップ
+- アクションボタン: Copy アイコン（lucide-react）— クリックでメッセージをクリップボードへコピー → `toast.success(copied)` を表示
+- 全モーダル・ページで `toast.error()` の直接呼び出しを禁止し、このヘルパーを使用
+
+**インラインエラー表示**（例: `ImageDisplay.tsx`）:
+
+- `useState` + `navigator.clipboard.writeText()` で Copy/Check アイコンボタンを実装
+- コピー後2秒間 Check アイコンを表示してフィードバック
 
 ### 5-2. ロギング
 

@@ -79,8 +79,10 @@ pub enum AppError {
 
 ### Frontend
 
-- `error.kind` で分岐 → Toast 通知
+- `error.kind` で分岐 → `toastError(String(e))` で通知（`toast.error()` 直接呼び出し禁止）
+- `toastError()` は `src/lib/toast-error.ts` に定義 — Copy アイコンアクション付きの Sonner toast を表示
 - `NotInitialized` → 設定ダイアログへ誘導
+- インラインエラー表示（コンポーネント内）: `useState` + `navigator.clipboard.writeText()` で Copy/Check アイコンボタンを実装
 
 ## 7. レイヤールール (Rust)
 

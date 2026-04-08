@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
+import { toastError } from "@/lib/toast-error";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,7 @@ export default function CreateProjectDialog({
       const selected = await openDialog({ directory: true });
       if (selected) setDirectoryPath(selected);
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
@@ -59,7 +59,7 @@ export default function CreateProjectDialog({
       onOpenChange(false);
       onCreated?.();
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     } finally {
       setIsCreating(false);
     }

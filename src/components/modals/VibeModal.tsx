@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-error";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,7 @@ export default function VibeModal({ open, onOpenChange, onVibesChanged }: VibeMo
     try {
       setVibes(await ipc.listVibes());
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
@@ -54,7 +55,7 @@ export default function VibeModal({ open, onOpenChange, onVibesChanged }: VibeMo
       await loadVibes();
       onVibesChanged();
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
@@ -66,7 +67,7 @@ export default function VibeModal({ open, onOpenChange, onVibesChanged }: VibeMo
       await loadVibes();
       onVibesChanged();
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 

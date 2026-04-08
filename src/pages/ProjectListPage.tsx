@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FolderOpen, Settings, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toastError } from "@/lib/toast-error";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +33,7 @@ export default function ProjectListPage() {
       await openProject(id);
       navigate(`/project/${id}`);
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
@@ -42,7 +42,7 @@ export default function ProjectListPage() {
     try {
       await deleteProject(deleteTarget);
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
     setDeleteTarget(null);
   };

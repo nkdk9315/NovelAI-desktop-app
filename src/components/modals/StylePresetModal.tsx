@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-error";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,7 @@ export default function StylePresetModal({ open, onOpenChange, onPresetsChanged 
       setPresets(p);
       setVibes(v);
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
@@ -110,7 +111,7 @@ export default function StylePresetModal({ open, onOpenChange, onPresetsChanged 
       await loadData();
       onPresetsChanged();
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
@@ -124,7 +125,7 @@ export default function StylePresetModal({ open, onOpenChange, onPresetsChanged 
       await loadData();
       onPresetsChanged();
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 

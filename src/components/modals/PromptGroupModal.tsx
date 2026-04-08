@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { toastError } from "@/lib/toast-error";
 import {
   Dialog,
   DialogContent,
@@ -105,20 +105,20 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
       resetForm();
       loadPromptGroups(selectedGenreId);
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
   const handleDelete = async (id: string, isSystem: boolean) => {
     if (isSystem) {
-      toast.error(t("promptGroup.systemCannotDelete"));
+      toastError(t("promptGroup.systemCannotDelete"));
       return;
     }
     try {
       await deletePromptGroup(id);
       if (editing?.id === id) resetForm();
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
@@ -128,20 +128,20 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
       await createGenre({ name: newGenreName.trim() });
       setNewGenreName("");
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
   const handleDeleteGenre = async (id: string, isSystem: boolean) => {
     if (isSystem) {
-      toast.error(t("promptGroup.systemCannotDelete"));
+      toastError(t("promptGroup.systemCannotDelete"));
       return;
     }
     try {
       await deleteGenre(id);
       if (selectedGenreId === id) setSelectedGenreId(undefined);
     } catch (e) {
-      toast.error(String(e));
+      toastError(String(e));
     }
   };
 
