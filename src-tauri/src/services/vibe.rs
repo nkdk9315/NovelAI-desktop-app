@@ -67,10 +67,12 @@ pub fn delete_vibe(conn: &Connection, id: &str) -> Result<(), AppError> {
     let vibe = crate::repositories::vibe::find_by_id(conn, id)?;
     crate::repositories::vibe::delete(conn, id)?;
 
-    // Remove the file (ignore errors if already gone)
+    // Remove the file (warn if deletion fails)
     let path = Path::new(&vibe.file_path);
     if path.exists() {
-        let _ = std::fs::remove_file(path);
+        if let Err(e) = std::fs::remove_file(path) {
+            tracing::warn!("Failed to remove vibe file {}: {e}", vibe.file_path);
+        }
     }
     Ok(())
 }
@@ -81,7 +83,9 @@ pub async fn encode_vibe(
     _app_data_dir: &Path,
     _req: EncodeVibeRequest,
 ) -> Result<VibeDto, AppError> {
-    todo!()
+    Err(AppError::NotInitialized(
+        "encode_vibe is not yet implemented".into(),
+    ))
 }
 
 #[cfg(test)]

@@ -96,7 +96,7 @@ export default function ArtistStyleSection() {
               handleAddTag(tagInput);
             }
           }}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          onBlur={() => setShowSuggestions(false)}
           placeholder={t("style.artistPlaceholder")}
           className="h-7 text-xs"
         />
