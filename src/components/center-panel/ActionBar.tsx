@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useHistoryStore } from "@/stores/history-store";
+import { useSettingsStore } from "@/stores/settings-store";
 import type { GenerateImageRequest } from "@/types";
 
 export default function ActionBar() {
@@ -17,6 +18,7 @@ export default function ActionBar() {
   const saveAllImages = useHistoryStore((s) => s.saveAllImages);
   const deleteImage = useHistoryStore((s) => s.deleteImage);
   const loadImages = useHistoryStore((s) => s.loadImages);
+  const refreshAnlas = useSettingsStore((s) => s.refreshAnlas);
   const params = useGenerationParamsStore();
 
   const handleGenerate = async () => {
@@ -62,7 +64,7 @@ export default function ActionBar() {
       action: { type: "generate" },
     };
     await generate(req);
-    await loadImages(projectId);
+    await Promise.all([loadImages(projectId), refreshAnlas()]);
   };
 
   const handleSave = async () => {

@@ -562,18 +562,20 @@ function ProjectListPage() {
   └── Generate ボタン押下
         │
         v
-      useGenerationStore.generate()
+      ActionBar.handleGenerate()
         │
-        ├── isGenerating = true
-        ├── プロンプト + パラメータ収集
-        │     └── usePromptStore から取得
-        ├── ipc.generateImage(request)
-        │     └── Tauri backend → NovelAI API
-        ├── 成功: lastResult = response
-        │     ├── useHistoryStore.addImage(image)
-        │     └── useSettingsStore.refreshAnlas()
-        └── 失敗: error = message
-              └── toast.error(message)
+        ├── パラメータ収集（artistTags, vibes, prompt 等）
+        ├── useGenerationStore.generate(request)
+        │     ├── isGenerating = true
+        │     ├── ipc.generateImage(request)
+        │     │     └── Tauri backend → NovelAI API
+        │     ├── 成功: lastResult = response
+        │     └── 失敗: error = message
+        │           └── toast.error(message)
+        │
+        └── 生成成功後（並列実行）
+              ├── useHistoryStore.loadImages(projectId)
+              └── useSettingsStore.refreshAnlas()
 ```
 
 ### 8.2 プロジェクト操作フロー

@@ -1,6 +1,5 @@
 import { useRef, useState, useCallback } from "react";
 import { useAutocomplete } from "@/hooks/use-autocomplete";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface PromptTextareaProps {
   value: string;
@@ -113,27 +112,25 @@ export default function PromptTextarea({
         rows={rows}
       />
       {showDropdown && results.length > 0 && (
-        <div className="absolute z-50 w-full rounded-md border bg-popover shadow-md">
-          <ScrollArea className="max-h-40">
-            {results.map((tag, i) => (
-              <button
-                key={tag.name}
-                type="button"
-                className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-xs hover:bg-accent ${
-                  i === selectedIndex ? "bg-accent" : ""
-                }`}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  insertTag(tag.name);
-                }}
-              >
-                <span className="font-medium">{tag.name}</span>
-                <span className="text-muted-foreground">
-                  {tag.postCount.toLocaleString()}
-                </span>
-              </button>
-            ))}
-          </ScrollArea>
+        <div className="absolute z-50 max-h-48 w-full overflow-y-auto rounded-md border bg-popover shadow-md">
+          {results.map((tag, i) => (
+            <button
+              key={tag.name}
+              type="button"
+              className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-xs hover:bg-accent ${
+                i === selectedIndex ? "bg-accent" : ""
+              }`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                insertTag(tag.name);
+              }}
+            >
+              <span className="font-medium">{tag.name}</span>
+              <span className="text-muted-foreground">
+                {tag.postCount.toLocaleString()}
+              </span>
+            </button>
+          ))}
         </div>
       )}
     </div>

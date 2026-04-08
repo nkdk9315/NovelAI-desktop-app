@@ -58,7 +58,11 @@ OWASP Top 10に基づき、本アプリケーションへの該当を評価。
 ```json
 {
   "security": {
-    "csp": "default-src 'self'; img-src 'self' asset: https://image.novelai.net; style-src 'self' 'unsafe-inline'; script-src 'self'"
+    "csp": "default-src 'self'; img-src 'self' asset: https://image.novelai.net; style-src 'self' 'unsafe-inline'; script-src 'self'",
+    "assetProtocol": {
+      "enable": true,
+      "scope": ["**"]
+    }
   }
 }
 ```
@@ -67,6 +71,7 @@ OWASP Top 10に基づき、本アプリケーションへの該当を評価。
 - `img-src`: `asset:` プロトコル（Tauri画像配信）+ NovelAI画像サーバー
 - `style-src 'unsafe-inline'`: Tailwind CSS用
 - `script-src 'self'`: バンドルされたスクリプトのみ
+- `assetProtocol`: `convertFileSrc()` によるローカル画像表示に必要。Cargo.toml の `protocol-asset` feature と併用
 
 ---
 
