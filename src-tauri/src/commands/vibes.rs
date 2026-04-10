@@ -94,7 +94,7 @@ pub async fn encode_vibe(
         .path()
         .app_data_dir()
         .map_err(|e| e.to_string())?;
-    crate::services::vibe::encode_vibe(&state.db, &state.api_client, &app_data_dir, req)
+    crate::services::vibe_encode::encode_vibe(&state.db, &state.api_client, &app_data_dir, req)
         .await
         .map_err(|e| e.into())
 }

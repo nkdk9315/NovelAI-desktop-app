@@ -49,8 +49,11 @@ export default function VibeCard({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
+          role="button"
+          tabIndex={0}
           className="relative rounded-lg border border-border p-1.5 hover:bg-accent/50 cursor-pointer transition-colors"
           onClick={onToggleSidebar}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleSidebar(); } }}
         >
           {/* Thumbnail — card-width square, image not stretched */}
           <div className="aspect-square rounded bg-muted mb-1 overflow-hidden flex items-center justify-center">
@@ -77,6 +80,7 @@ export default function VibeCard({
               onBlur={onSaveEdit}
               onClick={(e) => e.stopPropagation()}
               className="h-5 text-[10px]"
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
           ) : (

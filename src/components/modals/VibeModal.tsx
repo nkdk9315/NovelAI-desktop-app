@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Search, Sparkles, Star } from "lucide-react";
 import { toast } from "sonner";
@@ -57,7 +57,7 @@ export default function VibeModal({ open, onOpenChange, onVibesChanged }: VibeMo
     if (open) setFilterModel(currentVibeKey);
   }, [open, currentVibeKey]);
 
-  const loadVibes = async () => {
+  const loadVibes = useCallback(async () => {
     try {
       setVibes(await ipc.listVibes());
       if (currentProject) {
@@ -67,11 +67,11 @@ export default function VibeModal({ open, onOpenChange, onVibesChanged }: VibeMo
     } catch (e) {
       toastError(String(e));
     }
-  };
+  }, [currentProject]);
 
   useEffect(() => {
     if (open) loadVibes();
-  }, [open]);
+  }, [open, loadVibes]);
 
   const modelOptions = useMemo(() => {
     const models = new Set(vibes.map((v) => v.model));
@@ -109,45 +109,24 @@ export default function VibeModal({ open, onOpenChange, onVibesChanged }: VibeMo
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      await ipc.deleteVibe(deleteTarget.id);
-      setDeleteTarget(null);
-      await refresh();
-    } catch (e) {
-      toastError(String(e));
-    }
+    try { await ipc.deleteVibe(deleteTarget.id); setDeleteTarget(null); await refresh(); }
+    catch (e) { toastError(String(e)); }
   };
 
-  const handleStartEdit = (vibe: VibeDto) => {
-    setEditingId(vibe.id);
-    setEditName(vibe.name);
-  };
+  const handleStartEdit = (vibe: VibeDto) => { setEditingId(vibe.id); setEditName(vibe.name); };
 
   const handleSaveEdit = async (id: string) => {
     if (!editName.trim()) return;
-    try {
-      await ipc.updateVibeName({ id, name: editName.trim() });
-      setEditingId(null);
-      await refresh();
-    } catch (e) {
-      toastError(String(e));
-    }
+    try { await ipc.updateVibeName({ id, name: editName.trim() }); setEditingId(null); await refresh(); }
+    catch (e) { toastError(String(e)); }
   };
 
   const handleChangeThumbnail = async (vibeId: string) => {
     try {
       const { open: openDialog } = await import("@tauri-apps/plugin-dialog");
-      const selected = await openDialog({
-        multiple: false,
-        filters: [{ name: "Image", extensions: ["png", "jpg", "jpeg", "webp"] }],
-      });
-      if (selected) {
-        await ipc.updateVibeThumbnail({ id: vibeId, thumbnailPath: selected as string });
-        await refresh();
-      }
-    } catch (e) {
-      toastError(String(e));
-    }
+      const selected = await openDialog({ multiple: false, filters: [{ name: "Image", extensions: ["png", "jpg", "jpeg", "webp"] }] });
+      if (selected) { await ipc.updateVibeThumbnail({ id: vibeId, thumbnailPath: selected as string }); await refresh(); }
+    } catch (e) { toastError(String(e)); }
   };
 
   const handleToggleSidebar = async (vibe: VibeDto) => {
@@ -156,49 +135,29 @@ export default function VibeModal({ open, onOpenChange, onVibesChanged }: VibeMo
       if (projectVibeIds.has(vibe.id)) {
         await ipc.removeVibeFromProject(currentProject.id, vibe.id);
       } else {
-        if (currentVibeKey && vibe.model !== currentVibeKey) {
-          toast.error(t("vibe.modelMismatch"));
-          return;
-        }
+        if (currentVibeKey && vibe.model !== currentVibeKey) { toast.error(t("vibe.modelMismatch")); return; }
         await ipc.addVibeToProject(currentProject.id, vibe.id);
       }
       await refresh();
-    } catch (e) {
-      toastError(String(e));
-    }
+    } catch (e) { toastError(String(e)); }
   };
 
   const handleClearThumbnail = async (vibeId: string) => {
-    try {
-      await ipc.clearVibeThumbnail(vibeId);
-      await refresh();
-    } catch (e) {
-      toastError(String(e));
-    }
+    try { await ipc.clearVibeThumbnail(vibeId); await refresh(); }
+    catch (e) { toastError(String(e)); }
   };
 
   const handleToggleFavorite = async (vibeId: string) => {
-    try {
-      await ipc.toggleVibeFavorite(vibeId);
-      await loadVibes();
-    } catch (e) {
-      toastError(String(e));
-    }
+    try { await ipc.toggleVibeFavorite(vibeId); await loadVibes(); }
+    catch (e) { toastError(String(e)); }
   };
 
   const handleExport = async (vibe: VibeDto) => {
     try {
       const { save } = await import("@tauri-apps/plugin-dialog");
-      const dest = await save({
-        defaultPath: `${vibe.name}.naiv4vibe`,
-        filters: [{ name: "Vibe", extensions: ["naiv4vibe"] }],
-      });
-      if (dest) {
-        await ipc.exportVibe(vibe.id, dest);
-      }
-    } catch (e) {
-      toastError(String(e));
-    }
+      const dest = await save({ defaultPath: `${vibe.name}.naiv4vibe`, filters: [{ name: "Vibe", extensions: ["naiv4vibe"] }] });
+      if (dest) await ipc.exportVibe(vibe.id, dest);
+    } catch (e) { toastError(String(e)); }
   };
 
   return (

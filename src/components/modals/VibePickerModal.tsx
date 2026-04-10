@@ -118,10 +118,13 @@ export default function VibePickerModal({
                 return (
                   <div
                     key={vibe.id}
+                    role="button"
+                    tabIndex={0}
                     className={`relative rounded-lg border p-1.5 cursor-pointer transition-colors ${
                       isSelected ? "border-primary bg-primary/10" : "border-border hover:bg-accent/50"
                     }`}
                     onClick={() => toggle(vibe.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(vibe.id); } }}
                   >
                     <div className="aspect-square rounded bg-muted mb-1 overflow-hidden flex items-center justify-center">
                       {vibe.thumbnailPath ? (

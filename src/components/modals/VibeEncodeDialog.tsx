@@ -134,6 +134,8 @@ export default function VibeEncodeDialog({
           <div className="space-y-1.5">
             <Label className="text-xs">{t("vibe.encodeImageLabel")}</Label>
             <div
+              role="button"
+              tabIndex={0}
               className={`relative h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${
                 isDragOver
                   ? "border-primary bg-primary/10"
@@ -142,6 +144,7 @@ export default function VibeEncodeDialog({
                     : "border-border hover:border-primary/50"
               }`}
               onClick={handleSelectImage}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelectImage(); } }}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}

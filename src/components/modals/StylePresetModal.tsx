@@ -250,8 +250,11 @@ function PresetCard({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
+          role="button"
+          tabIndex={0}
           className="relative rounded-lg border border-border p-1.5 hover:bg-accent/50 cursor-pointer transition-colors"
           onClick={onToggleSidebar}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleSidebar(); } }}
         >
           <div className="aspect-square rounded bg-muted mb-1 overflow-hidden flex items-center justify-center">
             {preset.thumbnailPath ? (
