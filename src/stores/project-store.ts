@@ -20,8 +20,12 @@ export const useProjectStore = create<ProjectState>()((set) => ({
   isLoading: false,
   loadProjects: async (search?: string, projectType?: string) => {
     set({ isLoading: true });
-    const projects = await ipc.listProjects(search, projectType);
-    set({ projects, isLoading: false });
+    try {
+      const projects = await ipc.listProjects(search, projectType);
+      set({ projects });
+    } finally {
+      set({ isLoading: false });
+    }
   },
   createProject: async (req) => {
     const project = await ipc.createProject(req);

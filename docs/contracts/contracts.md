@@ -14,6 +14,7 @@ pub struct ProjectRow {
     pub name: String,
     pub project_type: String,
     pub directory_path: String,
+    pub thumbnail_path: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -96,6 +97,7 @@ pub struct ProjectDto {
     pub name: String,
     pub project_type: String,
     pub directory_path: String,
+    pub thumbnail_path: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -241,7 +243,16 @@ pub struct SystemTagDto {
 pub struct CreateProjectRequest {
     pub name: String,
     pub project_type: String,
-    pub directory_path: String,
+    pub directory_path: Option<String>, // None の場合はデフォルトパスを自動計算
+    pub thumbnail_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProjectRequest {
+    pub id: String,
+    pub name: Option<String>,
+    pub thumbnail_path: Option<Option<String>>, // Some(None) = クリア, Some(Some(path)) = セット, None = 変更なし
 }
 
 #[derive(Debug, Deserialize)]
@@ -485,18 +496,30 @@ pub fn set(conn: &Connection, key: &str, value: &str) -> Result<(), AppError>;
 ```rust
 // --- repositories/project.rs ---
 
-/// 全プロジェクト一覧
-/// SQL: SELECT * FROM projects ORDER BY created_at DESC
-pub fn list_all(conn: &Connection) -> Result<Vec<ProjectRow>, AppError>;
+/// フィルタ付きプロジェクト一覧
+/// SQL: SELECT * FROM projects [WHERE name LIKE ?] [AND project_type = ?] ORDER BY created_at DESC
+pub fn list_filtered(
+    conn: &Connection,
+    search: Option<&str>,
+    project_type: Option<&str>,
+) -> Result<Vec<ProjectRow>, AppError>;
 
 /// ID指定で取得
 /// SQL: SELECT * FROM projects WHERE id = ?1
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<ProjectRow, AppError>;
 
 /// 挿入
-/// SQL: INSERT INTO projects (id, name, project_type, directory_path, created_at, updated_at)
-///      VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+/// SQL: INSERT INTO projects (id, name, project_type, directory_path, thumbnail_path, created_at, updated_at)
+///      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
 pub fn insert(conn: &Connection, row: &ProjectRow) -> Result<(), AppError>;
+
+/// サムネイルパス更新（None でクリア）
+/// SQL: UPDATE projects SET thumbnail_path = ?1, updated_at = ?2 WHERE id = ?3
+pub fn update_thumbnail(conn: &Connection, id: &str, path: Option<&str>) -> Result<(), AppError>;
+
+/// 名前更新
+/// SQL: UPDATE projects SET name = ?1, updated_at = ?2 WHERE id = ?3
+pub fn update_name(conn: &Connection, id: &str, name: &str) -> Result<(), AppError>;
 
 /// 削除 (CASCADE で generated_images も消える)
 /// SQL: DELETE FROM projects WHERE id = ?1
@@ -777,18 +800,44 @@ pub async fn get_anlas_balance(
 ```rust
 // --- services/project.rs ---
 
-/// プロジェクト一覧
-/// → project_repo::list_all
-pub fn list_projects(conn: &Connection) -> Result<Vec<ProjectDto>, AppError>;
+/// プロジェクト一覧（フィルタ付き）
+/// → project_repo::list_filtered
+pub fn list_projects(
+    conn: &Connection,
+    search: Option<&str>,
+    project_type: Option<&str>,
+) -> Result<Vec<ProjectDto>, AppError>;
 
 /// プロジェクト作成
 /// 1. UUID生成
-/// 2. directory_path にディレクトリ作成 (fs::create_dir_all)
-/// 3. directory_path/images/ サブディレクトリ作成
-/// 4. project_repo::insert
+/// 2. directory_path が None の場合 get_default_project_dir で自動計算
+/// 3. directory_path にディレクトリ作成 (fs::create_dir_all)
+/// 4. directory_path/images/ サブディレクトリ作成
+/// 5. project_repo::insert
 pub fn create_project(
     conn: &Connection,
     req: CreateProjectRequest,
+    base_dir: &Path,
+) -> Result<ProjectDto, AppError>;
+
+/// デフォルト保存先を計算（DB操作なし）
+/// 戻り値: {base_dir}/projects/{project_type}/{sanitized_name}
+pub fn get_default_project_dir(base_dir: &Path, project_type: &str, name: &str) -> PathBuf;
+
+/// プロジェクト名・サムネイル更新
+/// → project_repo::update_name (name が Some の場合)
+/// → project_repo::update_thumbnail (thumbnail_path が Some の場合)
+pub fn update_project(
+    conn: &Connection,
+    req: UpdateProjectRequest,
+) -> Result<ProjectDto, AppError>;
+
+/// サムネイル単体更新（None でクリア）
+/// → project_repo::update_thumbnail
+pub fn update_project_thumbnail(
+    conn: &Connection,
+    id: &str,
+    thumbnail_path: Option<String>,
 ) -> Result<ProjectDto, AppError>;
 
 /// プロジェクトを開く
@@ -1127,13 +1176,37 @@ pub async fn get_anlas_balance(
 
 ```rust
 #[tauri::command]
-pub fn list_projects(state: State<'_, AppState>) -> Result<Vec<ProjectDto>, String>;
+pub fn list_projects(
+    state: State<'_, AppState>,
+    search: Option<String>,
+    project_type: Option<String>,
+) -> Result<Vec<ProjectDto>, String>;
 
 #[tauri::command]
 pub fn create_project(
     state: State<'_, AppState>,
     req: CreateProjectRequest,
 ) -> Result<ProjectDto, String>;
+
+#[tauri::command]
+pub fn update_project(
+    state: State<'_, AppState>,
+    req: UpdateProjectRequest,
+) -> Result<ProjectDto, String>;
+
+#[tauri::command]
+pub fn update_project_thumbnail(
+    state: State<'_, AppState>,
+    id: String,
+    thumbnail_path: Option<String>,
+) -> Result<ProjectDto, String>;
+
+#[tauri::command]
+pub fn get_default_project_dir(
+    state: State<'_, AppState>,
+    project_type: String,
+    name: String,
+) -> Result<String, String>;
 
 #[tauri::command]
 pub fn open_project(state: State<'_, AppState>, id: String) -> Result<ProjectDto, String>;
@@ -1334,6 +1407,7 @@ export interface ProjectDto {
   name: string;
   projectType: string;
   directoryPath: string;
+  thumbnailPath: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1421,7 +1495,14 @@ export interface SystemTagDto {
 export interface CreateProjectRequest {
   name: string;
   projectType: string;
-  directoryPath: string;
+  directoryPath?: string; // 省略時はバックエンドでデフォルトパスを自動計算
+  thumbnailPath?: string | null;
+}
+
+export interface UpdateProjectRequest {
+  id: string;
+  name?: string;
+  thumbnailPath?: string | null; // null = クリア, string = セット, undefined = 変更なし
 }
 
 export interface GenerateImageRequest {
@@ -1539,7 +1620,7 @@ import type {
   ProjectDto, GenreDto, PromptGroupDto, GeneratedImageDto,
   VibeDto, StylePresetDto, AnlasBalanceDto, CostResultDto,
   CategoryDto, SystemTagDto, GenerateImageResponse,
-  CreateProjectRequest, GenerateImageRequest, CostEstimateRequest,
+  CreateProjectRequest, UpdateProjectRequest, GenerateImageRequest, CostEstimateRequest,
   CreatePromptGroupRequest, UpdatePromptGroupRequest, CreateGenreRequest,
   AddVibeRequest, EncodeVibeRequest, CreateStylePresetRequest,
   UpdateStylePresetRequest,
@@ -1565,12 +1646,24 @@ export function getAnlasBalance(): Promise<AnlasBalanceDto> {
 
 // ---- Projects ----
 
-export function listProjects(): Promise<ProjectDto[]> {
-  return invoke("list_projects");
+export function listProjects(search?: string, projectType?: string): Promise<ProjectDto[]> {
+  return invoke("list_projects", { search, projectType });
 }
 
 export function createProject(req: CreateProjectRequest): Promise<ProjectDto> {
   return invoke("create_project", { req });
+}
+
+export function updateProject(req: UpdateProjectRequest): Promise<ProjectDto> {
+  return invoke("update_project", { req });
+}
+
+export function updateProjectThumbnail(id: string, thumbnailPath?: string | null): Promise<ProjectDto> {
+  return invoke("update_project_thumbnail", { id, thumbnailPath });
+}
+
+export function getDefaultProjectDir(projectType: string, name: string): Promise<string> {
+  return invoke("get_default_project_dir", { projectType, name });
 }
 
 export function openProject(id: string): Promise<ProjectDto> {

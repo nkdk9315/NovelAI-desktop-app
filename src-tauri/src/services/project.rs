@@ -219,6 +219,8 @@ mod tests {
         assert_eq!(sanitize_dir_name("hello world"), "hello world");
         assert_eq!(sanitize_dir_name("a/b\\c:d"), "a_b_c_d");
         assert_eq!(sanitize_dir_name("  spaces  "), "spaces");
+        assert_eq!(sanitize_dir_name("../escape"), "___escape");
+        assert_eq!(sanitize_dir_name("../../etc/passwd"), "______etc_passwd");
     }
 
     #[test]
