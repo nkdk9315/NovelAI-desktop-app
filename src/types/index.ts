@@ -7,6 +7,7 @@ export interface ProjectDto {
   directoryPath: string;
   createdAt: string;
   updatedAt: string;
+  thumbnailPath: string | null;
 }
 
 export interface GenreDto {
@@ -107,7 +108,14 @@ export interface SystemTagDto {
 export interface CreateProjectRequest {
   name: string;
   projectType: string;
-  directoryPath: string;
+  directoryPath?: string;
+  thumbnailPath?: string;
+}
+
+export interface UpdateProjectRequest {
+  id: string;
+  name?: string;
+  thumbnailPath?: string | null;
 }
 
 export interface GenerateImageRequest {

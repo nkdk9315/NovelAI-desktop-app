@@ -9,6 +9,7 @@ pub struct ProjectRow {
     pub directory_path: String,
     pub created_at: String,
     pub updated_at: String,
+    pub thumbnail_path: Option<String>,
 }
 
 pub struct GenreRow {
@@ -96,6 +97,7 @@ pub struct ProjectDto {
     pub directory_path: String,
     pub created_at: String,
     pub updated_at: String,
+    pub thumbnail_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -208,7 +210,17 @@ pub struct SystemTagDto {
 pub struct CreateProjectRequest {
     pub name: String,
     pub project_type: String,
-    pub directory_path: String,
+    pub directory_path: Option<String>,
+    pub thumbnail_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProjectRequest {
+    pub id: String,
+    pub name: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_double_option")]
+    pub thumbnail_path: Option<Option<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -393,6 +405,7 @@ impl From<ProjectRow> for ProjectDto {
             directory_path: row.directory_path,
             created_at: row.created_at,
             updated_at: row.updated_at,
+            thumbnail_path: row.thumbnail_path,
         }
     }
 }

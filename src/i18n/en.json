@@ -29,7 +29,15 @@
     "directory": "Directory",
     "directoryPlaceholder": "Select a directory",
     "browse": "Browse",
-    "createdAt": "Created"
+    "createdAt": "Created",
+    "thumbnail": "Thumbnail",
+    "thumbnailSelect": "Select thumbnail image",
+    "thumbnailHint": "Cover image for the project (optional)",
+    "defaultDirectoryNote": "Default directory is set automatically",
+    "search": "Search projects...",
+    "filterByType": "Filter by type",
+    "allTypes": "All",
+    "editProject": "Edit Project"
   },
   "generation": {
     "generate": "Generate",
