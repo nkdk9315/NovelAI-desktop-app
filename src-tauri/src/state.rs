@@ -20,4 +20,5 @@ pub struct AppState {
     pub db: Mutex<Connection>,
     pub api_client: tokio::sync::Mutex<Option<NovelAIClient>>,
     pub system_tags: SystemPromptDB,
+    pub app_data_dir: std::path::PathBuf,
 }

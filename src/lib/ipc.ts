@@ -3,7 +3,7 @@ import type {
   ProjectDto, GenreDto, PromptGroupDto, GeneratedImageDto,
   VibeDto, StylePresetDto, AnlasBalanceDto, CostResultDto,
   CategoryDto, SystemTagDto, GenerateImageResponse, ProjectVibeDto,
-  CreateProjectRequest, GenerateImageRequest, CostEstimateRequest,
+  CreateProjectRequest, UpdateProjectRequest, GenerateImageRequest, CostEstimateRequest,
   CreatePromptGroupRequest, UpdatePromptGroupRequest, CreateGenreRequest,
   AddVibeRequest, EncodeVibeRequest, UpdateVibeNameRequest,
   UpdateVibeThumbnailRequest, CreateStylePresetRequest,
@@ -30,8 +30,11 @@ export function getAnlasBalance(): Promise<AnlasBalanceDto> {
 
 // ---- Projects ----
 
-export function listProjects(): Promise<ProjectDto[]> {
-  return invoke("list_projects");
+export function listProjects(
+  search?: string,
+  projectType?: string,
+): Promise<ProjectDto[]> {
+  return invoke("list_projects", { search, projectType });
 }
 
 export function createProject(req: CreateProjectRequest): Promise<ProjectDto> {
@@ -44,6 +47,24 @@ export function openProject(id: string): Promise<ProjectDto> {
 
 export function deleteProject(id: string): Promise<void> {
   return invoke("delete_project", { id });
+}
+
+export function updateProject(req: UpdateProjectRequest): Promise<ProjectDto> {
+  return invoke("update_project", { req });
+}
+
+export function updateProjectThumbnail(
+  id: string,
+  thumbnailPath?: string | null,
+): Promise<ProjectDto> {
+  return invoke("update_project_thumbnail", { id, thumbnailPath });
+}
+
+export function getDefaultProjectDir(
+  projectType: string,
+  name: string,
+): Promise<string> {
+  return invoke("get_default_project_dir", { projectType, name });
 }
 
 // ---- Images ----

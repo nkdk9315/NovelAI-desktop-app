@@ -57,6 +57,7 @@ mod tests {
             directory_path: dir.to_str().unwrap().to_string(),
             created_at: "2026-01-01T00:00:00Z".to_string(),
             updated_at: "2026-01-01T00:00:00Z".to_string(),
+            thumbnail_path: None,
         };
         crate::repositories::project::insert(conn, &row).unwrap();
         row

@@ -12,6 +12,7 @@
 | name | TEXT | プロジェクト名 |
 | project_type | TEXT | `simple` / `manga` / `cg` |
 | directory_path | TEXT | 画像保存先ディレクトリの絶対パス |
+| thumbnail_path | TEXT (NULL許容) | サムネイル画像パス |
 | created_at | TEXT (ISO 8601) | 作成日時 |
 | updated_at | TEXT (ISO 8601) | 更新日時 |
 
@@ -241,6 +242,7 @@ CREATE TABLE IF NOT EXISTS projects (
     name            TEXT NOT NULL,
     project_type    TEXT NOT NULL DEFAULT 'simple',
     directory_path  TEXT NOT NULL,
+    thumbnail_path  TEXT,
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -503,8 +505,11 @@ pub struct SystemPromptDB {
 
 | コマンド | 引数 | 戻り値 | 説明 |
 |----------|------|--------|------|
-| `list_projects` | - | `Vec<ProjectDto>` | 一覧 |
-| `create_project` | name, project_type, directory_path | `ProjectDto` | 作成 |
+| `list_projects` | search?, project_type? | `Vec<ProjectDto>` | 一覧（名前検索・ジャンルフィルター） |
+| `create_project` | name, project_type, directory_path?, thumbnail_path? | `ProjectDto` | 作成（directory_path 省略時は自動計算） |
+| `update_project` | UpdateProjectRequest | `ProjectDto` | 名前・サムネイル更新 |
+| `update_project_thumbnail` | id, thumbnail_path? | `ProjectDto` | サムネイル単体更新（null でクリア） |
+| `get_default_project_dir` | project_type, name | `String` | デフォルト保存先パスを取得 |
 | `open_project` | id | `ProjectDto` | 開く + 未保存画像クリーンアップ |
 | `delete_project` | id | - | 削除 |
 

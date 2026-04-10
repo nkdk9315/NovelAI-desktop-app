@@ -1,16 +1,50 @@
+use std::path::PathBuf;
+
 use rusqlite::Connection;
 
 use crate::error::AppError;
-use crate::models::dto::{CreateProjectRequest, ProjectDto, ProjectRow};
+use crate::models::dto::{CreateProjectRequest, ProjectDto, ProjectRow, UpdateProjectRequest};
 
-pub fn list_projects(conn: &Connection) -> Result<Vec<ProjectDto>, AppError> {
-    let rows = crate::repositories::project::list_all(conn)?;
+pub fn list_projects(
+    conn: &Connection,
+    search: Option<&str>,
+    project_type: Option<&str>,
+) -> Result<Vec<ProjectDto>, AppError> {
+    let rows = crate::repositories::project::list_filtered(conn, search, project_type)?;
     Ok(rows.into_iter().map(ProjectDto::from).collect())
+}
+
+/// Sanitize a project name for use as a directory name.
+fn sanitize_dir_name(name: &str) -> String {
+    name.chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' || c == ' ' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect::<String>()
+        .trim()
+        .to_string()
+}
+
+/// Compute the default project directory path.
+pub fn default_project_dir(
+    base_dir: &std::path::Path,
+    project_type: &str,
+    name: &str,
+) -> PathBuf {
+    base_dir
+        .join("projects")
+        .join(project_type)
+        .join(sanitize_dir_name(name))
 }
 
 pub fn create_project(
     conn: &Connection,
     req: CreateProjectRequest,
+    app_data_dir: &std::path::Path,
 ) -> Result<ProjectDto, AppError> {
     let name = req.name.trim().to_string();
     if name.is_empty() {
@@ -24,7 +58,14 @@ pub fn create_project(
         )));
     }
 
-    let dir = std::path::Path::new(&req.directory_path);
+    let directory_path = match req.directory_path {
+        Some(ref p) if !p.is_empty() => p.clone(),
+        _ => default_project_dir(app_data_dir, &req.project_type, &name)
+            .to_string_lossy()
+            .to_string(),
+    };
+
+    let dir = std::path::Path::new(&directory_path);
     if !dir.exists() {
         std::fs::create_dir_all(dir)?;
     }
@@ -38,11 +79,44 @@ pub fn create_project(
         id: uuid::Uuid::new_v4().to_string(),
         name,
         project_type: req.project_type,
-        directory_path: req.directory_path,
+        directory_path,
         created_at: now.clone(),
         updated_at: now,
+        thumbnail_path: req.thumbnail_path,
     };
     crate::repositories::project::insert(conn, &row)?;
+    Ok(ProjectDto::from(row))
+}
+
+pub fn update_project_thumbnail(
+    conn: &Connection,
+    id: &str,
+    thumbnail_path: Option<&str>,
+) -> Result<ProjectDto, AppError> {
+    crate::repositories::project::update_thumbnail(conn, id, thumbnail_path)?;
+    let row = crate::repositories::project::find_by_id(conn, id)?;
+    Ok(ProjectDto::from(row))
+}
+
+pub fn update_project(
+    conn: &Connection,
+    req: UpdateProjectRequest,
+) -> Result<ProjectDto, AppError> {
+    crate::repositories::project::find_by_id(conn, &req.id)?;
+
+    if let Some(ref name) = req.name {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err(AppError::Validation("project name is required".to_string()));
+        }
+        crate::repositories::project::update_name(conn, &req.id, trimmed)?;
+    }
+
+    if let Some(ref thumb) = req.thumbnail_path {
+        crate::repositories::project::update_thumbnail(conn, &req.id, thumb.as_deref())?;
+    }
+
+    let row = crate::repositories::project::find_by_id(conn, &req.id)?;
     Ok(ProjectDto::from(row))
 }
 
@@ -58,73 +132,5 @@ pub fn delete_project(conn: &Connection, id: &str) -> Result<(), AppError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::test_utils::{create_test_image, setup_test_db};
-
-    #[test]
-    fn test_create_project() {
-        let conn = setup_test_db();
-        let tmp = tempfile::TempDir::new().unwrap();
-        let dir = tmp.path().join("test-project");
-
-        let req = CreateProjectRequest {
-            name: "My Project".to_string(),
-            project_type: "simple".to_string(),
-            directory_path: dir.to_str().unwrap().to_string(),
-        };
-        let dto = create_project(&conn, req).unwrap();
-        assert_eq!(dto.name, "My Project");
-        assert!(dir.exists());
-        assert!(dir.join("images").exists());
-    }
-
-    #[test]
-    fn test_create_project_empty_name() {
-        let conn = setup_test_db();
-        let req = CreateProjectRequest {
-            name: "  ".to_string(),
-            project_type: "simple".to_string(),
-            directory_path: "/tmp/x".to_string(),
-        };
-        assert!(create_project(&conn, req).is_err());
-    }
-
-    #[test]
-    fn test_create_project_invalid_type() {
-        let conn = setup_test_db();
-        let req = CreateProjectRequest {
-            name: "Test".to_string(),
-            project_type: "invalid".to_string(),
-            directory_path: "/tmp/x".to_string(),
-        };
-        assert!(create_project(&conn, req).is_err());
-    }
-
-    #[test]
-    fn test_open_project_cleans_unsaved() {
-        let conn = setup_test_db();
-        let project = crate::test_utils::create_test_project(&conn);
-        let saved = create_test_image(&conn, &project.id, 1);
-        create_test_image(&conn, &project.id, 0);
-
-        let dto = open_project(&conn, &project.id).unwrap();
-        assert_eq!(dto.id, project.id);
-
-        // Unsaved images should be cleaned from DB
-        let remaining =
-            crate::repositories::image::list_by_project(&conn, &project.id, None).unwrap();
-        assert_eq!(remaining.len(), 1);
-        assert_eq!(remaining[0].id, saved.id);
-    }
-
-    #[test]
-    fn test_delete_project() {
-        let conn = setup_test_db();
-        let project = crate::test_utils::create_test_project(&conn);
-        delete_project(&conn, &project.id).unwrap();
-
-        let list = list_projects(&conn).unwrap();
-        assert!(list.is_empty());
-    }
-}
+#[path = "project_tests.rs"]
+mod tests;

@@ -29,7 +29,15 @@
     "directory": "保存先ディレクトリ",
     "directoryPlaceholder": "ディレクトリを選択",
     "browse": "参照",
-    "createdAt": "作成日"
+    "createdAt": "作成日",
+    "thumbnail": "サムネイル",
+    "thumbnailSelect": "サムネイル画像を選択",
+    "thumbnailHint": "プロジェクトのカバー画像（任意）",
+    "defaultDirectoryNote": "デフォルトの保存先が自動的に設定されます",
+    "search": "プロジェクト名で検索...",
+    "filterByType": "タイプで絞り込み",
+    "allTypes": "すべて",
+    "editProject": "プロジェクトを編集"
   },
   "generation": {
     "generate": "生成",

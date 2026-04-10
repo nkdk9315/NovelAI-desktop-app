@@ -9,6 +9,7 @@ const MIGRATION_004: &str = include_str!("../migrations/004_preset_thumbnail.sql
 const MIGRATION_005: &str = include_str!("../migrations/005_preset_vibe_strength.sql");
 const MIGRATION_006: &str = include_str!("../migrations/006_preset_favorite.sql");
 const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
+const MIGRATION_008: &str = include_str!("../migrations/008_project_thumbnail.sql");
 
 pub fn init_db(path: &str) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;
@@ -88,6 +89,14 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
             rusqlite::params!["schema_version", "7"],
+        )?;
+    }
+
+    if version < 8 {
+        conn.execute_batch(MIGRATION_008)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "8"],
         )?;
     }
 

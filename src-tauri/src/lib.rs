@@ -67,6 +67,7 @@ pub fn run() {
                 db: Mutex::new(conn),
                 api_client: tokio::sync::Mutex::new(api_client_val),
                 system_tags,
+                app_data_dir: data_dir,
             };
             app.manage(app_state);
             Ok(())
@@ -80,6 +81,9 @@ pub fn run() {
             commands::projects::create_project,
             commands::projects::open_project,
             commands::projects::delete_project,
+            commands::projects::update_project,
+            commands::projects::update_project_thumbnail,
+            commands::projects::get_default_project_dir,
             commands::images::generate_image,
             commands::images::estimate_cost,
             commands::images::save_image,
