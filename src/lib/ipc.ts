@@ -2,11 +2,12 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   ProjectDto, GenreDto, PromptGroupDto, GeneratedImageDto,
   VibeDto, StylePresetDto, AnlasBalanceDto, CostResultDto,
-  CategoryDto, SystemTagDto, GenerateImageResponse,
+  CategoryDto, SystemTagDto, GenerateImageResponse, ProjectVibeDto,
   CreateProjectRequest, GenerateImageRequest, CostEstimateRequest,
   CreatePromptGroupRequest, UpdatePromptGroupRequest, CreateGenreRequest,
-  AddVibeRequest, EncodeVibeRequest, CreateStylePresetRequest,
-  UpdateStylePresetRequest,
+  AddVibeRequest, EncodeVibeRequest, UpdateVibeNameRequest,
+  UpdateVibeThumbnailRequest, CreateStylePresetRequest,
+  UpdateStylePresetRequest, UpdatePresetThumbnailRequest,
 } from "@/types";
 
 // ---- Settings ----
@@ -136,6 +137,46 @@ export function encodeVibe(req: EncodeVibeRequest): Promise<VibeDto> {
   return invoke("encode_vibe", { req });
 }
 
+export function updateVibeName(req: UpdateVibeNameRequest): Promise<VibeDto> {
+  return invoke("update_vibe_name", { req });
+}
+
+export function updateVibeThumbnail(req: UpdateVibeThumbnailRequest): Promise<VibeDto> {
+  return invoke("update_vibe_thumbnail", { req });
+}
+
+export function clearVibeThumbnail(id: string): Promise<VibeDto> {
+  return invoke("clear_vibe_thumbnail", { id });
+}
+
+export function toggleVibeFavorite(id: string): Promise<VibeDto> {
+  return invoke("toggle_vibe_favorite", { id });
+}
+
+export function exportVibe(id: string, destPath: string): Promise<void> {
+  return invoke("export_vibe", { id, destPath });
+}
+
+export function addVibeToProject(projectId: string, vibeId: string): Promise<void> {
+  return invoke("add_vibe_to_project", { projectId, vibeId });
+}
+
+export function removeVibeFromProject(projectId: string, vibeId: string): Promise<void> {
+  return invoke("remove_vibe_from_project", { projectId, vibeId });
+}
+
+export function setVibeVisibility(projectId: string, vibeId: string, isVisible: boolean): Promise<void> {
+  return invoke("set_vibe_visibility", { projectId, vibeId, isVisible });
+}
+
+export function listProjectVibes(projectId: string): Promise<VibeDto[]> {
+  return invoke("list_project_vibes", { projectId });
+}
+
+export function listProjectVibesAll(projectId: string): Promise<ProjectVibeDto[]> {
+  return invoke("list_project_vibes_all", { projectId });
+}
+
 // ---- Style Presets ----
 
 export function listStylePresets(): Promise<StylePresetDto[]> {
@@ -154,6 +195,18 @@ export function deleteStylePreset(id: string): Promise<void> {
   return invoke("delete_style_preset", { id });
 }
 
+export function updatePresetThumbnail(req: UpdatePresetThumbnailRequest): Promise<StylePresetDto> {
+  return invoke("update_preset_thumbnail", { req });
+}
+
+export function clearPresetThumbnail(id: string): Promise<StylePresetDto> {
+  return invoke("clear_preset_thumbnail", { id });
+}
+
+export function togglePresetFavorite(id: string): Promise<StylePresetDto> {
+  return invoke("toggle_preset_favorite", { id });
+}
+
 // ---- System Prompts ----
 
 export function getSystemPromptCategories(): Promise<CategoryDto[]> {
@@ -166,4 +219,8 @@ export function searchSystemPrompts(
   limit?: number,
 ): Promise<SystemTagDto[]> {
   return invoke("search_system_prompts", { query, category, limit });
+}
+
+export function getRandomArtistTags(count: number): Promise<SystemTagDto[]> {
+  return invoke("get_random_artist_tags", { count });
 }

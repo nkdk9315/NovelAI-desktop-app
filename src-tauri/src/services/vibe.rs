@@ -1,10 +1,36 @@
 use std::path::Path;
 
-use novelai_api::client::NovelAIClient;
 use rusqlite::Connection;
 
 use crate::error::AppError;
-use crate::models::dto::{AddVibeRequest, EncodeVibeRequest, VibeDto, VibeRow};
+use crate::models::dto::{AddVibeRequest, VibeDto, VibeRow};
+
+const ALLOWED_IMAGE_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp"];
+
+pub(crate) fn validate_image_extension(ext: &str) -> Result<(), AppError> {
+    if !ALLOWED_IMAGE_EXTENSIONS.contains(&ext.to_lowercase().as_str()) {
+        return Err(AppError::Validation(format!(
+            "Unsupported image extension: {ext}. Allowed: {}",
+            ALLOWED_IMAGE_EXTENSIONS.join(", ")
+        )));
+    }
+    Ok(())
+}
+
+pub(crate) fn copy_thumbnail(source: &Path, dest_dir: &Path, id: &str, dir_name: &str) -> Result<String, AppError> {
+    std::fs::create_dir_all(dest_dir).map_err(|e| {
+        AppError::Io(format!("Failed to create {dir_name} directory: {e}"))
+    })?;
+    let ext = source
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("png");
+    validate_image_extension(ext)?;
+    let dest = dest_dir.join(format!("{id}.{ext}"));
+    std::fs::copy(source, &dest)
+        .map_err(|e| AppError::Io(format!("Failed to copy thumbnail: {e}")))?;
+    Ok(dest.to_string_lossy().to_string())
+}
 
 pub fn list_vibes(conn: &Connection) -> Result<Vec<VibeDto>, AppError> {
     let rows = crate::repositories::vibe::list_all(conn)?;
@@ -52,12 +78,27 @@ pub fn add_vibe(
         AppError::Io(format!("Failed to copy vibe file: {e}"))
     })?;
 
+    // Copy thumbnail if provided
+    let thumbnail_path = if let Some(ref thumb_src) = req.thumbnail_path {
+        let thumb_src_path = Path::new(thumb_src);
+        if thumb_src_path.exists() {
+            let thumbs_dir = app_data_dir.join("vibe-thumbnails");
+            Some(copy_thumbnail(thumb_src_path, &thumbs_dir, &id, "vibe-thumbnails")?)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     let row = VibeRow {
         id,
         name: req.name,
         file_path: dest.to_string_lossy().to_string(),
         model,
         created_at: chrono::Utc::now().to_rfc3339(),
+        thumbnail_path,
+        is_favorite: false,
     };
     crate::repositories::vibe::insert(conn, &row)?;
     Ok(VibeDto::from(row))
@@ -77,15 +118,64 @@ pub fn delete_vibe(conn: &Connection, id: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-pub async fn encode_vibe(
-    _db: &std::sync::Mutex<Connection>,
-    _api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
-    _app_data_dir: &Path,
-    _req: EncodeVibeRequest,
+pub fn update_vibe_name(conn: &Connection, id: &str, name: &str) -> Result<VibeDto, AppError> {
+    if name.trim().is_empty() {
+        return Err(AppError::Validation("Vibe name cannot be empty".into()));
+    }
+    crate::repositories::vibe::update_name(conn, id, name.trim())?;
+    let row = crate::repositories::vibe::find_by_id(conn, id)?;
+    Ok(VibeDto::from(row))
+}
+
+pub fn update_vibe_thumbnail(
+    conn: &Connection,
+    app_data_dir: &Path,
+    id: &str,
+    source_path: &str,
 ) -> Result<VibeDto, AppError> {
-    Err(AppError::NotInitialized(
-        "encode_vibe is not yet implemented".into(),
-    ))
+    // Verify vibe exists
+    crate::repositories::vibe::find_by_id(conn, id)?;
+
+    let source = Path::new(source_path);
+    if !source.exists() {
+        return Err(AppError::Validation(format!(
+            "Thumbnail file not found: {source_path}"
+        )));
+    }
+
+    let thumbs_dir = app_data_dir.join("vibe-thumbnails");
+    let dest_str = copy_thumbnail(source, &thumbs_dir, id, "vibe-thumbnails")?;
+    crate::repositories::vibe::update_thumbnail(conn, id, Some(&dest_str))?;
+
+    let row = crate::repositories::vibe::find_by_id(conn, id)?;
+    Ok(VibeDto::from(row))
+}
+
+pub fn clear_vibe_thumbnail(conn: &Connection, id: &str) -> Result<VibeDto, AppError> {
+    let vibe = crate::repositories::vibe::find_by_id(conn, id)?;
+    // Remove file if it exists
+    if let Some(ref thumb_path) = vibe.thumbnail_path {
+        let path = Path::new(thumb_path);
+        if path.exists() {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+    crate::repositories::vibe::update_thumbnail(conn, id, None)?;
+    let row = crate::repositories::vibe::find_by_id(conn, id)?;
+    Ok(VibeDto::from(row))
+}
+
+pub fn toggle_vibe_favorite(conn: &Connection, id: &str) -> Result<VibeDto, AppError> {
+    crate::repositories::vibe::toggle_favorite(conn, id)?;
+    let row = crate::repositories::vibe::find_by_id(conn, id)?;
+    Ok(VibeDto::from(row))
+}
+
+pub fn export_vibe(conn: &Connection, id: &str, dest_path: &str) -> Result<(), AppError> {
+    let vibe = crate::repositories::vibe::find_by_id(conn, id)?;
+    std::fs::copy(&vibe.file_path, dest_path)
+        .map_err(|e| AppError::Io(format!("Failed to export vibe file: {e}")))?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -125,6 +215,7 @@ mod tests {
         let req = AddVibeRequest {
             file_path: vibe_path,
             name: "My Vibe".to_string(),
+            thumbnail_path: None,
         };
         let dto = add_vibe(&conn, app_data_dir.path(), req).unwrap();
 
@@ -146,6 +237,7 @@ mod tests {
         let req = AddVibeRequest {
             file_path: "/nonexistent/file.naiv4vibe".to_string(),
             name: "Missing".to_string(),
+            thumbnail_path: None,
         };
         let err = add_vibe(&conn, app_data_dir.path(), req).unwrap_err();
         assert!(matches!(err, AppError::Validation(_)));
@@ -161,6 +253,7 @@ mod tests {
         let req = AddVibeRequest {
             file_path: vibe_path,
             name: "To Delete".to_string(),
+            thumbnail_path: None,
         };
         let dto = add_vibe(&conn, app_data_dir.path(), req).unwrap();
         assert!(Path::new(&dto.file_path).exists());

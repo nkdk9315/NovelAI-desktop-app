@@ -3,7 +3,7 @@ import type { SystemTagDto } from "@/types";
 import { useDebounce } from "./use-debounce";
 import * as ipc from "@/lib/ipc";
 
-export function useAutocomplete(delay = 300) {
+export function useAutocomplete(delay = 300, category?: number) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SystemTagDto[]>([]);
   const debouncedQuery = useDebounce(query, delay);
@@ -13,8 +13,8 @@ export function useAutocomplete(delay = 300) {
       setResults([]);
       return;
     }
-    ipc.searchSystemPrompts(debouncedQuery).then(setResults);
-  }, [debouncedQuery]);
+    ipc.searchSystemPrompts(debouncedQuery, category).then(setResults);
+  }, [debouncedQuery, category]);
 
   return { results, search: setQuery };
 }

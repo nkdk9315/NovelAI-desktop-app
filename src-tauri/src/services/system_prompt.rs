@@ -1,5 +1,6 @@
 use crate::models::dto::{CategoryDto, SystemTagDto};
 use crate::state::{SystemPromptDB, SystemTag};
+use rand::seq::SliceRandom;
 use std::collections::HashMap;
 use std::io::BufRead;
 
@@ -134,6 +135,27 @@ pub fn search_system_prompts(
     }
 
     results
+}
+
+pub fn get_random_tags(db: &SystemPromptDB, category: u8, count: usize) -> Vec<SystemTagDto> {
+    let indices = match db.by_category.get(&category) {
+        Some(indices) => indices,
+        None => return Vec::new(),
+    };
+    let mut rng = rand::thread_rng();
+    let selected: Vec<&usize> = indices.choose_multiple(&mut rng, count.min(indices.len())).collect();
+    selected
+        .into_iter()
+        .map(|&idx| {
+            let tag = &db.tags[idx];
+            SystemTagDto {
+                name: tag.name.clone(),
+                category: tag.category,
+                post_count: tag.post_count,
+                aliases: tag.aliases.clone(),
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]

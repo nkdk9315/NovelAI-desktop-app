@@ -86,6 +86,21 @@
 | file_path | TEXT | `$APPDATA/novelai-desktop/vibes/`内の絶対パス |
 | model | TEXT | エンコード時のモデルID |
 | created_at | TEXT (ISO 8601) | 作成日時 |
+| thumbnail_path | TEXT (NULL許容) | サムネイル画像パス（`$APPDATA/vibe-thumbnails/{id}.ext`） |
+| is_favorite | INTEGER | 0=通常、1=お気に入り |
+
+### ProjectVibe（プロジェクト×Vibe中間テーブル）
+
+プロジェクトに紐付けられたVibeの管理。
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| project_id | TEXT | FK → Project.id（CASCADE DELETE） |
+| vibe_id | TEXT | FK → Vibe.id（CASCADE DELETE） |
+| is_visible | INTEGER | 1=サイドバーに表示、0=非表示 |
+| added_at | TEXT | 追加日時（DEFAULT datetime('now')） |
+
+複合PK: (project_id, vibe_id)
 
 ### StylePreset（スタイルプリセット）
 
@@ -95,8 +110,11 @@
 |------------|-----|------|
 | id | TEXT (UUID) | PK |
 | name | TEXT | プリセット名 |
-| artist_tags | TEXT (JSON Array) | アーティストタグリスト（JSON文字列） |
+| artist_tags | TEXT (JSON Array) | `ArtistTag[]`（`{name, strength}`のJSON配列） |
 | created_at | TEXT (ISO 8601) | 作成日時 |
+| thumbnail_path | TEXT (NULL許容) | サムネイル画像パス（`$APPDATA/preset-thumbnails/{id}.ext`） |
+| is_favorite | INTEGER | 0=通常、1=お気に入り |
+| model | TEXT | 対象モデルID |
 
 ### StylePresetVibe（スタイルプリセット×Vibe中間テーブル）
 
@@ -104,6 +122,7 @@
 |------------|-----|------|
 | style_preset_id | TEXT | FK → StylePreset.id（CASCADE DELETE） |
 | vibe_id | TEXT | FK → Vibe.id（CASCADE DELETE） |
+| strength | REAL | Vibe強度（デフォルト0.7） |
 
 複合PK: (style_preset_id, vibe_id)
 
@@ -145,14 +164,26 @@ Key-Valueストア。
                    │ is_saved       │
                    └────────────────┘
 
-┌──────────┐       ┌──────────────────┐       ┌──────────┐
-│  Vibe    │*    * │StylePresetVibe   │*    1 │StylePreset│
-│          │───────│                  │───────│           │
-│ id       │       │ vibe_id (FK)     │       │ id        │
-│ name     │       │ style_preset_id  │       │ name      │
-│ file_path│       │     (FK)         │       │artist_tags│
-│ model    │       └──────────────────┘       └───────────┘
-└──────────┘
+┌──────────┐       ┌──────────────────┐       ┌─────────────┐
+│  Vibe    │*    * │StylePresetVibe   │*    1 │ StylePreset │
+│          │───────│                  │───────│             │
+│ id       │       │ vibe_id (FK)     │       │ id          │
+│ name     │       │ style_preset_id  │       │ name        │
+│ file_path│       │     (FK)         │       │ artist_tags │
+│ model    │       │ strength         │       │ model       │
+│ thumb_..│       └──────────────────┘       │ thumb_path  │
+│ is_fav   │                                  │ is_favorite │
+└──────────┘                                  └─────────────┘
+      │
+      │ *    *
+┌─────┴──────────┐
+│ ProjectVibe    │
+│                │
+│ project_id(FK) │───── Project
+│ vibe_id (FK)   │
+│ is_visible     │
+│ added_at       │
+└────────────────┘
 
 ┌──────────┐
 │ Settings │
@@ -233,25 +264,40 @@ CREATE INDEX IF NOT EXISTS idx_generated_images_project
 
 -- Vibe
 CREATE TABLE IF NOT EXISTS vibes (
-    id          TEXT PRIMARY KEY,
-    name        TEXT NOT NULL,
-    file_path   TEXT NOT NULL,
-    model       TEXT NOT NULL,
-    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    id              TEXT PRIMARY KEY,
+    name            TEXT NOT NULL,
+    file_path       TEXT NOT NULL,
+    model           TEXT NOT NULL,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    thumbnail_path  TEXT,
+    is_favorite     INTEGER NOT NULL DEFAULT 0
+);
+
+-- プロジェクト × Vibe
+CREATE TABLE IF NOT EXISTS project_vibes (
+    project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    vibe_id     TEXT NOT NULL REFERENCES vibes(id) ON DELETE CASCADE,
+    is_visible  INTEGER NOT NULL DEFAULT 1,
+    added_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (project_id, vibe_id)
 );
 
 -- スタイルプリセット
 CREATE TABLE IF NOT EXISTS style_presets (
-    id          TEXT PRIMARY KEY,
-    name        TEXT NOT NULL,
-    artist_tags TEXT NOT NULL DEFAULT '[]',
-    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    id              TEXT PRIMARY KEY,
+    name            TEXT NOT NULL,
+    artist_tags     TEXT NOT NULL DEFAULT '[]',
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    thumbnail_path  TEXT,
+    is_favorite     INTEGER NOT NULL DEFAULT 0,
+    model           TEXT NOT NULL DEFAULT ''
 );
 
 -- スタイルプリセット × Vibe
 CREATE TABLE IF NOT EXISTS style_preset_vibes (
     style_preset_id TEXT NOT NULL REFERENCES style_presets(id) ON DELETE CASCADE,
     vibe_id         TEXT NOT NULL REFERENCES vibes(id) ON DELETE CASCADE,
+    strength        REAL NOT NULL DEFAULT 0.7,
     PRIMARY KEY (style_preset_id, vibe_id)
 );
 
@@ -308,6 +354,11 @@ CREATE TABLE IF NOT EXISTS settings (
     │
     ├─ アーティストタグ選択 ────────────────────> main_prompt に追記
     │
+    ├─ Vibeマージ（vibeIdで重複排除）
+    │   1. 有効プリセットのVibes（先勝ち: 先のプリセットの strength を採用）
+    │   2. 単品Vibes（プリセットに未登場の vibeId のみ追加）
+    │   ※ 同一 vibeId は1エントリに統合。プリセット > 単品の優先順
+    │
     └─ [Generate]
         │
         ▼
@@ -322,7 +373,7 @@ CREATE TABLE IF NOT EXISTS settings (
             },
             ...
         ],
-        vibes: [VibeConfig { ... }, ...],
+        vibes: [VibeConfig { ... }, ...],          ← マージ済み（vibeId重複なし）
         model, width, height, steps, scale, ...
     }
         │
@@ -352,13 +403,36 @@ cleanup_unsaved_images(project_id)
 ### 4.4 Vibeインポートフロー
 
 ```
-[ユーザー: ファイル選択]
+[ユーザー: ファイル選択 / D&D]
     │
     ▼
-add_vibe(file_path, name)
+VibeImportDialog（名前・サムネイル入力）
+    │
+    ▼
+add_vibe(file_path, name, thumbnail_path?)
     │
     ├─ .naiv4vibeファイルを$APPDATA/novelai-desktop/vibes/にコピー
     ├─ ファイル内容を解析してモデル情報を取得
+    ├─ サムネイル画像コピー（任意、拡張子ホワイトリスト検証）
+    ├─ DBにVibeレコード挿入
+    │
+    └─ VibeDto返却 → UI一覧に追加
+```
+
+### 4.5 Vibeエンコードフロー
+
+```
+[ユーザー: 画像ファイル選択 / D&D]
+    │
+    ▼
+VibeEncodeDialog（名前・情報抽出度入力）
+    │
+    ▼
+encode_vibe(image_path, model, name, information_extracted)
+    │
+    ├─ APIクライアントで encode_vibe 呼び出し (2 Anlas消費)
+    ├─ .naiv4vibeファイルを$APPDATA/novelai-desktop/vibes/に保存
+    ├─ ソース画像をサムネイルとしてコピー
     ├─ DBにVibeレコード挿入
     │
     └─ VibeDto返却 → UI一覧に追加
@@ -469,18 +543,31 @@ pub struct SystemPromptDB {
 | コマンド | 引数 | 戻り値 | 説明 |
 |----------|------|--------|------|
 | `list_vibes` | - | `Vec<VibeDto>` | 一覧 |
-| `add_vibe` | file_path, name | `VibeDto` | インポート |
+| `add_vibe` | file_path, name, thumbnail_path? | `VibeDto` | インポート |
 | `delete_vibe` | id | - | 削除 |
-| `encode_vibe` | image_path, model, name | `VibeDto` | 画像からVibeエンコード |
+| `update_vibe_name` | UpdateVibeNameRequest | `VibeDto` | 名前更新 |
+| `update_vibe_thumbnail` | UpdateVibeThumbnailRequest | `VibeDto` | サムネイル更新 |
+| `clear_vibe_thumbnail` | id | `VibeDto` | サムネイルクリア |
+| `toggle_vibe_favorite` | id | `VibeDto` | お気に入りトグル |
+| `export_vibe` | id, dest_path | - | エクスポート |
+| `encode_vibe` | EncodeVibeRequest | `VibeDto` | 画像からVibeエンコード |
+| `add_vibe_to_project` | project_id, vibe_id | - | プロジェクトにVibe追加 |
+| `remove_vibe_from_project` | project_id, vibe_id | - | プロジェクトからVibe削除 |
+| `set_vibe_visibility` | project_id, vibe_id, is_visible | - | 表示/非表示切替 |
+| `list_project_vibes` | project_id | `Vec<VibeDto>` | プロジェクトのVibe一覧（visible only） |
+| `list_project_vibes_all` | project_id | `Vec<ProjectVibeDto>` | プロジェクトのVibe一覧（全件） |
 
 ### スタイルプリセット
 
 | コマンド | 引数 | 戻り値 | 説明 |
 |----------|------|--------|------|
 | `list_style_presets` | - | `Vec<StylePresetDto>` | 一覧 |
-| `create_style_preset` | name, artist_tags, vibe_ids | `StylePresetDto` | 作成 |
-| `update_style_preset` | id, name?, artist_tags?, vibe_ids? | - | 更新 |
+| `create_style_preset` | CreateStylePresetRequest | `StylePresetDto` | 作成 |
+| `update_style_preset` | UpdateStylePresetRequest | - | 更新 |
 | `delete_style_preset` | id | - | 削除 |
+| `toggle_preset_favorite` | id | `StylePresetDto` | お気に入りトグル |
+| `update_preset_thumbnail` | UpdatePresetThumbnailRequest | `StylePresetDto` | サムネイル更新 |
+| `clear_preset_thumbnail` | id | `StylePresetDto` | サムネイルクリア |
 
 ### システムプロンプト
 

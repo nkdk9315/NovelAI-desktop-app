@@ -1,16 +1,19 @@
 use rusqlite::Connection;
 
 use crate::error::AppError;
-use crate::models::dto::StylePresetRow;
+use crate::models::dto::{PresetVibeRef, StylePresetRow};
 
 pub fn list_all(conn: &Connection) -> Result<Vec<StylePresetRow>, AppError> {
-    let mut stmt = conn.prepare("SELECT id, name, artist_tags, created_at FROM style_presets ORDER BY created_at DESC")?;
+    let mut stmt = conn.prepare("SELECT id, name, artist_tags, created_at, thumbnail_path, is_favorite, model FROM style_presets ORDER BY created_at DESC")?;
     let rows = stmt.query_map([], |row| {
         Ok(StylePresetRow {
             id: row.get(0)?,
             name: row.get(1)?,
             artist_tags: row.get(2)?,
             created_at: row.get(3)?,
+            thumbnail_path: row.get(4)?,
+            is_favorite: row.get::<_, i32>(5)? != 0,
+            model: row.get(6)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
@@ -18,7 +21,7 @@ pub fn list_all(conn: &Connection) -> Result<Vec<StylePresetRow>, AppError> {
 
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<StylePresetRow, AppError> {
     conn.query_row(
-        "SELECT id, name, artist_tags, created_at FROM style_presets WHERE id = ?1",
+        "SELECT id, name, artist_tags, created_at, thumbnail_path, is_favorite, model FROM style_presets WHERE id = ?1",
         [id],
         |row| {
             Ok(StylePresetRow {
@@ -26,6 +29,9 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<StylePresetRow, AppErro
                 name: row.get(1)?,
                 artist_tags: row.get(2)?,
                 created_at: row.get(3)?,
+                thumbnail_path: row.get(4)?,
+                is_favorite: row.get::<_, i32>(5)? != 0,
+                model: row.get(6)?,
             })
         },
     )
@@ -37,8 +43,8 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<StylePresetRow, AppErro
 
 pub fn insert(conn: &Connection, row: &StylePresetRow) -> Result<(), AppError> {
     conn.execute(
-        "INSERT INTO style_presets (id, name, artist_tags, created_at) VALUES (?1, ?2, ?3, ?4)",
-        rusqlite::params![row.id, row.name, row.artist_tags, row.created_at],
+        "INSERT INTO style_presets (id, name, artist_tags, created_at, thumbnail_path, is_favorite, model) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        rusqlite::params![row.id, row.name, row.artist_tags, row.created_at, row.thumbnail_path, row.is_favorite as i32, row.model],
     )?;
     Ok(())
 }
@@ -51,35 +57,66 @@ pub fn update(conn: &Connection, row: &StylePresetRow) -> Result<(), AppError> {
     Ok(())
 }
 
+pub fn toggle_favorite(conn: &Connection, id: &str) -> Result<(), AppError> {
+    let updated = conn.execute(
+        "UPDATE style_presets SET is_favorite = 1 - is_favorite WHERE id = ?1",
+        [id],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("style_preset {id}")));
+    }
+    Ok(())
+}
+
+pub fn update_thumbnail(
+    conn: &Connection,
+    id: &str,
+    thumbnail_path: Option<&str>,
+) -> Result<(), AppError> {
+    let updated = conn.execute(
+        "UPDATE style_presets SET thumbnail_path = ?1 WHERE id = ?2",
+        rusqlite::params![thumbnail_path, id],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("style_preset {id}")));
+    }
+    Ok(())
+}
+
 pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError> {
     conn.execute("DELETE FROM style_presets WHERE id = ?1", [id])?;
     Ok(())
 }
 
-pub fn find_vibe_ids_by_preset(
+pub fn find_vibe_refs_by_preset(
     conn: &Connection,
     preset_id: &str,
-) -> Result<Vec<String>, AppError> {
+) -> Result<Vec<PresetVibeRef>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT vibe_id FROM style_preset_vibes WHERE style_preset_id = ?1",
+        "SELECT vibe_id, strength FROM style_preset_vibes WHERE style_preset_id = ?1",
     )?;
-    let rows = stmt.query_map([preset_id], |row| row.get(0))?;
+    let rows = stmt.query_map([preset_id], |row| {
+        Ok(PresetVibeRef {
+            vibe_id: row.get(0)?,
+            strength: row.get(1)?,
+        })
+    })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
 }
 
-pub fn replace_vibe_ids(
+pub fn replace_vibe_refs(
     conn: &Connection,
     preset_id: &str,
-    vibe_ids: &[String],
+    vibe_refs: &[PresetVibeRef],
 ) -> Result<(), AppError> {
     conn.execute(
         "DELETE FROM style_preset_vibes WHERE style_preset_id = ?1",
         [preset_id],
     )?;
-    for vibe_id in vibe_ids {
+    for vr in vibe_refs {
         conn.execute(
-            "INSERT INTO style_preset_vibes (style_preset_id, vibe_id) VALUES (?1, ?2)",
-            rusqlite::params![preset_id, vibe_id],
+            "INSERT INTO style_preset_vibes (style_preset_id, vibe_id, strength) VALUES (?1, ?2, ?3)",
+            rusqlite::params![preset_id, vr.vibe_id, vr.strength],
         )?;
     }
     Ok(())
@@ -131,8 +168,8 @@ mod tests {
         assert!(matches!(err, AppError::NotFound(_)));
 
         // Junction rows should be gone (CASCADE)
-        let vibe_ids = find_vibe_ids_by_preset(&conn, &preset.id).unwrap();
-        assert!(vibe_ids.is_empty());
+        let refs = find_vibe_refs_by_preset(&conn, &preset.id).unwrap();
+        assert!(refs.is_empty());
 
         // Vibe itself should still exist
         let vibe_found = crate::repositories::vibe::find_by_id(&conn, &vibe.id).unwrap();
@@ -140,33 +177,35 @@ mod tests {
     }
 
     #[test]
-    fn test_replace_vibe_ids() {
+    fn test_replace_vibe_refs() {
         let conn = setup_test_db();
         let v1 = create_test_vibe(&conn);
         let v2 = create_test_vibe(&conn);
         let v3 = create_test_vibe(&conn);
         let preset = create_test_style_preset(&conn, &[v1.id.clone(), v2.id.clone()]);
 
-        // Replace with v2, v3
-        replace_vibe_ids(&conn, &preset.id, &[v2.id.clone(), v3.id.clone()]).unwrap();
+        let new_refs = vec![
+            PresetVibeRef { vibe_id: v2.id.clone(), strength: 0.5 },
+            PresetVibeRef { vibe_id: v3.id.clone(), strength: 0.8 },
+        ];
+        replace_vibe_refs(&conn, &preset.id, &new_refs).unwrap();
 
-        let ids = find_vibe_ids_by_preset(&conn, &preset.id).unwrap();
-        assert_eq!(ids.len(), 2);
-        assert!(ids.contains(&v2.id));
-        assert!(ids.contains(&v3.id));
-        assert!(!ids.contains(&v1.id));
+        let refs = find_vibe_refs_by_preset(&conn, &preset.id).unwrap();
+        assert_eq!(refs.len(), 2);
+        let ids: Vec<&str> = refs.iter().map(|r| r.vibe_id.as_str()).collect();
+        assert!(ids.contains(&v2.id.as_str()));
+        assert!(ids.contains(&v3.id.as_str()));
+        assert!(!ids.contains(&v1.id.as_str()));
     }
 
     #[test]
-    fn test_find_vibe_ids_by_preset() {
+    fn test_find_vibe_refs_by_preset() {
         let conn = setup_test_db();
         let v1 = create_test_vibe(&conn);
         let v2 = create_test_vibe(&conn);
         let preset = create_test_style_preset(&conn, &[v1.id.clone(), v2.id.clone()]);
 
-        let ids = find_vibe_ids_by_preset(&conn, &preset.id).unwrap();
-        assert_eq!(ids.len(), 2);
-        assert!(ids.contains(&v1.id));
-        assert!(ids.contains(&v2.id));
+        let refs = find_vibe_refs_by_preset(&conn, &preset.id).unwrap();
+        assert_eq!(refs.len(), 2);
     }
 }

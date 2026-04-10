@@ -24,3 +24,15 @@ pub fn search_system_prompts(
         limit.unwrap_or(50),
     ))
 }
+
+#[tauri::command]
+pub fn get_random_artist_tags(
+    state: State<'_, AppState>,
+    count: usize,
+) -> Result<Vec<SystemTagDto>, String> {
+    Ok(crate::services::system_prompt::get_random_tags(
+        &state.system_tags,
+        1, // category 1 = artists
+        count,
+    ))
+}

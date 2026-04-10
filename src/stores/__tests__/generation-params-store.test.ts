@@ -4,9 +4,7 @@ import { useGenerationParamsStore } from "../generation-params-store";
 beforeEach(() => {
   useGenerationParamsStore.setState({
     characters: [],
-    selectedVibes: [],
-    artistTags: [],
-    selectedStylePresetId: null,
+    sidebarPresets: [],
   });
 });
 
@@ -64,94 +62,69 @@ describe("characters CRUD", () => {
   });
 });
 
-describe("vibes CRUD", () => {
-  it("addVibe adds with defaults", () => {
-    useGenerationParamsStore.getState().addVibe("vibe-1");
-    const vibes = useGenerationParamsStore.getState().selectedVibes;
-    expect(vibes).toHaveLength(1);
-    expect(vibes[0]).toMatchObject({
-      vibeId: "vibe-1",
-      strength: 0.7,
-      infoExtracted: 0.7,
-      enabled: true,
-    });
+describe("sidebar presets", () => {
+  const mockPreset = {
+    id: "preset-1",
+    name: "My Preset",
+    artistTags: [{ name: "artist_a", strength: 0 }, { name: "artist_b", strength: 0 }],
+    vibeRefs: [{ vibeId: "vibe-1", strength: 0.8 }, { vibeId: "vibe-2", strength: 0.5 }],
+    createdAt: "2026-01-01",
+    thumbnailPath: null,
+    isFavorite: false,
+    model: "nai-diffusion-4-5-full",
+  };
+  const mockVibes = [
+    { id: "vibe-1", name: "V1", filePath: "/a", model: "m", createdAt: "2026-01-01", thumbnailPath: null, isFavorite: false },
+    { id: "vibe-2", name: "V2", filePath: "/b", model: "m", createdAt: "2026-01-01", thumbnailPath: null, isFavorite: false },
+  ];
+
+  it("addSidebarPreset adds preset with artist tags and vibes", () => {
+    useGenerationParamsStore.getState().addSidebarPreset(mockPreset, mockVibes);
+    const presets = useGenerationParamsStore.getState().sidebarPresets;
+    expect(presets).toHaveLength(1);
+    expect(presets[0].id).toBe("preset-1");
+    expect(presets[0].enabled).toBe(true);
+    expect(presets[0].artistTags).toHaveLength(2);
+    expect(presets[0].selectedVibes).toHaveLength(2);
   });
 
-  it("addVibe prevents duplicates", () => {
-    const { addVibe } = useGenerationParamsStore.getState();
-    addVibe("vibe-1");
-    useGenerationParamsStore.getState().addVibe("vibe-1");
-    expect(useGenerationParamsStore.getState().selectedVibes).toHaveLength(1);
+  it("addSidebarPreset prevents duplicates", () => {
+    useGenerationParamsStore.getState().addSidebarPreset(mockPreset, mockVibes);
+    useGenerationParamsStore.getState().addSidebarPreset(mockPreset, mockVibes);
+    expect(useGenerationParamsStore.getState().sidebarPresets).toHaveLength(1);
   });
 
-  it("addVibe respects MAX_VIBES limit", () => {
-    for (let i = 0; i < 12; i++) {
-      useGenerationParamsStore.getState().addVibe(`vibe-${i}`);
-    }
-    expect(useGenerationParamsStore.getState().selectedVibes).toHaveLength(10);
+  it("removeSidebarPreset removes by id", () => {
+    useGenerationParamsStore.getState().addSidebarPreset(mockPreset, mockVibes);
+    useGenerationParamsStore.getState().removeSidebarPreset("preset-1");
+    expect(useGenerationParamsStore.getState().sidebarPresets).toHaveLength(0);
   });
 
-  it("removeVibe removes by vibeId", () => {
-    const s = useGenerationParamsStore.getState();
-    s.addVibe("vibe-1");
-    useGenerationParamsStore.getState().addVibe("vibe-2");
-    useGenerationParamsStore.getState().removeVibe("vibe-1");
-    const vibes = useGenerationParamsStore.getState().selectedVibes;
-    expect(vibes).toHaveLength(1);
-    expect(vibes[0].vibeId).toBe("vibe-2");
+  it("toggleSidebarPreset toggles enabled", () => {
+    useGenerationParamsStore.getState().addSidebarPreset(mockPreset, mockVibes);
+    useGenerationParamsStore.getState().toggleSidebarPreset("preset-1");
+    expect(useGenerationParamsStore.getState().sidebarPresets[0].enabled).toBe(false);
+    useGenerationParamsStore.getState().toggleSidebarPreset("preset-1");
+    expect(useGenerationParamsStore.getState().sidebarPresets[0].enabled).toBe(true);
   });
 
-  it("toggleVibe toggles enabled", () => {
-    useGenerationParamsStore.getState().addVibe("vibe-1");
-    useGenerationParamsStore.getState().toggleVibe("vibe-1");
-    expect(useGenerationParamsStore.getState().selectedVibes[0].enabled).toBe(false);
-    useGenerationParamsStore.getState().toggleVibe("vibe-1");
-    expect(useGenerationParamsStore.getState().selectedVibes[0].enabled).toBe(true);
+  it("updatePresetArtistTags updates tags for specific preset", () => {
+    useGenerationParamsStore.getState().addSidebarPreset(mockPreset, mockVibes);
+    useGenerationParamsStore.getState().updatePresetArtistTags("preset-1", [{ name: "new_artist", strength: 1.5 }]);
+    const tags = useGenerationParamsStore.getState().sidebarPresets[0].artistTags;
+    expect(tags).toHaveLength(1);
+    expect(tags[0].name).toBe("new_artist");
   });
 
-  it("updateVibeStrength updates strength", () => {
-    useGenerationParamsStore.getState().addVibe("vibe-1");
-    useGenerationParamsStore.getState().updateVibeStrength("vibe-1", 0.5);
-    expect(useGenerationParamsStore.getState().selectedVibes[0].strength).toBe(0.5);
-  });
-
-  it("updateVibeInfoExtracted updates infoExtracted", () => {
-    useGenerationParamsStore.getState().addVibe("vibe-1");
-    useGenerationParamsStore.getState().updateVibeInfoExtracted("vibe-1", 0.3);
-    expect(useGenerationParamsStore.getState().selectedVibes[0].infoExtracted).toBe(0.3);
-  });
-});
-
-describe("style preset", () => {
-  it("applyStylePreset sets artistTags and selectedVibes", () => {
-    const preset = {
-      id: "preset-1",
-      name: "My Preset",
-      artistTags: ["artist_a", "artist_b"],
-      vibeIds: ["vibe-1", "vibe-2"],
-      createdAt: "2026-01-01",
-    };
-    const vibes = [
-      { id: "vibe-1", name: "V1", filePath: "/a", model: "m", createdAt: "2026-01-01" },
-      { id: "vibe-2", name: "V2", filePath: "/b", model: "m", createdAt: "2026-01-01" },
-      { id: "vibe-3", name: "V3", filePath: "/c", model: "m", createdAt: "2026-01-01" },
-    ];
-    useGenerationParamsStore.getState().applyStylePreset(preset, vibes);
-    const state = useGenerationParamsStore.getState();
-    expect(state.selectedStylePresetId).toBe("preset-1");
-    expect(state.artistTags).toEqual(["artist_a", "artist_b"]);
-    expect(state.selectedVibes).toHaveLength(2);
-    expect(state.selectedVibes.map((v) => v.vibeId)).toEqual(["vibe-1", "vibe-2"]);
-  });
-
-  it("clearStylePreset resets all preset state", () => {
-    useGenerationParamsStore.getState().addVibe("vibe-1");
-    useGenerationParamsStore.getState().setArtistTags(["x"]);
-    useGenerationParamsStore.getState().setStylePreset("preset-1");
-    useGenerationParamsStore.getState().clearStylePreset();
-    const state = useGenerationParamsStore.getState();
-    expect(state.selectedStylePresetId).toBeNull();
-    expect(state.artistTags).toEqual([]);
-    expect(state.selectedVibes).toEqual([]);
+  it("state persists across toggle", () => {
+    useGenerationParamsStore.getState().addSidebarPreset(mockPreset, mockVibes);
+    useGenerationParamsStore.getState().updatePresetArtistTags("preset-1", [{ name: "tweaked", strength: 2 }]);
+    // Toggle off and on
+    useGenerationParamsStore.getState().toggleSidebarPreset("preset-1");
+    useGenerationParamsStore.getState().toggleSidebarPreset("preset-1");
+    // Tweaked state should persist
+    const tags = useGenerationParamsStore.getState().sidebarPresets[0].artistTags;
+    expect(tags[0].name).toBe("tweaked");
+    expect(tags[0].strength).toBe(2);
   });
 });

@@ -5,6 +5,12 @@ use crate::models::dto::{
 };
 
 const MIGRATION_001: &str = include_str!("../migrations/001_init.sql");
+const MIGRATION_002: &str = include_str!("../migrations/002_vibe_ux.sql");
+const MIGRATION_003: &str = include_str!("../migrations/003_vibe_favorite.sql");
+const MIGRATION_004: &str = include_str!("../migrations/004_preset_thumbnail.sql");
+const MIGRATION_005: &str = include_str!("../migrations/005_preset_vibe_strength.sql");
+const MIGRATION_006: &str = include_str!("../migrations/006_preset_favorite.sql");
+const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
 
 pub fn setup_test_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
@@ -14,6 +20,12 @@ pub fn setup_test_db() -> Connection {
     )
     .unwrap();
     conn.execute_batch(MIGRATION_001).unwrap();
+    conn.execute_batch(MIGRATION_002).unwrap();
+    conn.execute_batch(MIGRATION_003).unwrap();
+    conn.execute_batch(MIGRATION_004).unwrap();
+    conn.execute_batch(MIGRATION_005).unwrap();
+    conn.execute_batch(MIGRATION_006).unwrap();
+    conn.execute_batch(MIGRATION_007).unwrap();
     conn
 }
 
@@ -81,21 +93,28 @@ pub fn create_test_vibe(conn: &Connection) -> VibeRow {
         file_path: format!("/tmp/vibes/{}.naiv4vibe", uuid::Uuid::new_v4()),
         model: "nai-diffusion-4-curated-preview".to_string(),
         created_at: "2026-01-01T00:00:00Z".to_string(),
+        thumbnail_path: None,
+        is_favorite: false,
     };
     crate::repositories::vibe::insert(conn, &row).unwrap();
     row
 }
 
 pub fn create_test_style_preset(conn: &Connection, vibe_ids: &[String]) -> StylePresetRow {
+    use crate::models::dto::PresetVibeRef;
     let row = StylePresetRow {
         id: uuid::Uuid::new_v4().to_string(),
         name: format!("Test Preset {}", &uuid::Uuid::new_v4().to_string()[..8]),
         artist_tags: serde_json::to_string(&["artist1", "artist2"]).unwrap(),
         created_at: "2026-01-01T00:00:00Z".to_string(),
+        thumbnail_path: None,
+        is_favorite: false,
+        model: "nai-diffusion-4-5-full".to_string(),
     };
     crate::repositories::style_preset::insert(conn, &row).unwrap();
     if !vibe_ids.is_empty() {
-        crate::repositories::style_preset::replace_vibe_ids(conn, &row.id, vibe_ids).unwrap();
+        let refs: Vec<PresetVibeRef> = vibe_ids.iter().map(|id| PresetVibeRef { vibe_id: id.clone(), strength: 0.7 }).collect();
+        crate::repositories::style_preset::replace_vibe_refs(conn, &row.id, &refs).unwrap();
     }
     row
 }
