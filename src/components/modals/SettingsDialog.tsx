@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import {
@@ -34,6 +34,16 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditingKey, setIsEditingKey] = useState(false);
+  const hasApiKey = !!settings.api_key;
+
+  // Reset editing state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setIsEditingKey(false);
+      setApiKey("");
+    }
+  }, [open]);
 
   const handleSaveApiKey = async () => {
     if (!apiKey.trim()) return;
@@ -43,10 +53,20 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
       await refreshAnlas();
       toast.success(t("settings.apiKeySaved"));
       setApiKey("");
+      setIsEditingKey(false);
     } catch (e) {
       toastError(String(e));
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteApiKey = async () => {
+    try {
+      await setSetting("api_key", "");
+      toast.success(t("settings.apiKeyDeleted"));
+    } catch (e) {
+      toastError(String(e));
     }
   };
 
@@ -66,26 +86,46 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
           {/* API Key */}
           <div className="space-y-2">
             <Label>{t("settings.apiKey")}</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  type={showKey ? "text" : "password"}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={settings.api_key ? "********" : "pst-..."}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+            {hasApiKey && !isEditingKey ? (
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                <span className="flex-1 text-sm text-green-500">{t("settings.apiKeyStored")}</span>
+                <Button variant="outline" size="sm" onClick={() => setIsEditingKey(true)}>
+                  <Pencil className="mr-1 h-3.5 w-3.5" />
+                  {t("common.edit")}
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDeleteApiKey}>
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                  {t("common.delete")}
+                </Button>
               </div>
-              <Button onClick={handleSaveApiKey} disabled={isSaving || !apiKey.trim()}>
-                {t("common.save")}
-              </Button>
-            </div>
+            ) : (
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showKey ? "text" : "password"}
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder="pst-..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <Button onClick={handleSaveApiKey} disabled={isSaving || !apiKey.trim()}>
+                  {t("common.save")}
+                </Button>
+                {isEditingKey && (
+                  <Button variant="ghost" onClick={() => { setIsEditingKey(false); setApiKey(""); }}>
+                    {t("common.cancel")}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Default Parameters */}
@@ -150,6 +190,24 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
                 />
               </div>
             </div>
+          </div>
+
+          {/* Cost Confirmation */}
+          <div className="space-y-1">
+            <Label className="text-xs">{t("settings.costConfirmMode")}</Label>
+            <Select
+              value={settings.cost_confirm_mode ?? "confirm"}
+              onValueChange={(v) => setSetting("cost_confirm_mode", v)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="confirm">{t("settings.costConfirmDialog")}</SelectItem>
+                <SelectItem value="color">{t("settings.costConfirmColor")}</SelectItem>
+                <SelectItem value="none">{t("settings.costConfirmNone")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Theme & Language */}

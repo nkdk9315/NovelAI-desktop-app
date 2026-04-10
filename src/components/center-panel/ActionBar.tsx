@@ -1,11 +1,26 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Play, Save, SaveAll, Trash2 } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useHistoryStore } from "@/stores/history-store";
 import { useSettingsStore } from "@/stores/settings-store";
+import { MAX_TOTAL_VIBES } from "@/lib/constants";
+import { calculateCost } from "@/lib/cost";
+import { normalizeStrengths } from "@/lib/normalize-strength";
 import type { GenerateImageRequest } from "@/types";
 
 export default function ActionBar() {
@@ -19,25 +34,77 @@ export default function ActionBar() {
   const deleteImage = useHistoryStore((s) => s.deleteImage);
   const loadImages = useHistoryStore((s) => s.loadImages);
   const refreshAnlas = useSettingsStore((s) => s.refreshAnlas);
+  const anlas = useSettingsStore((s) => s.anlas);
+  const settings = useSettingsStore((s) => s.settings);
   const params = useGenerationParamsStore();
 
-  const handleGenerate = async () => {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const costConfirmMode = settings.cost_confirm_mode ?? "confirm";
+
+  // Compute actual vibe count for cost estimation (deduplicated by vibeId)
+  const activePresets = params.sidebarPresets.filter((p) => p.enabled);
+  const uniqueVibeIds = new Set([
+    ...activePresets.flatMap((p) => p.selectedVibes.filter((v) => v.enabled).map((v) => v.vibeId)),
+    ...params.selectedVibes.filter((v) => v.enabled).map((v) => v.vibeId),
+  ]);
+  const totalVibeCount = uniqueVibeIds.size;
+  const hasCharacterReference = params.characters.length > 0;
+
+  const cost = calculateCost({
+    width: params.width,
+    height: params.height,
+    steps: params.steps,
+    vibeCount: totalVibeCount,
+    hasCharacterReference,
+    tier: anlas?.tier ?? 0,
+  });
+
+  const executeGenerate = async () => {
     if (!projectId || isGenerating) return;
 
-    // Prepend artist tags to prompt
-    const artistPrefix = params.artistTags.length > 0
-      ? params.artistTags.join(", ") + ", "
+    // Collect artist tags and vibes from enabled presets + independent vibes
+    // Merge by vibeId: presets first-wins, then independent vibes fill remaining
+    const allArtistTags = activePresets.flatMap((p) => p.artistTags);
+    const presetVibes = activePresets.flatMap((p) => p.selectedVibes.filter((v) => v.enabled));
+    const independentVibes = params.selectedVibes.filter((v) => v.enabled);
+    const seen = new Set<string>();
+    const allVibes: typeof presetVibes = [];
+    for (const v of [...presetVibes, ...independentVibes]) {
+      if (!seen.has(v.vibeId)) {
+        seen.add(v.vibeId);
+        allVibes.push(v);
+      }
+    }
+
+    if (allVibes.length > MAX_TOTAL_VIBES) {
+      toast.error(t("generation.tooManyVibes", { max: MAX_TOTAL_VIBES, count: allVibes.length }));
+      return;
+    }
+
+    // Normalize artist tag strengths if enabled
+    let finalArtistTags = allArtistTags;
+    if (params.normalizeArtistStrength && allArtistTags.length > 0) {
+      const normalized = normalizeStrengths(allArtistTags.map((t) => t.strength));
+      finalArtistTags = allArtistTags.map((t, i) => ({ ...t, strength: normalized[i] }));
+    }
+
+    const artistPrefix = finalArtistTags.length > 0
+      ? finalArtistTags.map((tag) => {
+          const base = `artist:${tag.name}`;
+          return tag.strength === 0 ? base : `{${tag.strength}::${base}::}`;
+        }).join(", ") + ", "
       : "";
     const fullPrompt = artistPrefix + params.prompt;
 
-    // Collect enabled vibes
-    const enabledVibes = params.selectedVibes
-      .filter((v) => v.enabled)
-      .map((v) => ({
-        vibeId: v.vibeId,
-        strength: v.strength,
-        infoExtracted: v.infoExtracted,
-      }));
+    let enabledVibes = allVibes.map((v) => ({
+      vibeId: v.vibeId,
+      strength: v.strength,
+    }));
+    if (params.normalizeVibeStrength && enabledVibes.length > 0) {
+      const normalized = normalizeStrengths(enabledVibes.map((v) => v.strength));
+      enabledVibes = enabledVibes.map((v, i) => ({ ...v, strength: normalized[i] }));
+    }
 
     const req: GenerateImageRequest = {
       projectId,
@@ -67,6 +134,14 @@ export default function ActionBar() {
     await Promise.all([loadImages(projectId), refreshAnlas()]);
   };
 
+  const handleGenerateClick = () => {
+    if (!cost.isOpusFree && costConfirmMode === "confirm") {
+      setConfirmOpen(true);
+    } else {
+      executeGenerate();
+    }
+  };
+
   const handleSave = async () => {
     if (!lastResult) return;
     await saveImage(lastResult.id);
@@ -82,15 +157,26 @@ export default function ActionBar() {
     await deleteImage(lastResult.id);
   };
 
+  const costLabel = cost.isOpusFree
+    ? t("generation.free")
+    : `${cost.totalCost} ${t("generation.anlas")}`;
+
+  // Determine button variant
+  let buttonVariant: "default" | "destructive" = "default";
+  if (!cost.isOpusFree && costConfirmMode === "color") {
+    buttonVariant = "destructive";
+  }
+
   return (
     <div className="flex items-center justify-center gap-2 border-t border-border p-3">
       <Button
-        onClick={handleGenerate}
+        onClick={handleGenerateClick}
         disabled={isGenerating || !params.prompt.trim()}
         size="sm"
+        variant={buttonVariant}
       >
         <Play className="mr-1 h-4 w-4" />
-        {t("generation.generate")}
+        {t("generation.generate")} ({costLabel})
       </Button>
       <Button
         variant="outline"
@@ -119,6 +205,23 @@ export default function ActionBar() {
         <Trash2 className="mr-1 h-4 w-4" />
         {t("common.delete")}
       </Button>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("generation.confirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("generation.confirmDescription", { cost: cost.totalCost })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => executeGenerate()}>
+              {t("generation.confirmGenerate")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

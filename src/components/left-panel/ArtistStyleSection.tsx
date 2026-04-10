@@ -1,36 +1,47 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Settings2, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Dices, ImageIcon, Settings, Settings2, SlidersHorizontal, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
-import { useAutocomplete } from "@/hooks/use-autocomplete";
-import type { StylePresetDto, VibeDto } from "@/types";
+import { useProjectStore } from "@/stores/project-store";
+import type { RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
+import { DEFAULT_RANDOM_PRESET_SETTINGS } from "@/lib/constants";
+import { generateRandomPreset } from "@/lib/random-preset";
 import * as ipc from "@/lib/ipc";
 import StylePresetModal from "@/components/modals/StylePresetModal";
+import RandomPresetSettingsDialog from "@/components/modals/RandomPresetSettingsDialog";
+import PresetTweakPanel from "./PresetTweakPanel";
+
+const GLOBAL_SETTINGS_KEY = "random_preset_settings";
 
 export default function ArtistStyleSection() {
   const { t } = useTranslation();
-  const artistTags = useGenerationParamsStore((s) => s.artistTags);
-  const setArtistTags = useGenerationParamsStore((s) => s.setArtistTags);
-  const selectedStylePresetId = useGenerationParamsStore((s) => s.selectedStylePresetId);
-  const applyStylePreset = useGenerationParamsStore((s) => s.applyStylePreset);
-  const clearStylePreset = useGenerationParamsStore((s) => s.clearStylePreset);
+  const currentProject = useProjectStore((s) => s.currentProject);
+  const model = useGenerationParamsStore((s) => s.model);
+  const sidebarPresets = useGenerationParamsStore((s) => s.sidebarPresets);
+  const toggleSidebarPreset = useGenerationParamsStore((s) => s.toggleSidebarPreset);
+  const removeSidebarPreset = useGenerationParamsStore((s) => s.removeSidebarPreset);
+  const saveSidebarPresets = useGenerationParamsStore((s) => s.saveSidebarPresets);
+  const loadSidebarPresets = useGenerationParamsStore((s) => s.loadSidebarPresets);
+  const addRandomPreset = useGenerationParamsStore((s) => s.addRandomPreset);
+  const rerollRandomPreset = useGenerationParamsStore((s) => s.rerollRandomPreset);
+  const updateRandomPresetSettings = useGenerationParamsStore((s) => s.updateRandomPresetSettings);
 
   const [presets, setPresets] = useState<StylePresetDto[]>([]);
   const [vibes, setVibes] = useState<VibeDto[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [tagInput, setTagInput] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const { results: suggestions, search } = useAutocomplete();
+  const [tweakPresetId, setTweakPresetId] = useState<string | null>(null);
+  const [globalSettings, setGlobalSettings] = useState<RandomPresetSettings>(DEFAULT_RANDOM_PRESET_SETTINGS);
+  const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
+  const [presetSettingsId, setPresetSettingsId] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -42,118 +53,227 @@ export default function ArtistStyleSection() {
     }
   };
 
+  // Load global random preset settings
+  const loadGlobalSettings = async () => {
+    try {
+      const settings = await ipc.getSettings();
+      const raw = settings[GLOBAL_SETTINGS_KEY];
+      if (raw) {
+        setGlobalSettings({ ...DEFAULT_RANDOM_PRESET_SETTINGS, ...JSON.parse(raw) });
+      }
+    } catch {
+      // use defaults
+    }
+  };
+
+  const saveGlobalSettings = (s: RandomPresetSettings) => {
+    setGlobalSettings(s);
+    ipc.setSetting(GLOBAL_SETTINGS_KEY, JSON.stringify(s)).catch(() => {});
+  };
+
   useEffect(() => {
     loadData();
+    loadGlobalSettings();
   }, []);
 
-  const handleTagInputChange = (value: string) => {
-    setTagInput(value);
-    search(value);
-    setShowSuggestions(value.trim().length > 0);
+  // Load saved sidebar presets when project opens
+  useEffect(() => {
+    if (currentProject) {
+      loadSidebarPresets(currentProject.id);
+    }
+  }, [currentProject, loadSidebarPresets]);
+
+  // Auto-save when sidebarPresets change
+  useEffect(() => {
+    if (currentProject) {
+      saveSidebarPresets(currentProject.id);
+    }
+  }, [sidebarPresets, currentProject, saveSidebarPresets]);
+
+  const handleRemovePreset = (presetId: string) => {
+    removeSidebarPreset(presetId);
   };
 
-  const handleAddTag = (tag: string) => {
-    const trimmed = tag.trim();
-    if (trimmed && !artistTags.includes(trimmed)) {
-      setArtistTags([...artistTags, trimmed]);
+  const handleGenerateRandom = async (settingsOverride?: RandomPresetSettings) => {
+    try {
+      const allVibes = vibes.length > 0 ? vibes : await ipc.listVibes();
+      const settings = settingsOverride ?? globalSettings;
+      const preset = await generateRandomPreset(settings, allVibes, model);
+      addRandomPreset(preset);
+    } catch (e) {
+      if (String(e).includes("no_compatible_vibes")) {
+        toast.error(t("style.noVibesAvailable"));
+      }
     }
-    setTagInput("");
-    setShowSuggestions(false);
   };
 
-  const handleRemoveTag = (index: number) => {
-    setArtistTags(artistTags.filter((_, i) => i !== index));
+  const handleReroll = async (presetId: string) => {
+    const sidebar = sidebarPresets.find((p) => p.id === presetId);
+    if (!sidebar) return;
+    try {
+      const allVibes = vibes.length > 0 ? vibes : await ipc.listVibes();
+      const settings = sidebar.randomSettings ?? globalSettings;
+      const newPreset = await generateRandomPreset(settings, allVibes, model);
+      rerollRandomPreset(presetId, {
+        artistTags: newPreset.artistTags,
+        selectedVibes: newPreset.selectedVibes,
+      });
+    } catch (e) {
+      if (String(e).includes("no_compatible_vibes")) {
+        toast.error(t("style.noVibesAvailable"));
+      }
+    }
   };
 
-  const handlePresetChange = (presetId: string) => {
-    if (presetId === "__none__") {
-      clearStylePreset();
-      return;
-    }
-    const preset = presets.find((p) => p.id === presetId);
-    if (preset) {
-      applyStylePreset(preset, vibes);
-    }
-  };
+  // Resolve preset details for sidebar display
+  const resolvedPresets = sidebarPresets
+    .map((sp) => ({
+      sidebar: sp,
+      preset: sp.isRandom ? null : presets.find((p) => p.id === sp.id),
+    }))
+    .filter((r) => r.preset || r.sidebar.isRandom);
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground">{t("style.title")}</p>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setModalOpen(true)}>
-          <Settings2 className="h-3.5 w-3.5" />
-        </Button>
+        <div className="flex items-center gap-0.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <Dices className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleGenerateRandom()}>
+                <Dices className="mr-2 h-3.5 w-3.5" />
+                {t("style.randomGenerate")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setGlobalSettingsOpen(true)}>
+                <Settings className="mr-2 h-3.5 w-3.5" />
+                {t("style.randomSettings")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setModalOpen(true)}>
+            <Settings2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
 
-      {/* Artist tag input */}
-      <div className="relative">
-        <Input
-          value={tagInput}
-          onChange={(e) => handleTagInputChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleAddTag(tagInput);
-            }
-          }}
-          onBlur={() => setShowSuggestions(false)}
-          placeholder={t("style.artistPlaceholder")}
-          className="h-7 text-xs"
-        />
-        {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md">
-            {suggestions
-              .filter((s) => s.category === 1)
-              .slice(0, 8)
-              .map((tag) => (
-                <button
-                  key={tag.name}
-                  type="button"
-                  className="w-full px-2 py-1 text-left text-xs hover:bg-accent"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => handleAddTag(tag.name)}
-                >
-                  {tag.name}
-                </button>
-              ))}
-          </div>
-        )}
-      </div>
+      {/* Sidebar presets with inline tweak panels */}
+      {resolvedPresets.length > 0 && (
+        <div className="space-y-1">
+          {resolvedPresets.map(({ sidebar, preset }) => {
+            const displayName = sidebar.isRandom ? (sidebar.name ?? t("style.randomPreset")) : preset!.name;
+            const thumbnailPath = sidebar.isRandom ? null : preset!.thumbnailPath;
 
-      {/* Artist tag badges */}
-      {artistTags.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {artistTags.map((tag, i) => (
-            <Badge key={tag} variant="secondary" className="text-[10px] gap-0.5 pr-1">
-              {tag}
-              <button type="button" onClick={() => handleRemoveTag(i)} className="ml-0.5">
-                <X className="h-2.5 w-2.5" />
-              </button>
-            </Badge>
-          ))}
+            return (
+              <div key={sidebar.id} className="rounded-md border border-border p-2 space-y-1">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={sidebar.enabled}
+                    onCheckedChange={() => toggleSidebarPreset(sidebar.id)}
+                    aria-label={displayName}
+                  />
+                  {thumbnailPath ? (
+                    <img
+                      src={`asset://localhost/${thumbnailPath}`}
+                      alt=""
+                      className="h-8 w-8 rounded object-contain shrink-0 bg-muted"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                      {sidebar.isRandom ? (
+                        <Dices className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  )}
+                  <span className="text-xs truncate flex-1">{displayName}</span>
+                  <Button
+                    variant={tweakPresetId === sidebar.id ? "default" : "ghost"}
+                    size="sm"
+                    className="h-5 w-5 p-0 shrink-0"
+                    onClick={() => setTweakPresetId((id) => (id === sidebar.id ? null : sidebar.id))}
+                    title={t("style.tweak")}
+                  >
+                    <SlidersHorizontal className="h-3 w-3" />
+                  </Button>
+                  {sidebar.isRandom && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 shrink-0"
+                        onClick={() => handleReroll(sidebar.id)}
+                        title={t("style.randomize")}
+                      >
+                        <Dices className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 shrink-0"
+                        onClick={() => setPresetSettingsId(sidebar.id)}
+                        title={t("style.randomSettings")}
+                      >
+                        <Settings className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 shrink-0"
+                    onClick={() => handleRemovePreset(sidebar.id)}
+                  >
+                    <X className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </div>
+                {tweakPresetId === sidebar.id && (
+                  <PresetTweakPanel
+                    presetId={sidebar.id}
+                    preset={sidebar.isRandom ? null : preset!}
+                    vibes={vibes}
+                    onPresetsChanged={loadData}
+                    isRandom={sidebar.isRandom}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
-
-      {/* Style preset selector */}
-      <Select value={selectedStylePresetId ?? "__none__"} onValueChange={handlePresetChange}>
-        <SelectTrigger className="h-7 text-xs">
-          <SelectValue placeholder={t("style.selectPreset")} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__none__">{t("style.noPreset")}</SelectItem>
-          {presets.map((preset) => (
-            <SelectItem key={preset.id} value={preset.id}>
-              {preset.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
 
       <StylePresetModal
         open={modalOpen}
         onOpenChange={setModalOpen}
         onPresetsChanged={loadData}
       />
+
+      {/* Global random preset settings dialog */}
+      <RandomPresetSettingsDialog
+        open={globalSettingsOpen}
+        onOpenChange={setGlobalSettingsOpen}
+        settings={globalSettings}
+        onSettingsChange={saveGlobalSettings}
+      />
+
+      {/* Per-preset random settings dialog */}
+      {presetSettingsId && (() => {
+        const sp = sidebarPresets.find((p) => p.id === presetSettingsId);
+        if (!sp) return null;
+        return (
+          <RandomPresetSettingsDialog
+            open={true}
+            onOpenChange={(open) => { if (!open) setPresetSettingsId(null); }}
+            settings={sp.randomSettings ?? globalSettings}
+            onSettingsChange={(s) => updateRandomPresetSettings(presetSettingsId, s)}
+          />
+        );
+      })()}
     </div>
   );
 }

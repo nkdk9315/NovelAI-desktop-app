@@ -56,6 +56,8 @@ pub struct VibeRow {
     pub file_path: String,
     pub model: String,
     pub created_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_favorite: bool,
 }
 
 #[derive(Debug)]
@@ -64,6 +66,22 @@ pub struct StylePresetRow {
     pub name: String,
     pub artist_tags: String, // JSON array
     pub created_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_favorite: bool,
+    pub model: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArtistTag {
+    pub name: String,
+    pub strength: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetVibeRef {
+    pub vibe_id: String,
+    pub strength: f64,
 }
 
 
@@ -135,6 +153,8 @@ pub struct VibeDto {
     pub file_path: String,
     pub model: String,
     pub created_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_favorite: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -142,9 +162,12 @@ pub struct VibeDto {
 pub struct StylePresetDto {
     pub id: String,
     pub name: String,
-    pub artist_tags: Vec<String>,
-    pub vibe_ids: Vec<String>,
+    pub artist_tags: Vec<ArtistTag>,
+    pub vibe_refs: Vec<PresetVibeRef>,
     pub created_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_favorite: bool,
+    pub model: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -222,7 +245,6 @@ pub struct CharacterRequest {
 pub struct VibeReference {
     pub vibe_id: String,
     pub strength: f64,
-    pub info_extracted: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -297,23 +319,51 @@ pub struct CreateGenreRequest {
 pub struct AddVibeRequest {
     pub file_path: String,
     pub name: String,
+    pub thumbnail_path: Option<String>,
 }
 
-#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EncodeVibeRequest {
     pub image_path: String,
     pub model: String,
     pub name: String,
+    pub information_extracted: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateVibeNameRequest {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateVibeThumbnailRequest {
+    pub id: String,
+    pub thumbnail_path: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectVibeDto {
+    pub vibe_id: String,
+    pub vibe_name: String,
+    pub thumbnail_path: Option<String>,
+    pub file_path: String,
+    pub model: String,
+    pub is_visible: bool,
+    pub added_at: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateStylePresetRequest {
     pub name: String,
-    pub artist_tags: Vec<String>,
-    pub vibe_ids: Vec<String>,
+    pub artist_tags: Vec<ArtistTag>,
+    pub vibe_refs: Vec<PresetVibeRef>,
+    pub model: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -321,8 +371,15 @@ pub struct CreateStylePresetRequest {
 pub struct UpdateStylePresetRequest {
     pub id: String,
     pub name: Option<String>,
-    pub artist_tags: Option<Vec<String>>,
-    pub vibe_ids: Option<Vec<String>>,
+    pub artist_tags: Option<Vec<ArtistTag>>,
+    pub vibe_refs: Option<Vec<PresetVibeRef>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePresetThumbnailRequest {
+    pub id: String,
+    pub thumbnail_path: String,
 }
 
 // ---- Row → DTO 変換 ----
@@ -404,18 +461,35 @@ impl From<VibeRow> for VibeDto {
             file_path: row.file_path,
             model: row.model,
             created_at: row.created_at,
+            thumbnail_path: row.thumbnail_path,
+            is_favorite: row.is_favorite,
         }
     }
 }
 
 impl StylePresetRow {
-    pub fn into_dto(self, vibe_ids: Vec<String>) -> StylePresetDto {
+    pub fn into_dto(self, vibe_refs: Vec<PresetVibeRef>) -> StylePresetDto {
+        // Backward-compatible parsing: support both ["tag"] and [{"name":"tag","strength":0}]
+        let artist_tags: Vec<ArtistTag> =
+            serde_json::from_str::<Vec<ArtistTag>>(&self.artist_tags).unwrap_or_else(|_| {
+                serde_json::from_str::<Vec<String>>(&self.artist_tags)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|name| ArtistTag {
+                        name,
+                        strength: 0.0,
+                    })
+                    .collect()
+            });
         StylePresetDto {
             id: self.id,
             name: self.name,
-            artist_tags: serde_json::from_str(&self.artist_tags).unwrap_or_default(),
-            vibe_ids,
+            artist_tags,
+            vibe_refs,
             created_at: self.created_at,
+            thumbnail_path: self.thumbnail_path,
+            is_favorite: self.is_favorite,
+            model: self.model,
         }
     }
 }

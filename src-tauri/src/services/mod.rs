@@ -5,5 +5,6 @@ pub mod generation;
 pub mod prompt_group;
 pub mod genre;
 pub mod vibe;
+pub mod project_vibe;
 pub mod style_preset;
 pub mod system_prompt;

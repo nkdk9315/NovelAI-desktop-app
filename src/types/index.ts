@@ -54,14 +54,29 @@ export interface VibeDto {
   filePath: string;
   model: string;
   createdAt: string;
+  thumbnailPath: string | null;
+  isFavorite: boolean;
+}
+
+export interface ArtistTag {
+  name: string;
+  strength: number;
+}
+
+export interface PresetVibeRef {
+  vibeId: string;
+  strength: number;
 }
 
 export interface StylePresetDto {
   id: string;
   name: string;
-  artistTags: string[];
-  vibeIds: string[];
+  artistTags: ArtistTag[];
+  vibeRefs: PresetVibeRef[];
   createdAt: string;
+  thumbnailPath: string | null;
+  isFavorite: boolean;
+  model: string;
 }
 
 export interface AnlasBalanceDto {
@@ -123,7 +138,6 @@ export interface CharacterRequest {
 export interface VibeReference {
   vibeId: string;
   strength: number;
-  infoExtracted: number;
 }
 
 export type GenerateActionRequest =
@@ -171,25 +185,68 @@ export interface CreateGenreRequest {
 export interface AddVibeRequest {
   filePath: string;
   name: string;
+  thumbnailPath?: string;
 }
 
 export interface EncodeVibeRequest {
   imagePath: string;
   model: string;
   name: string;
+  informationExtracted: number;
+}
+
+export interface UpdateVibeNameRequest {
+  id: string;
+  name: string;
+}
+
+export interface UpdateVibeThumbnailRequest {
+  id: string;
+  thumbnailPath: string;
+}
+
+export interface ProjectVibeDto {
+  vibeId: string;
+  vibeName: string;
+  thumbnailPath: string | null;
+  filePath: string;
+  model: string;
+  isVisible: boolean;
+  addedAt: string;
 }
 
 export interface CreateStylePresetRequest {
   name: string;
-  artistTags: string[];
-  vibeIds: string[];
+  artistTags: ArtistTag[];
+  vibeRefs: PresetVibeRef[];
+  model: string;
 }
 
 export interface UpdateStylePresetRequest {
   id: string;
   name?: string;
-  artistTags?: string[];
-  vibeIds?: string[];
+  artistTags?: ArtistTag[];
+  vibeRefs?: PresetVibeRef[];
+}
+
+export interface UpdatePresetThumbnailRequest {
+  id: string;
+  thumbnailPath: string;
+}
+
+// ---- Random Preset Settings ----
+
+export interface RandomPresetSettings {
+  vibeCount: number | "random";
+  artistTagCount: number | "random";
+  artistTagCountMin: number;
+  artistTagCountMax: number;
+  artistTagStrength: number | "random";
+  artistTagStrengthMin: number;
+  artistTagStrengthMax: number;
+  vibeStrengthMin: number;
+  vibeStrengthMax: number;
+  favoritesOnly: boolean;
 }
 
 // ---- Error ----

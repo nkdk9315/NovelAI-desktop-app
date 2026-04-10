@@ -2594,6 +2594,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "novelai-api",
+ "rand 0.8.5",
  "rusqlite",
  "secrecy",
  "serde",

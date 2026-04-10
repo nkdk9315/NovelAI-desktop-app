@@ -18,6 +18,7 @@ tracing = "0.1"
 novelai-api = { path = "../novelai_api_client/rust-api" }
 chrono = "0.4"
 base64 = "0.22"
+rand = "0.8"
 
 [dev-dependencies]
 tempfile = "3"

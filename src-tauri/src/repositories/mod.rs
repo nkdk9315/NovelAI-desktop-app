@@ -4,4 +4,5 @@ pub mod image;
 pub mod genre;
 pub mod prompt_group;
 pub mod vibe;
+pub mod project_vibe;
 pub mod style_preset;

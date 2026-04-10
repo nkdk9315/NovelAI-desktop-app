@@ -62,6 +62,8 @@ pub struct VibeRow {
     pub file_path: String,
     pub model: String,
     pub created_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_favorite: bool,
 }
 
 pub struct StylePresetRow {
@@ -69,6 +71,9 @@ pub struct StylePresetRow {
     pub name: String,
     pub artist_tags: String, // JSON array
     pub created_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_favorite: bool,
+    pub model: String,
 }
 
 ```
@@ -150,6 +155,8 @@ pub struct VibeDto {
     pub file_path: String,
     pub model: String,
     pub created_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_favorite: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -157,9 +164,37 @@ pub struct VibeDto {
 pub struct StylePresetDto {
     pub id: String,
     pub name: String,
-    pub artist_tags: Vec<String>,  // JSON parse済み
-    pub vibe_ids: Vec<String>,     // インライン
+    pub artist_tags: Vec<ArtistTag>,
+    pub vibe_refs: Vec<PresetVibeRef>,
     pub created_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_favorite: bool,
+    pub model: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArtistTag {
+    pub name: String,
+    pub strength: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetVibeRef {
+    pub vibe_id: String,
+    pub strength: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectVibeDto {
+    pub vibe_id: String,
+    pub vibe_name: String,
+    pub thumbnail_path: Option<String>,
+    pub file_path: String,
+    pub model: String,
+    pub is_visible: bool,
+    pub added_at: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -243,7 +278,6 @@ pub struct CharacterRequest {
 pub struct VibeReference {
     pub vibe_id: String,
     pub strength: f64,
-    pub info_extracted: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -322,6 +356,7 @@ pub struct CreateGenreRequest {
 pub struct AddVibeRequest {
     pub file_path: String,
     pub name: String,
+    pub thumbnail_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -330,14 +365,30 @@ pub struct EncodeVibeRequest {
     pub image_path: String,
     pub model: String,
     pub name: String,
+    pub information_extracted: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateVibeNameRequest {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateVibeThumbnailRequest {
+    pub id: String,
+    pub thumbnail_path: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateStylePresetRequest {
     pub name: String,
-    pub artist_tags: Vec<String>,
-    pub vibe_ids: Vec<String>,
+    pub artist_tags: Vec<ArtistTag>,
+    pub vibe_refs: Vec<PresetVibeRef>,
+    pub model: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -345,8 +396,15 @@ pub struct CreateStylePresetRequest {
 pub struct UpdateStylePresetRequest {
     pub id: String,
     pub name: Option<String>,
-    pub artist_tags: Option<Vec<String>>,
-    pub vibe_ids: Option<Vec<String>>,
+    pub artist_tags: Option<Vec<ArtistTag>>,
+    pub vibe_refs: Option<Vec<PresetVibeRef>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePresetThumbnailRequest {
+    pub id: String,
+    pub thumbnail_path: String,
 }
 ```
 
@@ -385,13 +443,14 @@ impl From<GeneratedImageRow> for GeneratedImageDto {
 }
 
 impl From<VibeRow> for VibeDto {
-    fn from(row: VibeRow) -> Self { /* 1:1マッピング */ }
+    fn from(row: VibeRow) -> Self { /* 1:1マッピング（thumbnail_path, is_favorite含む） */ }
 }
 
 impl StylePresetRow {
-    /// vibe_idsを外部から受け取ってDtoを構築
-    pub fn into_dto(self, vibe_ids: Vec<String>) -> StylePresetDto {
-        // artist_tags: serde_json::from_str(&self.artist_tags)
+    /// vibe_refsを外部から受け取ってDtoを構築
+    pub fn into_dto(self, vibe_refs: Vec<PresetVibeRef>) -> StylePresetDto {
+        // artist_tags: serde_json::from_str(&self.artist_tags) -> Vec<ArtistTag>
+        // thumbnail_path, is_favorite, model 含む
     }
 }
 ```
@@ -583,15 +642,49 @@ pub fn list_all(conn: &Connection) -> Result<Vec<VibeRow>, AppError>;
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<VibeRow, AppError>;
 
 /// 挿入
-/// SQL: INSERT INTO vibes (id, name, file_path, model, created_at) VALUES (...)
+/// SQL: INSERT INTO vibes (id, name, file_path, model, created_at, thumbnail_path, is_favorite) VALUES (...)
 pub fn insert(conn: &Connection, row: &VibeRow) -> Result<(), AppError>;
 
-/// 削除 (style_preset_vibes は CASCADE)
+/// 削除 (style_preset_vibes, project_vibes は CASCADE)
 /// SQL: DELETE FROM vibes WHERE id = ?1
 pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError>;
+
+/// 名前更新
+/// SQL: UPDATE vibes SET name = ?2 WHERE id = ?1
+pub fn update_name(conn: &Connection, id: &str, name: &str) -> Result<(), AppError>;
+
+/// サムネイルパス更新
+/// SQL: UPDATE vibes SET thumbnail_path = ?2 WHERE id = ?1
+pub fn update_thumbnail(conn: &Connection, id: &str, path: Option<&str>) -> Result<(), AppError>;
+
+/// お気に入りトグル
+/// SQL: UPDATE vibes SET is_favorite = NOT is_favorite WHERE id = ?1
+pub fn toggle_favorite(conn: &Connection, id: &str) -> Result<(), AppError>;
 ```
 
-### 2.7 style_preset_repo
+### 2.7 project_vibe_repo
+
+```rust
+// --- repositories/project_vibe.rs ---
+
+/// プロジェクトにVibe追加
+/// SQL: INSERT OR IGNORE INTO project_vibes (project_id, vibe_id) VALUES (...)
+pub fn add_to_project(conn: &Connection, project_id: &str, vibe_id: &str) -> Result<(), AppError>;
+
+/// プロジェクトからVibe削除
+/// SQL: DELETE FROM project_vibes WHERE project_id = ?1 AND vibe_id = ?2
+pub fn remove_from_project(conn: &Connection, project_id: &str, vibe_id: &str) -> Result<(), AppError>;
+
+/// 表示/非表示切替
+/// SQL: UPDATE project_vibes SET is_visible = ?1 WHERE project_id = ?2 AND vibe_id = ?3
+pub fn set_visibility(conn: &Connection, project_id: &str, vibe_id: &str, is_visible: bool) -> Result<(), AppError>;
+
+/// プロジェクトのVibe一覧（JOIN取得）
+/// SQL: SELECT v.*, pv.is_visible FROM project_vibes pv JOIN vibes v ON pv.vibe_id = v.id WHERE pv.project_id = ?1
+pub fn list_with_vibe_details(conn: &Connection, project_id: &str, visible_only: bool) -> Result<Vec<(VibeRow, bool)>, AppError>;
+```
+
+### 2.8 style_preset_repo
 
 ```rust
 // --- repositories/style_preset.rs ---
@@ -605,7 +698,7 @@ pub fn list_all(conn: &Connection) -> Result<Vec<StylePresetRow>, AppError>;
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<StylePresetRow, AppError>;
 
 /// 挿入
-/// SQL: INSERT INTO style_presets (id, name, artist_tags, created_at) VALUES (...)
+/// SQL: INSERT INTO style_presets (id, name, artist_tags, created_at, thumbnail_path, is_favorite, model) VALUES (...)
 pub fn insert(conn: &Connection, row: &StylePresetRow) -> Result<(), AppError>;
 
 /// 更新
@@ -616,20 +709,28 @@ pub fn update(conn: &Connection, row: &StylePresetRow) -> Result<(), AppError>;
 /// SQL: DELETE FROM style_presets WHERE id = ?1
 pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError>;
 
-/// プリセットのVibe ID一覧
-/// SQL: SELECT vibe_id FROM style_preset_vibes WHERE style_preset_id = ?1
-pub fn find_vibe_ids_by_preset(
-    conn: &Connection,
-    preset_id: &str,
-) -> Result<Vec<String>, AppError>;
+/// サムネイルパス更新
+/// SQL: UPDATE style_presets SET thumbnail_path = ?2 WHERE id = ?1
+pub fn update_thumbnail(conn: &Connection, id: &str, path: Option<&str>) -> Result<(), AppError>;
 
-/// Vibe IDを全置換 (DELETE + INSERT)
-/// SQL: DELETE FROM style_preset_vibes WHERE style_preset_id = ?1
-/// SQL: INSERT INTO style_preset_vibes (style_preset_id, vibe_id) VALUES (...)
-pub fn replace_vibe_ids(
+/// お気に入りトグル
+/// SQL: UPDATE style_presets SET is_favorite = NOT is_favorite WHERE id = ?1
+pub fn toggle_favorite(conn: &Connection, id: &str) -> Result<(), AppError>;
+
+/// プリセットのVibe参照一覧
+/// SQL: SELECT vibe_id, strength FROM style_preset_vibes WHERE style_preset_id = ?1
+pub fn find_vibe_refs_by_preset(
     conn: &Connection,
     preset_id: &str,
-    vibe_ids: &[String],
+) -> Result<Vec<PresetVibeRef>, AppError>;
+
+/// Vibe参照を全置換 (DELETE + INSERT)
+/// SQL: DELETE FROM style_preset_vibes WHERE style_preset_id = ?1
+/// SQL: INSERT INTO style_preset_vibes (style_preset_id, vibe_id, strength) VALUES (...)
+pub fn replace_vibe_refs(
+    conn: &Connection,
+    preset_id: &str,
+    vibe_refs: &[PresetVibeRef],
 ) -> Result<(), AppError>;
 ```
 
@@ -852,11 +953,12 @@ pub fn delete_genre(conn: &Connection, id: &str) -> Result<(), AppError>;
 /// → vibe_repo::list_all → Vec<VibeDto>
 pub fn list_vibes(conn: &Connection) -> Result<Vec<VibeDto>, AppError>;
 
-/// Vibeインポート
+/// Vibeインポート（サムネイル付き）
 /// 1. .naiv4vibe ファイルを $APPDATA/novelai-desktop/vibes/ にコピー
 /// 2. ファイル内容解析 → モデル情報取得 (novelai_api::utils::vibe)
 /// 3. UUID生成
-/// 4. vibe_repo::insert
+/// 4. サムネイル画像コピー（任意、拡張子ホワイトリスト検証済み）
+/// 5. vibe_repo::insert
 pub fn add_vibe(
     conn: &Connection,
     app_data_dir: &Path,
@@ -865,39 +967,75 @@ pub fn add_vibe(
 
 /// Vibe削除
 /// 1. vibe_repo::find_by_id → file_path 取得
-/// 2. vibe_repo::delete (CASCADE で style_preset_vibes も消える)
+/// 2. vibe_repo::delete (CASCADE で style_preset_vibes, project_vibes も消える)
 /// 3. fs::remove_file(file_path)
 pub fn delete_vibe(conn: &Connection, id: &str) -> Result<(), AppError>;
+
+/// Vibe名前更新
+pub fn update_vibe_name(conn: &Connection, id: &str, name: &str) -> Result<VibeDto, AppError>;
+
+/// Vibeサムネイル更新（拡張子ホワイトリスト検証済み）
+pub fn update_vibe_thumbnail(conn: &Connection, app_data_dir: &Path, id: &str, source_path: &str) -> Result<VibeDto, AppError>;
+
+/// Vibeサムネイルクリア
+pub fn clear_vibe_thumbnail(conn: &Connection, id: &str) -> Result<VibeDto, AppError>;
+
+/// Vibeお気に入りトグル
+pub fn toggle_vibe_favorite(conn: &Connection, id: &str) -> Result<VibeDto, AppError>;
+
+/// Vibeエクスポート
+pub fn export_vibe(conn: &Connection, id: &str, dest_path: &str) -> Result<(), AppError>;
 
 /// Vibeエンコード (画像 → .naiv4vibe)
 /// 1. api_client で encode_vibe API 呼び出し
 /// 2. .naiv4vibe ファイルを $APPDATA/novelai-desktop/vibes/ に保存
-/// 3. UUID生成
+/// 3. ソース画像をサムネイルとしてコピー
 /// 4. vibe_repo::insert
 pub async fn encode_vibe(
-    conn: &Connection,
+    db: &std::sync::Mutex<Connection>,
     api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     app_data_dir: &Path,
     req: EncodeVibeRequest,
 ) -> Result<VibeDto, AppError>;
 ```
 
-### 3.8 style_preset_service
+### 3.8 project_vibe_service
+
+```rust
+// --- services/project_vibe.rs ---
+
+/// プロジェクトにVibe追加（存在チェック付き）
+pub fn add_vibe_to_project(conn: &Connection, project_id: &str, vibe_id: &str) -> Result<(), AppError>;
+
+/// プロジェクトからVibe削除
+pub fn remove_vibe_from_project(conn: &Connection, project_id: &str, vibe_id: &str) -> Result<(), AppError>;
+
+/// Vibe表示/非表示切替
+pub fn set_vibe_visibility(conn: &Connection, project_id: &str, vibe_id: &str, is_visible: bool) -> Result<(), AppError>;
+
+/// プロジェクトのVibe一覧（visible only）→ VibeDto（JOINクエリ）
+pub fn list_project_vibes(conn: &Connection, project_id: &str) -> Result<Vec<VibeDto>, AppError>;
+
+/// プロジェクトのVibe一覧（全件）→ ProjectVibeDto（JOINクエリ）
+pub fn list_project_vibes_all(conn: &Connection, project_id: &str) -> Result<Vec<ProjectVibeDto>, AppError>;
+```
+
+### 3.9 style_preset_service
 
 ```rust
 // --- services/style_preset.rs ---
 
-/// 全プリセット一覧 (vibe_ids含む)
+/// 全プリセット一覧 (vibe_refs含む)
 /// 1. style_preset_repo::list_all
-/// 2. 各プリセットに対して find_vibe_ids_by_preset
-/// 3. row.into_dto(vibe_ids)
+/// 2. 各プリセットに対して find_vibe_refs_by_preset
+/// 3. row.into_dto(vibe_refs)
 pub fn list_style_presets(conn: &Connection) -> Result<Vec<StylePresetDto>, AppError>;
 
 /// プリセット作成
 /// 1. UUID生成
 /// 2. artist_tags → JSON文字列化
 /// 3. style_preset_repo::insert
-/// 4. style_preset_repo::replace_vibe_ids
+/// 4. style_preset_repo::replace_vibe_refs
 pub fn create_style_preset(
     conn: &Connection,
     req: CreateStylePresetRequest,
@@ -906,11 +1044,20 @@ pub fn create_style_preset(
 /// プリセット更新
 /// 1. style_preset_repo::find_by_id → 既存取得
 /// 2. name/artist_tags を更新 → style_preset_repo::update
-/// 3. vibe_ids が Some の場合: style_preset_repo::replace_vibe_ids
+/// 3. vibe_refs が Some の場合: style_preset_repo::replace_vibe_refs
 pub fn update_style_preset(
     conn: &Connection,
     req: UpdateStylePresetRequest,
 ) -> Result<(), AppError>;
+
+/// プリセットサムネイル更新（拡張子ホワイトリスト検証済み）
+pub fn update_preset_thumbnail(conn: &Connection, app_data_dir: &Path, id: &str, source_path: &str) -> Result<StylePresetDto, AppError>;
+
+/// プリセットサムネイルクリア
+pub fn clear_preset_thumbnail(conn: &Connection, id: &str) -> Result<StylePresetDto, AppError>;
+
+/// プリセットお気に入りトグル
+pub fn toggle_preset_favorite(conn: &Connection, id: &str) -> Result<StylePresetDto, AppError>;
 
 /// プリセット削除
 /// → style_preset_repo::delete (CASCADE で junction も消える)
@@ -1088,22 +1235,43 @@ pub fn delete_genre(state: State<'_, AppState>, id: String) -> Result<(), String
 pub fn list_vibes(state: State<'_, AppState>) -> Result<Vec<VibeDto>, String>;
 
 #[tauri::command]
-pub fn add_vibe(
-    state: State<'_, AppState>,
-    app_handle: tauri::AppHandle,
-    req: AddVibeRequest,
-) -> Result<VibeDto, String>;
-// → app_handle.path().app_data_dir() で保存先取得
+pub fn add_vibe(state: State<'_, AppState>, app_handle: tauri::AppHandle, req: AddVibeRequest) -> Result<VibeDto, String>;
 
 #[tauri::command]
 pub fn delete_vibe(state: State<'_, AppState>, id: String) -> Result<(), String>;
 
 #[tauri::command]
-pub async fn encode_vibe(
-    state: State<'_, AppState>,
-    app_handle: tauri::AppHandle,
-    req: EncodeVibeRequest,
-) -> Result<VibeDto, String>;
+pub fn update_vibe_name(state: State<'_, AppState>, req: UpdateVibeNameRequest) -> Result<VibeDto, String>;
+
+#[tauri::command]
+pub fn update_vibe_thumbnail(state: State<'_, AppState>, app_handle: tauri::AppHandle, req: UpdateVibeThumbnailRequest) -> Result<VibeDto, String>;
+
+#[tauri::command]
+pub fn clear_vibe_thumbnail(state: State<'_, AppState>, id: String) -> Result<VibeDto, String>;
+
+#[tauri::command]
+pub fn toggle_vibe_favorite(state: State<'_, AppState>, id: String) -> Result<VibeDto, String>;
+
+#[tauri::command]
+pub fn export_vibe(state: State<'_, AppState>, id: String, dest_path: String) -> Result<(), String>;
+
+#[tauri::command]
+pub async fn encode_vibe(state: State<'_, AppState>, app_handle: tauri::AppHandle, req: EncodeVibeRequest) -> Result<VibeDto, String>;
+
+#[tauri::command]
+pub fn add_vibe_to_project(state: State<'_, AppState>, project_id: String, vibe_id: String) -> Result<(), String>;
+
+#[tauri::command]
+pub fn remove_vibe_from_project(state: State<'_, AppState>, project_id: String, vibe_id: String) -> Result<(), String>;
+
+#[tauri::command]
+pub fn set_vibe_visibility(state: State<'_, AppState>, project_id: String, vibe_id: String, is_visible: bool) -> Result<(), String>;
+
+#[tauri::command]
+pub fn list_project_vibes(state: State<'_, AppState>, project_id: String) -> Result<Vec<VibeDto>, String>;
+
+#[tauri::command]
+pub fn list_project_vibes_all(state: State<'_, AppState>, project_id: String) -> Result<Vec<ProjectVibeDto>, String>;
 ```
 
 ### 4.7 commands/style_presets.rs
@@ -1113,19 +1281,22 @@ pub async fn encode_vibe(
 pub fn list_style_presets(state: State<'_, AppState>) -> Result<Vec<StylePresetDto>, String>;
 
 #[tauri::command]
-pub fn create_style_preset(
-    state: State<'_, AppState>,
-    req: CreateStylePresetRequest,
-) -> Result<StylePresetDto, String>;
+pub fn create_style_preset(state: State<'_, AppState>, req: CreateStylePresetRequest) -> Result<StylePresetDto, String>;
 
 #[tauri::command]
-pub fn update_style_preset(
-    state: State<'_, AppState>,
-    req: UpdateStylePresetRequest,
-) -> Result<(), String>;
+pub fn update_style_preset(state: State<'_, AppState>, req: UpdateStylePresetRequest) -> Result<(), String>;
 
 #[tauri::command]
 pub fn delete_style_preset(state: State<'_, AppState>, id: String) -> Result<(), String>;
+
+#[tauri::command]
+pub fn toggle_preset_favorite(state: State<'_, AppState>, id: String) -> Result<StylePresetDto, String>;
+
+#[tauri::command]
+pub fn update_preset_thumbnail(state: State<'_, AppState>, app_handle: tauri::AppHandle, req: UpdatePresetThumbnailRequest) -> Result<StylePresetDto, String>;
+
+#[tauri::command]
+pub fn clear_preset_thumbnail(state: State<'_, AppState>, id: String) -> Result<StylePresetDto, String>;
 ```
 
 ### 4.8 commands/system_prompts.rs
@@ -1601,6 +1772,28 @@ fn category_name(id: u8) -> &'static str {
 }
 ```
 
+### 6.5 Vibe マージ戦略（プリセット × 単品 重複時）
+
+フロントエンド（`ActionBar.tsx`）で生成リクエスト組み立て時に、同一 `vibeId` を1エントリに統合する。
+
+**優先順位**:
+1. **有効プリセットのVibes（先勝ち）** — `sidebarPresets` 配列順に走査。同一 vibeId が複数プリセットに含まれる場合、先に登場したプリセットの `strength` を採用
+2. **単品Vibes（補完）** — プリセットに含まれない vibeId のみ追加
+
+```
+PresetA (enabled): vibe-1 (0.5), vibe-2 (0.8)
+PresetB (enabled): vibe-1 (0.3), vibe-3 (0.6)
+単品:               vibe-2 (0.4), vibe-4 (0.9)
+
+→ 結果: vibe-1 (0.5), vibe-2 (0.8), vibe-3 (0.6), vibe-4 (0.9)
+  vibe-1: PresetA先勝ち（PresetBの0.3は無視）
+  vibe-2: PresetA先勝ち（単品の0.4は無視）
+  vibe-3: PresetBから（PresetAに未登場）
+  vibe-4: 単品から（プリセットに未登場）
+```
+
+コスト計算（`vibeCount`）もマージ後のユニーク数を使用。
+
 ---
 
 ## 変更履歴
@@ -1608,3 +1801,4 @@ fn category_name(id: u8) -> &'static str {
 | 日付 | 内容 |
 |------|------|
 | 2026-04-07 | 初版作成 |
+| 2026-04-10 | Vibe UX強化に伴うDTO/Repository/Service/Command全面更新、Vibeマージ戦略追加 |

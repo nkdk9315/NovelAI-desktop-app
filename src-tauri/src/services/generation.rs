@@ -169,16 +169,33 @@ pub async fn generate_image(
         builder = builder.characters(configs);
     }
     if let Some(vibes) = req.vibes {
-        // Resolve vibe file paths from DB
+        // Resolve vibe file paths and info_extracted from vibe files
         let conn = db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+        let expected_key = novelai_api::constants::model_key_from_str(&req.model);
         let configs: Vec<VibeConfig> = vibes
             .into_iter()
             .map(|v| {
                 let vibe_row = crate::repositories::vibe::find_by_id(&conn, &v.vibe_id)?;
+                // Validate model match
+                if let Some(key) = expected_key {
+                    if vibe_row.model != key {
+                        return Err(AppError::Validation(format!(
+                            "Vibe '{}' model ({}) does not match generation model ({})",
+                            vibe_row.name, vibe_row.model, key
+                        )));
+                    }
+                }
+                // Read info_extracted from the vibe file (baked at encode time)
+                let vibe_data =
+                    novelai_api::utils::vibe::load_vibe_file(&vibe_row.file_path)
+                        .map_err(|e| AppError::ApiClient(e.to_string()))?;
+                let (_, info_extracted) =
+                    novelai_api::utils::vibe::extract_encoding(&vibe_data, &req.model)
+                        .map_err(|e| AppError::ApiClient(e.to_string()))?;
                 Ok(VibeConfig {
                     item: VibeItem::FilePath(PathBuf::from(vibe_row.file_path)),
                     strength: v.strength,
-                    info_extracted: v.info_extracted,
+                    info_extracted,
                 })
             })
             .collect::<Result<Vec<_>, AppError>>()?;
