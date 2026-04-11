@@ -153,13 +153,13 @@ function GroupItem({
                   value={[tag.strength]}
                   min={-10}
                   max={10}
-                  step={1}
-                  onValueChange={([v]) => onSetStrength(tag.tagId, v)}
+                  step={0.1}
+                  onValueChange={([v]) => onSetStrength(tag.tagId, Math.round(v * 10) / 10)}
                   className="flex-1"
                   disabled={!tag.enabled}
                 />
-                <span className="w-6 text-right text-[10px] text-muted-foreground">
-                  {tag.strength}
+                <span className="w-8 text-right text-[10px] text-muted-foreground">
+                  {tag.strength.toFixed(1)}
                 </span>
               </div>
             </div>

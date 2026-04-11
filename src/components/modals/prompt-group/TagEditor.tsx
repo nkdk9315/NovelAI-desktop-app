@@ -118,13 +118,13 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
               <Slider
                 min={-10}
                 max={10}
-                step={1}
+                step={0.1}
                 value={[tag.defaultStrength ?? 0]}
-                onValueChange={([v]) => handleStrength(i, v)}
+                onValueChange={([v]) => handleStrength(i, Math.round(v * 10) / 10)}
                 className="flex-1"
               />
-              <span className="text-[10px] text-muted-foreground w-6 text-right">
-                {tag.defaultStrength ?? 0}
+              <span className="text-[10px] text-muted-foreground w-8 text-right">
+                {(tag.defaultStrength ?? 0).toFixed(1)}
               </span>
             </div>
           ))}

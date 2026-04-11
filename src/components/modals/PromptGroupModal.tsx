@@ -30,6 +30,7 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
 
   const [selectedGenreId, setSelectedGenreId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSystem, setShowSystem] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState<PromptGroupDto | null>(null);
 
@@ -104,8 +105,10 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
             groups={promptGroups}
             selectedGenreId={selectedGenreId}
             searchQuery={searchQuery}
+            showSystem={showSystem}
             onGenreChange={setSelectedGenreId}
             onSearchChange={setSearchQuery}
+            onShowSystemChange={setShowSystem}
             onAdd={() => setShowAddModal(true)}
             onEdit={setEditingGroup}
           />

@@ -42,10 +42,9 @@ describe("CharacterSection", () => {
     expect(screen.getByText("character.label")).toBeInTheDocument();
   });
 
-  it("shows position sliders", () => {
+  it("shows position editor", () => {
     render(<CharacterSection index={0} />);
-    const sliders = screen.getAllByRole("slider");
-    expect(sliders.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText(/character\.position/)).toBeInTheDocument();
   });
 
   it("removes character and sidebar target on delete", () => {

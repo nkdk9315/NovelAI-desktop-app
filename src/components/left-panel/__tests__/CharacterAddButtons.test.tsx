@@ -45,9 +45,10 @@ describe("CharacterAddButtons", () => {
       })),
     });
     render(<CharacterAddButtons />);
-    const buttons = screen.getAllByRole("button");
-    // All buttons that can add characters should be disabled
-    const addButtons = buttons.filter((b) => !b.textContent?.includes("promptGroup.newGenre"));
-    addButtons.forEach((btn) => expect(btn).toBeDisabled());
+    // Male, Female, Other buttons should be disabled (genre create button is not)
+    const maleBtn = screen.getAllByRole("button").find((b) => b.textContent?.includes("Male"));
+    const otherBtn = screen.getAllByRole("button").find((b) => b.textContent?.includes("character.other"));
+    expect(maleBtn).toBeDisabled();
+    expect(otherBtn).toBeDisabled();
   });
 });

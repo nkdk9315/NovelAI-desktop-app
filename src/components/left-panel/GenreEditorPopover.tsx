@@ -51,9 +51,8 @@ export default function GenreEditorPopover({
     <Popover open={open} onOpenChange={handleOpen}>
       <PopoverTrigger asChild>
         {trigger ?? (
-          <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs">
+          <Button variant="outline" size="icon" className="h-7 w-7" title={t("promptGroup.newGenre")}>
             <Plus className="h-3 w-3" />
-            {t("promptGroup.newGenre")}
           </Button>
         )}
       </PopoverTrigger>
