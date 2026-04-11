@@ -82,10 +82,10 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
 
         <Badge
           variant="outline"
-          className="cursor-pointer hover:bg-accent px-1.5"
+          className="cursor-pointer hover:bg-accent px-1.5 border-dashed border-primary/40 text-primary"
           onClick={openAdd}
         >
-          <Plus className="h-3 w-3" />
+          <Plus className="h-3.5 w-3.5" />
         </Badge>
       </div>
 
