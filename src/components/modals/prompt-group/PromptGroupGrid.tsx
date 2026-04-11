@@ -160,17 +160,18 @@ export default function PromptGroupGrid({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, existingGroupIds, sidebarTargets]);
 
+  const sysCheckRef = useRef<HTMLButtonElement>(null);
+
   const handleTreeKeyDown = (e: React.KeyboardEvent) => {
-    // Don't interfere with system search input
     if ((e.target as HTMLElement).tagName === "INPUT") return;
 
     const move = (delta: number) => {
       e.preventDefault();
       setFocusIdx((p) => {
-        // Skip sysSearch items
         let n = p + delta;
         while (n >= 0 && n < items.length && items[n].kind === "sysSearch") n += delta;
-        n = Math.max(0, Math.min(n, items.length - 1));
+        if (n < 0) { sysCheckRef.current?.focus(); return -1; }
+        n = Math.min(n, items.length - 1);
         itemRefs.current[n]?.scrollIntoView({ block: "nearest" });
         return n;
       });
@@ -194,7 +195,7 @@ export default function PromptGroupGrid({
   const enabledCountFor = (groupId: string) =>
     sidebarTargets?.groups.find((g) => g.groupId === groupId)?.tags.filter((t) => t.enabled).length ?? 0;
 
-  const focusStyle = "border-b-2 border-primary";
+  const underline = "underline decoration-primary/40 decoration-1 underline-offset-2";
 
   return (
     <div className="space-y-2">
@@ -206,7 +207,13 @@ export default function PromptGroupGrid({
         </Button>
       </div>
       <div className="flex items-center gap-2">
-        <Checkbox id="show-system" checked={showSystem} onCheckedChange={(v) => onShowSystemChange(v === true)} />
+        <Checkbox id="show-system" ref={sysCheckRef} checked={showSystem} onCheckedChange={(v) => onShowSystemChange(v === true)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+              e.preventDefault();
+              if (items.length > 0) { setFocusIdx(0); treeRef.current?.focus(); itemRefs.current[0]?.scrollIntoView({ block: "nearest" }); }
+            }
+          }} />
         <label htmlFor="show-system" className="text-[10px] text-muted-foreground cursor-pointer">System</label>
       </div>
 
@@ -220,10 +227,10 @@ export default function PromptGroupGrid({
               const open = expandedGenres.has(item.id);
               return (
                 <div key={`g-${item.id}`} ref={(el) => { itemRefs.current[idx] = el; }}
-                  className={`flex items-center gap-1 py-1 font-medium text-muted-foreground hover:text-foreground cursor-pointer ${focused ? focusStyle : ""}`}
+                  className="flex items-center gap-1 py-1 font-medium text-muted-foreground hover:text-foreground cursor-pointer"
                   onClick={() => { setExpandedGenres((s) => toggleSet(s, item.id)); setFocusIdx(idx); }}>
                   <ChevronRight className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`} />
-                  <span>{item.label}</span>
+                  <span className={focused ? underline : ""}>{item.label}</span>
                   <span className="text-[10px] text-muted-foreground/60">{item.count}</span>
                 </div>
               );
@@ -237,11 +244,11 @@ export default function PromptGroupGrid({
                 <ContextMenu key={`grp-${group.id}`}>
                   <ContextMenuTrigger>
                     <div ref={(el) => { itemRefs.current[idx] = el; }}
-                      className={`ml-3 flex items-center py-0.5 gap-0.5 ${focused ? focusStyle : ""}`}>
+                      className="ml-3 flex items-center py-0.5 gap-0.5">
                       <button type="button" className="flex items-center gap-1 flex-1 min-w-0 hover:text-foreground"
                         onClick={() => { handleExpandGroup(group); setFocusIdx(idx); }}>
                         <ChevronRight className={`h-2.5 w-2.5 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
-                        <span className={`truncate ${isAdded && ec > 0 ? "font-semibold text-primary" : ""}`}>{group.name}</span>
+                        <span className={`truncate ${isAdded && ec > 0 ? "font-semibold text-primary" : ""} ${focused ? underline : ""}`}>{group.name}</span>
                         <span className="text-[9px] text-muted-foreground/60 shrink-0">
                           {isSys && group.id in sysTotals ? sysTotals[group.id].toLocaleString() : group.tags.length}
                         </span>
@@ -281,7 +288,7 @@ export default function PromptGroupGrid({
                 <Badge key={`st-${item.groupId}-${item.tagName}`}
                   ref={(el) => { itemRefs.current[idx] = el; }}
                   variant={added ? "default" : "outline"}
-                  className={`ml-7 cursor-pointer text-[9px] px-1 py-0 select-none transition-colors inline-block mr-0.5 mb-0.5 ${focused ? focusStyle : ""}`}
+                  className={`ml-7 cursor-pointer text-[9px] px-1 py-0 select-none transition-colors inline-block mr-0.5 mb-0.5 ${focused ? underline : ""}`}
                   onClick={() => { if (gItem?.kind === "group") handleSysTagClick(gItem.group, item.tagName); setFocusIdx(idx); }}>
                   {item.tagName}
                 </Badge>
@@ -295,7 +302,7 @@ export default function PromptGroupGrid({
                   <ContextMenuTrigger>
                     <Badge ref={(el) => { itemRefs.current[idx] = el; }}
                       variant={enabled ? "default" : "outline"}
-                      className={`ml-7 cursor-pointer text-[9px] px-1 py-0 select-none transition-colors inline-block mr-0.5 mb-0.5 ${focused ? focusStyle : ""}`}
+                      className={`ml-7 cursor-pointer text-[9px] px-1 py-0 select-none transition-colors inline-block mr-0.5 mb-0.5 ${focused ? underline : ""}`}
                       onClick={() => { if (gItem?.kind === "group") handleEntryClick(gItem.group, item.tagId); setFocusIdx(idx); }}>
                       {item.label}
                     </Badge>
