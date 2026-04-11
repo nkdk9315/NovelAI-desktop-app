@@ -95,7 +95,7 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("promptGroup.title")}</DialogTitle>
           </DialogHeader>

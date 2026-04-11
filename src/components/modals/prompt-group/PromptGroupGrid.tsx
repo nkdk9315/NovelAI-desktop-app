@@ -67,9 +67,8 @@ export default function PromptGroupGrid({
           placeholder={t("common.search")}
           className="h-8 flex-1 min-w-24 text-xs"
         />
-        <Button size="sm" className="h-8 gap-1 text-xs shrink-0" onClick={onAdd}>
-          <Plus className="h-3 w-3" />
-          {t("promptGroup.newGroup")}
+        <Button size="icon" className="h-8 w-8 shrink-0" onClick={onAdd} title={t("promptGroup.newGroup")}>
+          <Plus className="h-4 w-4" />
         </Button>
       </div>
 
@@ -92,7 +91,7 @@ export default function PromptGroupGrid({
             {t("promptGroup.noGroups")}
           </p>
         ) : (
-          <div className="grid grid-cols-3 gap-2 pr-2">
+          <div className="grid grid-cols-2 gap-2 pr-3 sm:grid-cols-3">
             {filteredGroups.map((group) => (
               <button
                 key={group.id}
