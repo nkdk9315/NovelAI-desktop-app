@@ -120,7 +120,19 @@ export default function PromptGroupGrid({
     if ((e.target as HTMLElement).tagName === "INPUT") return;
     const mv = (d: number) => {
       e.preventDefault();
-      setFocusIdx((p) => { let n = p + d; while (n >= 0 && n < items.length && items[n].kind === "sysSearch") n += d; if (n < 0) { sysCheckRef.current?.focus(); return -1; } n = Math.min(n, items.length - 1); itemRefs.current[n]?.scrollIntoView({ block: "nearest" }); return n; });
+      setFocusIdx((p) => {
+        let n = p + d;
+        if (n < 0) { sysCheckRef.current?.focus(); return -1; }
+        n = Math.min(n, items.length - 1);
+        // If landing on sysSearch, focus its input
+        if (items[n]?.kind === "sysSearch") {
+          const el = itemRefs.current[n];
+          const input = el?.querySelector("input");
+          if (input) setTimeout(() => input.focus(), 0);
+        }
+        itemRefs.current[n]?.scrollIntoView({ block: "nearest" });
+        return n;
+      });
     };
     if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) mv(1);
     else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) mv(-1);
