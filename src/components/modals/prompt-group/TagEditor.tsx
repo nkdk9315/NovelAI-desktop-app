@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -21,7 +27,7 @@ interface TagEditorProps {
 export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
   const { t } = useTranslation();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState("");
   const [newContent, setNewContent] = useState("");
 
@@ -33,7 +39,7 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
     ]);
     setNewName("");
     setNewContent("");
-    setShowAddForm(false);
+    setShowAddModal(false);
   };
 
   const handleRemove = (index: number, e: React.MouseEvent) => {
@@ -101,42 +107,52 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
           </Popover>
         ))}
 
-        {!showAddForm && (
-          <Badge
-            variant="outline"
-            className="cursor-pointer text-xs hover:bg-accent gap-0.5"
-            onClick={() => setShowAddForm(true)}
-          >
-            <Plus className="h-2.5 w-2.5" />
-            {t("promptGroup.addPromptEntry")}
-          </Badge>
-        )}
+        <Badge
+          variant="outline"
+          className="cursor-pointer text-xs hover:bg-accent gap-0.5"
+          onClick={() => setShowAddModal(true)}
+        >
+          <Plus className="h-2.5 w-2.5" />
+          {t("promptGroup.addPromptEntry")}
+        </Badge>
       </div>
 
-      {showAddForm && (
-        <div className="space-y-1 rounded border border-dashed border-border p-2">
-          <Input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder={t("promptGroup.entryName")}
-            className="h-7 text-xs"
-          />
-          <PromptTextarea
-            value={newContent}
-            onChange={setNewContent}
-            placeholder={t("promptGroup.entryContent")}
-            rows={2}
-          />
-          <div className="flex gap-1">
-            <Button size="sm" className="h-6 text-xs" onClick={handleAdd} disabled={!newContent.trim()}>
-              {t("promptGroup.addTag")}
-            </Button>
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowAddForm(false)}>
-              {t("common.cancel")}
-            </Button>
+      {/* Add entry modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">{t("promptGroup.addPromptEntry")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">{t("promptGroup.entryName")}</Label>
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder={t("promptGroup.entryName")}
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">{t("promptGroup.entryContent")}</Label>
+              <PromptTextarea
+                value={newContent}
+                onChange={setNewContent}
+                placeholder={t("promptGroup.entryContent")}
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowAddModal(false)}>
+                {t("common.cancel")}
+              </Button>
+              <Button size="sm" onClick={handleAdd} disabled={!newContent.trim()}>
+                {t("promptGroup.addTag")}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
