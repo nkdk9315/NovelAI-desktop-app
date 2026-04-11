@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, Plus, Minus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -112,6 +112,8 @@ function GroupRow({ group, isAdded, isExpanded, targetId, onToggleExpand, onTogg
   const [sysSearch, setSysSearch] = useState("");
   const [sysTags, setSysTags] = useState<string[]>([]);
   const [sysTotal, setSysTotal] = useState<number | null>(null);
+  const [sysHighlight, setSysHighlight] = useState(-1);
+  const sysTagRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
   const addGroupToTarget = useSidebarPromptStore((s) => s.addGroupToTarget);
   const toggleTag = useSidebarPromptStore((s) => s.toggleTag);
@@ -131,6 +133,7 @@ function GroupRow({ group, isAdded, isExpanded, targetId, onToggleExpand, onTogg
 
   const handleSysSearch = async (q: string) => {
     setSysSearch(q);
+    setSysHighlight(-1);
     if (!q.trim() || group.category == null) { setSysTags([]); return; }
     try { const r = await ipc.listSystemGroupTags(group.category, q, 0, 20); setSysTags(r.tags.map((t) => t.name)); } catch { setSysTags([]); }
   };
@@ -201,16 +204,40 @@ function GroupRow({ group, isAdded, isExpanded, targetId, onToggleExpand, onTogg
               <div className="flex items-center gap-1">
                 <Search className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
                 <input value={sysSearch} onChange={(e) => handleSysSearch(e.target.value)}
-                  placeholder="..." className="h-5 w-full bg-transparent text-[10px] outline-none placeholder:text-muted-foreground/40" />
+                  placeholder="..."
+                  className="h-5 w-full bg-transparent text-[10px] outline-none placeholder:text-muted-foreground/40"
+                  onKeyDown={(e) => {
+                    if (sysTags.length === 0) return;
+                    if (e.key === "Tab" || e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setSysHighlight((p) => {
+                        const n = e.shiftKey ? Math.max(p - 1, 0) : Math.min(p + 1, sysTags.length - 1);
+                        sysTagRefs.current[n]?.scrollIntoView({ block: "nearest" });
+                        return n;
+                      });
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setSysHighlight((p) => {
+                        const n = Math.max(p - 1, 0);
+                        sysTagRefs.current[n]?.scrollIntoView({ block: "nearest" });
+                        return n;
+                      });
+                    } else if (e.key === "Enter" && sysHighlight >= 0 && sysHighlight < sysTags.length) {
+                      e.preventDefault();
+                      handleSysTagClick(sysTags[sysHighlight]);
+                    }
+                  }}
+                />
               </div>
               {sysTags.length > 0 && (
                 <div className="flex flex-wrap gap-0.5">
-                  {sysTags.map((name) => {
+                  {sysTags.map((name, idx) => {
                     const added = isSysTagAdded(name);
                     return (
                       <Badge key={name}
+                        ref={(el) => { sysTagRefs.current[idx] = el; }}
                         variant={added ? "default" : "outline"}
-                        className="cursor-pointer text-[9px] px-1 py-0 select-none transition-colors"
+                        className={`cursor-pointer text-[9px] px-1 py-0 select-none transition-colors ${idx === sysHighlight ? "ring-1 ring-primary" : ""}`}
                         onClick={() => handleSysTagClick(name)}>
                         {name}
                       </Badge>
