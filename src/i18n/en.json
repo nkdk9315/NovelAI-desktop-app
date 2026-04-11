@@ -98,7 +98,11 @@
     "male": "Male",
     "female": "Female",
     "other": "Other",
-    "maxReached": "Maximum 6 characters reached"
+    "maxReached": "Maximum 6 characters reached",
+    "freeTextPlaceholder": "Additional prompt...",
+    "promptPreview": "Prompt Preview",
+    "addGroup": "Add",
+    "added": "Added"
   },
   "vibe": {
     "title": "Vibe",

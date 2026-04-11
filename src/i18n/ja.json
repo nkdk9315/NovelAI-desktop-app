@@ -98,7 +98,11 @@
     "male": "男性",
     "female": "女性",
     "other": "その他",
-    "maxReached": "キャラクター上限（6人）に達しました"
+    "maxReached": "キャラクター上限（6人）に達しました",
+    "freeTextPlaceholder": "追加プロンプト...",
+    "promptPreview": "プロンプトプレビュー",
+    "addGroup": "追加",
+    "added": "追加済み"
   },
   "vibe": {
     "title": "Vibe",

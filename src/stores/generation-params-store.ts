@@ -22,6 +22,9 @@ export interface Character {
   centerX: number;
   centerY: number;
   genreName: string;
+  genreId: string;
+  genreIcon: string;
+  genreColor: string;
 }
 
 export interface SelectedVibe {
@@ -60,7 +63,7 @@ interface GenerationParamsState extends GenerationParamsData {
   selectedVibes: SelectedVibe[];
   sidebarPresets: SidebarPreset[];
   setParam: <K extends keyof GenerationParamsData>(key: K, value: GenerationParamsData[K]) => void;
-  addCharacter: (genreName: string) => void;
+  addCharacter: (genre: { name: string; id: string; icon: string; color: string }) => void;
   removeCharacter: (index: number) => void;
   updateCharacter: (index: number, partial: Partial<Character>) => void;
   clearCharacters: () => void;
@@ -105,13 +108,23 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
   selectedVibes: [],
   sidebarPresets: [],
   setParam: (key, value) => set({ [key]: value }),
-  addCharacter: (genreName) =>
+  addCharacter: (genre) =>
     set((state) => {
       if (state.characters.length >= MAX_CHARACTERS) return state;
       return {
         characters: [
           ...state.characters,
-          { id: crypto.randomUUID(), prompt: "", negativePrompt: "", centerX: 0.5, centerY: 0.5, genreName },
+          {
+            id: crypto.randomUUID(),
+            prompt: "",
+            negativePrompt: "",
+            centerX: 0.5,
+            centerY: 0.5,
+            genreName: genre.name,
+            genreId: genre.id,
+            genreIcon: genre.icon,
+            genreColor: genre.color,
+          },
         ],
       };
     }),
