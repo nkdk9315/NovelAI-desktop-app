@@ -34,7 +34,6 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
   const target = useSidebarPromptStore((s) => s.targets[targetId]);
   const existingGroupIds = target?.groups.map((g) => g.groupId) ?? [];
 
-  const [selectedGenreId, setSelectedGenreId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSystem, setShowSystem] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -43,9 +42,9 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
   useEffect(() => {
     if (open) {
       loadGenres();
-      loadPromptGroups(selectedGenreId, searchQuery || undefined);
+      loadPromptGroups(undefined, searchQuery || undefined);
     }
-  }, [open, selectedGenreId, searchQuery, loadGenres, loadPromptGroups]);
+  }, [open, searchQuery, loadGenres, loadPromptGroups]);
 
   const handleToggleSidebar = (group: PromptGroupDto) => {
     if (existingGroupIds.includes(group.id)) {
@@ -70,7 +69,7 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
       if (data.isDefault) {
         await updatePromptGroup({ id: group.id, isDefault: true });
       }
-      loadPromptGroups(selectedGenreId, searchQuery || undefined);
+      loadPromptGroups(undefined, searchQuery || undefined);
     } catch (e) {
       toastError(String(e));
     }
@@ -91,7 +90,7 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
         tags: data.tags,
         isDefault: data.isDefault,
       });
-      loadPromptGroups(selectedGenreId, searchQuery || undefined);
+      loadPromptGroups(undefined, searchQuery || undefined);
     } catch (e) {
       toastError(String(e));
     }
@@ -101,7 +100,7 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
     try {
       await deletePromptGroup(id);
       removeGroupFromTarget(targetId, id);
-      loadPromptGroups(selectedGenreId, searchQuery || undefined);
+      loadPromptGroups(undefined, searchQuery || undefined);
     } catch (e) {
       toastError(String(e));
     }
@@ -118,11 +117,9 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
           <PromptGroupGrid
             genres={genres}
             groups={promptGroups}
-            selectedGenreId={selectedGenreId}
             searchQuery={searchQuery}
             showSystem={showSystem}
             existingGroupIds={existingGroupIds}
-            onGenreChange={setSelectedGenreId}
             onSearchChange={setSearchQuery}
             onShowSystemChange={setShowSystem}
             onAdd={() => setShowAddModal(true)}
