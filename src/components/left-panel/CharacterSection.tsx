@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import PromptTextarea from "@/components/shared/PromptTextarea";
-import PositionSliders from "./PositionSliders";
+import PositionEditor from "./PositionEditor";
 import CharacterHeader from "./CharacterHeader";
 import CharacterPromptGroups from "./CharacterPromptGroups";
 import GroupBrowserModal from "@/components/modals/GroupBrowserModal";
@@ -72,7 +72,8 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
           )}
 
           {/* Position */}
-          <PositionSliders
+          <PositionEditor
+            currentIndex={index}
             centerX={character.centerX}
             centerY={character.centerY}
             onChangeX={(v) => updateCharacter(index, { centerX: v })}
