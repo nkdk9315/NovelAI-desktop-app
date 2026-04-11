@@ -31,6 +31,7 @@ export default function GroupBrowserModal({
   const genres = usePromptStore((s) => s.genres);
   const loadGenres = usePromptStore((s) => s.loadGenres);
   const addGroupToTarget = useSidebarPromptStore((s) => s.addGroupToTarget);
+  const removeGroupFromTarget = useSidebarPromptStore((s) => s.removeGroupFromTarget);
   const target = useSidebarPromptStore((s) => s.targets[targetId]);
   const existingGroupIds = target?.groups.map((g) => g.groupId) ?? [];
 
@@ -51,8 +52,12 @@ export default function GroupBrowserModal({
     ipc.listPromptGroups(selectedGenreId).then(setGroups).catch(() => setGroups([]));
   }, [open, selectedGenreId]);
 
-  const handleAddGroup = (group: PromptGroupDto) => {
-    addGroupToTarget(targetId, group);
+  const handleToggleGroup = (group: PromptGroupDto) => {
+    if (existingGroupIds.includes(group.id)) {
+      removeGroupFromTarget(targetId, group.id);
+    } else {
+      addGroupToTarget(targetId, group);
+    }
   };
 
   const handleExpandGroup = (groupId: string) => {
@@ -134,14 +139,12 @@ export default function GroupBrowserModal({
                         )}
                       </button>
                       <Button
-                        variant="ghost"
+                        variant={isAdded ? "secondary" : "ghost"}
                         size="sm"
-                        className="h-6 gap-1 px-2 text-xs"
-                        disabled={isAdded}
-                        onClick={() => handleAddGroup(group)}
+                        className={`h-6 px-2 text-xs ${isAdded ? "text-destructive" : ""}`}
+                        onClick={() => handleToggleGroup(group)}
                       >
-                        <Plus className="h-3 w-3" />
-                        {isAdded ? t("character.added") : t("character.addGroup")}
+                        {isAdded ? "−" : "+"}
                       </Button>
                     </div>
 
@@ -171,23 +174,16 @@ export default function GroupBrowserModal({
                           </div>
                         )}
 
-                        {/* Regular group: show tags */}
+                        {/* Regular group: show entry names */}
                         {!group.isSystem && (
                           <div className="flex flex-wrap gap-1">
                             {group.tags.map((tag) => (
-                              <Badge key={tag.id} variant="secondary" className="text-[10px]">
-                                {tag.tag}
-                                {tag.defaultStrength !== 0 && (
-                                  <span className="ml-0.5 text-muted-foreground">
-                                    ({tag.defaultStrength > 0 ? "+" : ""}{tag.defaultStrength})
-                                  </span>
-                                )}
+                              <Badge key={tag.id} variant="outline" className="text-[10px]">
+                                {tag.name || tag.tag}
                               </Badge>
                             ))}
                             {group.tags.length === 0 && (
-                              <span className="text-xs text-muted-foreground">
-                                {t("promptGroup.noGroups")}
-                              </span>
+                              <span className="text-xs text-muted-foreground">—</span>
                             )}
                           </div>
                         )}
