@@ -16,11 +16,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
+import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useHistoryStore } from "@/stores/history-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { MAX_TOTAL_VIBES } from "@/lib/constants";
 import { calculateCost } from "@/lib/cost";
 import { normalizeStrengths } from "@/lib/normalize-strength";
+import { assembleFullPrompt } from "@/lib/prompt-assembly";
 import type { GenerateImageRequest } from "@/types";
 
 export default function ActionBar() {
@@ -95,7 +97,17 @@ export default function ActionBar() {
           return tag.strength === 0 ? base : `{${tag.strength}::${base}::}`;
         }).join(", ") + ", "
       : "";
-    const fullPrompt = artistPrefix + params.prompt;
+
+    // Assemble main prompt: artist prefix + main textarea + sidebar group tags + sidebar free text
+    const sidebarState = useSidebarPromptStore.getState();
+    const mainTarget = sidebarState.targets["main"];
+    const combinedFreeText = [params.prompt, mainTarget?.freeText]
+      .filter((s) => s?.trim())
+      .join(", ");
+    const assembledMain = mainTarget
+      ? assembleFullPrompt(combinedFreeText, mainTarget.groups)
+      : combinedFreeText;
+    const fullPrompt = artistPrefix + assembledMain;
 
     let enabledVibes = allVibes.map((v) => ({
       vibeId: v.vibeId,
@@ -112,12 +124,18 @@ export default function ActionBar() {
       negativePrompt: params.negativePrompt || undefined,
       characters:
         params.characters.length > 0
-          ? params.characters.map((c) => ({
-              prompt: c.prompt,
-              centerX: c.centerX,
-              centerY: c.centerY,
-              negativePrompt: c.negativePrompt,
-            }))
+          ? params.characters.map((c) => {
+              const charTarget = sidebarState.targets[c.id];
+              const charPrompt = charTarget
+                ? assembleFullPrompt(charTarget.freeText, charTarget.groups)
+                : c.prompt;
+              return {
+                prompt: charPrompt,
+                centerX: c.centerX,
+                centerY: c.centerY,
+                negativePrompt: c.negativePrompt,
+              };
+            })
           : undefined,
       vibes: enabledVibes.length > 0 ? enabledVibes : undefined,
       width: params.width,
@@ -171,7 +189,7 @@ export default function ActionBar() {
     <div className="flex items-center justify-center gap-2 border-t border-border p-3">
       <Button
         onClick={handleGenerateClick}
-        disabled={isGenerating || !params.prompt.trim()}
+        disabled={isGenerating}
         size="sm"
         variant={buttonVariant}
       >

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { PromptGroupDto } from "@/types";
+import * as ipc from "@/lib/ipc";
 
 // ---- Types ----
 
@@ -46,6 +47,9 @@ interface SidebarPromptState {
   removeSystemTag: (targetId: string, groupId: string, tagId: string) => void;
 
   setFreeText: (targetId: string, text: string) => void;
+
+  saveSidebarPromptState: (projectId: string) => void;
+  loadSidebarPromptState: (projectId: string) => Promise<void>;
 }
 
 function groupDtoToSidebar(dto: PromptGroupDto): SidebarPromptGroup {
@@ -200,4 +204,24 @@ export const useSidebarPromptStore = create<SidebarPromptState>()((set) => ({
     set((state) =>
       updateTarget(state, targetId, (target) => ({ ...target, freeText: text })),
     ),
+
+  saveSidebarPromptState: (projectId) => {
+    const { targets } = useSidebarPromptStore.getState();
+    ipc.setSetting(`sidebar_prompts_${projectId}`, JSON.stringify(targets)).catch(() => {});
+  },
+
+  loadSidebarPromptState: async (projectId) => {
+    try {
+      const settings = await ipc.getSettings();
+      const raw = settings[`sidebar_prompts_${projectId}`];
+      if (raw) {
+        const targets: Record<string, TargetPromptState> = JSON.parse(raw);
+        set({ targets });
+      } else {
+        set({ targets: {} });
+      }
+    } catch {
+      set({ targets: {} });
+    }
+  },
 }));

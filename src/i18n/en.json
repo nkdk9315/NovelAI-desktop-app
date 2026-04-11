@@ -185,7 +185,6 @@
   "promptGroup": {
     "title": "Prompt Groups",
     "genre": "Genre",
-    "usage": "Usage",
     "selectGroup": "Select Group",
     "manage": "Manage",
     "name": "Group Name",
@@ -198,14 +197,10 @@
     "deleteConfirm": "Delete this prompt group?",
     "noGroups": "No groups",
     "all": "All",
-    "usageMain": "Main",
-    "usageCharacter": "Character",
-    "usageBoth": "Both",
     "defaultForGenre": "Default",
     "newGenre": "New Genre",
     "genreNamePlaceholder": "Enter genre name",
     "deleteGenreConfirm": "Delete this genre?",
-    "systemCannotDelete": "System data cannot be deleted",
-    "insertTags": "Insert Tags"
+    "systemCannotDelete": "System data cannot be deleted"
   }
 }
