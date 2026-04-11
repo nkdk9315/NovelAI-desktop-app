@@ -7,14 +7,12 @@ use crate::state::AppState;
 pub fn list_prompt_groups(
     state: State<'_, AppState>,
     genre_id: Option<String>,
-    usage_type: Option<String>,
     search: Option<String>,
 ) -> Result<Vec<PromptGroupDto>, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     crate::services::prompt_group::list_prompt_groups(
         &conn,
         genre_id.as_deref(),
-        usage_type.as_deref(),
         search.as_deref(),
     )
     .map_err(|e| e.into())

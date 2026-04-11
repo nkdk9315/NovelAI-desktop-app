@@ -4,7 +4,7 @@ use crate::error::AppError;
 use crate::models::dto::GenreRow;
 
 pub fn list_all(conn: &Connection) -> Result<Vec<GenreRow>, AppError> {
-    let mut stmt = conn.prepare("SELECT id, name, is_system, sort_order, created_at FROM genres ORDER BY sort_order ASC")?;
+    let mut stmt = conn.prepare("SELECT id, name, is_system, sort_order, created_at, icon, color FROM genres ORDER BY sort_order ASC")?;
     let rows = stmt.query_map([], |row| {
         Ok(GenreRow {
             id: row.get(0)?,
@@ -12,6 +12,8 @@ pub fn list_all(conn: &Connection) -> Result<Vec<GenreRow>, AppError> {
             is_system: row.get(2)?,
             sort_order: row.get(3)?,
             created_at: row.get(4)?,
+            icon: row.get(5)?,
+            color: row.get(6)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
@@ -19,7 +21,7 @@ pub fn list_all(conn: &Connection) -> Result<Vec<GenreRow>, AppError> {
 
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<GenreRow, AppError> {
     conn.query_row(
-        "SELECT id, name, is_system, sort_order, created_at FROM genres WHERE id = ?1",
+        "SELECT id, name, is_system, sort_order, created_at, icon, color FROM genres WHERE id = ?1",
         [id],
         |row| {
             Ok(GenreRow {
@@ -28,6 +30,8 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<GenreRow, AppError> {
                 is_system: row.get(2)?,
                 sort_order: row.get(3)?,
                 created_at: row.get(4)?,
+                icon: row.get(5)?,
+                color: row.get(6)?,
             })
         },
     )
@@ -39,8 +43,16 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<GenreRow, AppError> {
 
 pub fn insert(conn: &Connection, row: &GenreRow) -> Result<(), AppError> {
     conn.execute(
-        "INSERT INTO genres (id, name, is_system, sort_order, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-        rusqlite::params![row.id, row.name, row.is_system, row.sort_order, row.created_at],
+        "INSERT INTO genres (id, name, is_system, sort_order, created_at, icon, color) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        rusqlite::params![row.id, row.name, row.is_system, row.sort_order, row.created_at, row.icon, row.color],
+    )?;
+    Ok(())
+}
+
+pub fn update(conn: &Connection, row: &GenreRow) -> Result<(), AppError> {
+    conn.execute(
+        "UPDATE genres SET name = ?2, icon = ?3, color = ?4 WHERE id = ?1",
+        rusqlite::params![row.id, row.name, row.icon, row.color],
     )?;
     Ok(())
 }

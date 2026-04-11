@@ -12,6 +12,7 @@ const MIGRATION_005: &str = include_str!("../migrations/005_preset_vibe_strength
 const MIGRATION_006: &str = include_str!("../migrations/006_preset_favorite.sql");
 const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
 const MIGRATION_008: &str = include_str!("../migrations/008_project_thumbnail.sql");
+const MIGRATION_009: &str = include_str!("../migrations/009_prompt_group_overhaul.sql");
 
 pub fn setup_test_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
@@ -28,6 +29,7 @@ pub fn setup_test_db() -> Connection {
     conn.execute_batch(MIGRATION_006).unwrap();
     conn.execute_batch(MIGRATION_007).unwrap();
     conn.execute_batch(MIGRATION_008).unwrap();
+    conn.execute_batch(MIGRATION_009).unwrap();
     conn
 }
 
@@ -52,6 +54,8 @@ pub fn create_test_genre(conn: &Connection) -> GenreRow {
         is_system: 0,
         sort_order: 10,
         created_at: "2026-01-01T00:00:00Z".to_string(),
+        icon: "user".to_string(),
+        color: "#888888".to_string(),
     };
     crate::repositories::genre::insert(conn, &row).unwrap();
     row
@@ -67,6 +71,9 @@ pub fn create_test_prompt_group(conn: &Connection, genre_id: &str) -> PromptGrou
         usage_type: "both".to_string(),
         created_at: "2026-01-01T00:00:00Z".to_string(),
         updated_at: "2026-01-01T00:00:00Z".to_string(),
+        thumbnail_path: None,
+        is_default: 0,
+        category: None,
     };
     crate::repositories::prompt_group::insert(conn, &row).unwrap();
     row

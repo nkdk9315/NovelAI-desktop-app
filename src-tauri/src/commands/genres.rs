@@ -1,6 +1,6 @@
 use tauri::State;
 
-use crate::models::dto::{CreateGenreRequest, GenreDto};
+use crate::models::dto::{CreateGenreRequest, GenreDto, UpdateGenreRequest};
 use crate::state::AppState;
 
 #[tauri::command]
@@ -16,6 +16,15 @@ pub fn create_genre(
 ) -> Result<GenreDto, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     crate::services::genre::create_genre(&conn, req).map_err(|e| e.into())
+}
+
+#[tauri::command]
+pub fn update_genre(
+    state: State<'_, AppState>,
+    req: UpdateGenreRequest,
+) -> Result<GenreDto, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    crate::services::genre::update_genre(&conn, req).map_err(|e| e.into())
 }
 
 #[tauri::command]

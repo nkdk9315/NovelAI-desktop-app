@@ -10,10 +10,9 @@ use crate::repositories::prompt_group as pg_repo;
 pub fn list_prompt_groups(
     conn: &Connection,
     genre_id: Option<&str>,
-    usage_type: Option<&str>,
     search: Option<&str>,
 ) -> Result<Vec<PromptGroupDto>, AppError> {
-    let rows = pg_repo::list(conn, genre_id, usage_type, search)?;
+    let rows = pg_repo::list(conn, genre_id, search)?;
     let mut result = Vec::with_capacity(rows.len());
     for row in rows {
         let tags = pg_repo::find_tags_by_group(conn, &row.id)?;
@@ -43,18 +42,28 @@ pub fn create_prompt_group(
         genre_id: req.genre_id,
         is_default_for_genre: 0,
         is_system: 0,
-        usage_type: req.usage_type,
+        usage_type: "both".to_string(),
         created_at: now.clone(),
         updated_at: now,
+        thumbnail_path: None,
+        is_default: 0,
+        category: None,
     };
     pg_repo::insert(conn, &row)?;
 
-    // Insert tags
-    let tag_tuples: Vec<(String, String, i32)> = req
+    let tag_tuples: Vec<(String, String, i32, i32, Option<String>)> = req
         .tags
         .iter()
         .enumerate()
-        .map(|(i, tag)| (uuid::Uuid::new_v4().to_string(), tag.clone(), i as i32))
+        .map(|(i, t)| {
+            (
+                uuid::Uuid::new_v4().to_string(),
+                t.tag.clone(),
+                i as i32,
+                t.default_strength.unwrap_or(0),
+                t.thumbnail_path.clone(),
+            )
+        })
         .collect();
     pg_repo::replace_tags(conn, &id, &tag_tuples)?;
 
@@ -73,25 +82,29 @@ pub fn update_prompt_group(
     if let Some(genre_id) = req.genre_id {
         existing.genre_id = genre_id;
     }
-    if let Some(is_default) = req.is_default_for_genre {
-        existing.is_default_for_genre = i32::from(is_default);
+    if let Some(is_default) = req.is_default {
+        existing.is_default = i32::from(is_default);
+    }
+    if let Some(thumbnail_path) = req.thumbnail_path {
+        existing.thumbnail_path = thumbnail_path;
     }
 
     existing.updated_at = chrono::Utc::now().to_rfc3339();
     pg_repo::update(conn, &existing)?;
 
-    // Enforce default exclusivity
-    if existing.is_default_for_genre != 0 {
-        if let Some(ref genre_id) = existing.genre_id {
-            pg_repo::clear_default_for_genre(conn, genre_id, &existing.id)?;
-        }
-    }
-
     if let Some(tags) = req.tags {
-        let tag_tuples: Vec<(String, String, i32)> = tags
+        let tag_tuples: Vec<(String, String, i32, i32, Option<String>)> = tags
             .iter()
             .enumerate()
-            .map(|(i, tag)| (uuid::Uuid::new_v4().to_string(), tag.clone(), i as i32))
+            .map(|(i, t)| {
+                (
+                    uuid::Uuid::new_v4().to_string(),
+                    t.tag.clone(),
+                    i as i32,
+                    t.default_strength.unwrap_or(0),
+                    t.thumbnail_path.clone(),
+                )
+            })
             .collect();
         pg_repo::replace_tags(conn, &req.id, &tag_tuples)?;
     }
@@ -113,6 +126,7 @@ pub fn delete_prompt_group(conn: &Connection, id: &str) -> Result<(), AppError> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::dto::TagInput;
     use crate::test_utils::{create_test_genre, setup_test_db};
 
     #[test]
@@ -125,8 +139,11 @@ mod tests {
             CreatePromptGroupRequest {
                 name: "Test Group".to_string(),
                 genre_id: Some(genre.id.clone()),
-                usage_type: "both".to_string(),
-                tags: vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
+                tags: vec![
+                    TagInput { tag: "tag1".to_string(), default_strength: None, thumbnail_path: None },
+                    TagInput { tag: "tag2".to_string(), default_strength: Some(3), thumbnail_path: None },
+                    TagInput { tag: "tag3".to_string(), default_strength: Some(-2), thumbnail_path: Some("/tmp/t.png".to_string()) },
+                ],
             },
         )
         .unwrap();
@@ -135,13 +152,17 @@ mod tests {
         assert_eq!(pg.genre_id, Some(genre.id));
         assert_eq!(pg.tags.len(), 3);
         assert_eq!(pg.tags[0].tag, "tag1");
+        assert_eq!(pg.tags[0].default_strength, 0);
         assert_eq!(pg.tags[1].tag, "tag2");
+        assert_eq!(pg.tags[1].default_strength, 3);
         assert_eq!(pg.tags[2].tag, "tag3");
+        assert_eq!(pg.tags[2].default_strength, -2);
+        assert_eq!(pg.tags[2].thumbnail_path.as_deref(), Some("/tmp/t.png"));
         assert!(!pg.is_system);
     }
 
     #[test]
-    fn test_update_default_exclusivity() {
+    fn test_update_multiple_defaults_allowed() {
         let conn = setup_test_db();
         let genre = create_test_genre(&conn);
 
@@ -150,7 +171,6 @@ mod tests {
             CreatePromptGroupRequest {
                 name: "Group A".to_string(),
                 genre_id: Some(genre.id.clone()),
-                usage_type: "both".to_string(),
                 tags: vec![],
             },
         )
@@ -161,7 +181,6 @@ mod tests {
             CreatePromptGroupRequest {
                 name: "Group B".to_string(),
                 genre_id: Some(genre.id.clone()),
-                usage_type: "both".to_string(),
                 tags: vec![],
             },
         )
@@ -175,12 +194,13 @@ mod tests {
                 name: None,
                 genre_id: None,
                 tags: None,
-                is_default_for_genre: Some(true),
+                is_default: Some(true),
+                thumbnail_path: None,
             },
         )
         .unwrap();
 
-        // Set pg2 as default — pg1 should lose default
+        // Set pg2 as default — pg1 should ALSO remain default (multiple allowed)
         update_prompt_group(
             &conn,
             UpdatePromptGroupRequest {
@@ -188,21 +208,21 @@ mod tests {
                 name: None,
                 genre_id: None,
                 tags: None,
-                is_default_for_genre: Some(true),
+                is_default: Some(true),
+                thumbnail_path: None,
             },
         )
         .unwrap();
 
         let found1 = get_prompt_group(&conn, &pg1.id).unwrap();
         let found2 = get_prompt_group(&conn, &pg2.id).unwrap();
-        assert!(!found1.is_default_for_genre);
-        assert!(found2.is_default_for_genre);
+        assert!(found1.is_default);
+        assert!(found2.is_default);
     }
 
     #[test]
     fn test_delete_system_group_rejected() {
         let conn = setup_test_db();
-        // Insert a system prompt group
         let id = uuid::Uuid::new_v4().to_string();
         pg_repo::insert(
             &conn,
@@ -215,6 +235,9 @@ mod tests {
                 usage_type: "both".to_string(),
                 created_at: "2026-01-01T00:00:00Z".to_string(),
                 updated_at: "2026-01-01T00:00:00Z".to_string(),
+                thumbnail_path: None,
+                is_default: 0,
+                category: None,
             },
         )
         .unwrap();
@@ -236,8 +259,7 @@ mod tests {
             CreatePromptGroupRequest {
                 name: "Deletable".to_string(),
                 genre_id: Some(genre.id),
-                usage_type: "both".to_string(),
-                tags: vec!["a".to_string()],
+                tags: vec![TagInput { tag: "a".to_string(), default_strength: None, thumbnail_path: None }],
             },
         )
         .unwrap();
@@ -256,14 +278,12 @@ mod tests {
             CreatePromptGroupRequest {
                 name: "Has Genre".to_string(),
                 genre_id: Some(genre.id.clone()),
-                usage_type: "both".to_string(),
                 tags: vec![],
             },
         )
         .unwrap();
         assert_eq!(pg.genre_id, Some(genre.id));
 
-        // Update with Some(None) → should clear genre_id to NULL
         update_prompt_group(
             &conn,
             UpdatePromptGroupRequest {
@@ -271,7 +291,8 @@ mod tests {
                 name: None,
                 genre_id: Some(None),
                 tags: None,
-                is_default_for_genre: None,
+                is_default: None,
+                thumbnail_path: None,
             },
         )
         .unwrap();

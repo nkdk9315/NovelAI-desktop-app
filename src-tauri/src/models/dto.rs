@@ -18,6 +18,8 @@ pub struct GenreRow {
     pub is_system: i32,
     pub sort_order: i32,
     pub created_at: String,
+    pub icon: String,
+    pub color: String,
 }
 
 pub struct PromptGroupRow {
@@ -29,12 +31,17 @@ pub struct PromptGroupRow {
     pub usage_type: String,
     pub created_at: String,
     pub updated_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_default: i32,
+    pub category: Option<i32>,
 }
 
 pub struct PromptGroupTagRow {
     pub id: String,
     pub tag: String,
     pub sort_order: i32,
+    pub default_strength: i32,
+    pub thumbnail_path: Option<String>,
 }
 
 pub struct GeneratedImageRow {
@@ -108,6 +115,8 @@ pub struct GenreDto {
     pub is_system: bool,
     pub sort_order: i32,
     pub created_at: String,
+    pub icon: String,
+    pub color: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -122,6 +131,9 @@ pub struct PromptGroupDto {
     pub tags: Vec<PromptGroupTagDto>,
     pub created_at: String,
     pub updated_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_default: bool,
+    pub category: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -130,6 +142,8 @@ pub struct PromptGroupTagDto {
     pub id: String,
     pub tag: String,
     pub sort_order: i32,
+    pub default_strength: i32,
+    pub thumbnail_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -302,11 +316,18 @@ pub struct CostEstimateRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TagInput {
+    pub tag: String,
+    pub default_strength: Option<i32>,
+    pub thumbnail_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreatePromptGroupRequest {
     pub name: String,
     pub genre_id: Option<String>,
-    pub usage_type: String,
-    pub tags: Vec<String>,
+    pub tags: Vec<TagInput>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -316,14 +337,27 @@ pub struct UpdatePromptGroupRequest {
     pub name: Option<String>,
     #[serde(default, deserialize_with = "deserialize_double_option")]
     pub genre_id: Option<Option<String>>,
-    pub tags: Option<Vec<String>>,
-    pub is_default_for_genre: Option<bool>,
+    pub tags: Option<Vec<TagInput>>,
+    pub is_default: Option<bool>,
+    #[serde(default, deserialize_with = "deserialize_double_option")]
+    pub thumbnail_path: Option<Option<String>>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGenreRequest {
     pub name: String,
+    pub icon: Option<String>,
+    pub color: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateGenreRequest {
+    pub id: String,
+    pub name: Option<String>,
+    pub icon: Option<String>,
+    pub color: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -418,6 +452,8 @@ impl From<GenreRow> for GenreDto {
             is_system: row.is_system != 0,
             sort_order: row.sort_order,
             created_at: row.created_at,
+            icon: row.icon,
+            color: row.color,
         }
     }
 }
@@ -434,6 +470,9 @@ impl PromptGroupRow {
             tags,
             created_at: self.created_at,
             updated_at: self.updated_at,
+            thumbnail_path: self.thumbnail_path,
+            is_default: self.is_default != 0,
+            category: self.category,
         }
     }
 }
@@ -444,6 +483,8 @@ impl From<PromptGroupTagRow> for PromptGroupTagDto {
             id: row.id,
             tag: row.tag,
             sort_order: row.sort_order,
+            default_strength: row.default_strength,
+            thumbnail_path: row.thumbnail_path,
         }
     }
 }

@@ -98,6 +98,7 @@ pub fn run() {
             commands::prompt_groups::delete_prompt_group,
             commands::genres::list_genres,
             commands::genres::create_genre,
+            commands::genres::update_genre,
             commands::genres::delete_genre,
             commands::vibes::list_vibes,
             commands::vibes::add_vibe,
