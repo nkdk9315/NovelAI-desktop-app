@@ -146,7 +146,7 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
               <Button variant="outline" size="sm" onClick={() => setShowAddModal(false)}>
                 {t("common.cancel")}
               </Button>
-              <Button size="sm" onClick={handleAdd} disabled={!newContent.trim()}>
+              <Button size="sm" onClick={handleAdd} disabled={!newName.trim() || !newContent.trim()}>
                 {t("promptGroup.addTag")}
               </Button>
             </div>
