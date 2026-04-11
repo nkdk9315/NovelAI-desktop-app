@@ -120,6 +120,7 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
             searchQuery={searchQuery}
             showSystem={showSystem}
             existingGroupIds={existingGroupIds}
+            targetId={targetId}
             onSearchChange={setSearchQuery}
             onShowSystemChange={setShowSystem}
             onAdd={() => setShowAddModal(true)}

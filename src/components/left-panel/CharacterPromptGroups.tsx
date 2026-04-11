@@ -154,15 +154,15 @@ function TagBadge({
     <ContextMenu>
       <ContextMenuTrigger>
         <Badge
-          variant={tag.enabled ? "secondary" : "outline"}
-          className={`cursor-pointer text-[11px] select-none ${
-            tag.enabled ? "" : "opacity-40 line-through"
+          variant={tag.enabled ? "default" : "outline"}
+          className={`cursor-pointer text-[11px] select-none transition-colors ${
+            tag.enabled ? "" : "text-muted-foreground/50 bg-transparent"
           }`}
           onClick={onToggle}
         >
           {tag.name || tag.tag}
           {tag.strength !== 0 && (
-            <span className="ml-0.5 text-[9px] text-muted-foreground">
+            <span className={`ml-0.5 text-[9px] ${tag.enabled ? "opacity-70" : "opacity-40"}`}>
               {tag.strength > 0 ? "+" : ""}{tag.strength.toFixed(1)}
             </span>
           )}
