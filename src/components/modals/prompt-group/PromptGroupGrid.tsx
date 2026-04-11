@@ -6,51 +6,42 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import * as ipc from "@/lib/ipc";
 import type { GenreDto, PromptGroupDto } from "@/types";
 
-interface PromptGroupGridProps {
-  genres: GenreDto[];
-  groups: PromptGroupDto[];
-  searchQuery: string;
-  showSystem: boolean;
-  existingGroupIds: string[];
-  targetId: string;
-  onSearchChange: (query: string) => void;
-  onShowSystemChange: (show: boolean) => void;
-  onAdd: () => void;
-  onToggleSidebar: (group: PromptGroupDto) => void;
-  onEdit: (group: PromptGroupDto) => void;
-  onDelete: (id: string) => void;
+interface Props {
+  genres: GenreDto[]; groups: PromptGroupDto[];
+  searchQuery: string; showSystem: boolean; existingGroupIds: string[]; targetId: string;
+  onSearchChange: (q: string) => void; onShowSystemChange: (v: boolean) => void;
+  onAdd: () => void; onToggleSidebar: (g: PromptGroupDto) => void;
+  onEdit: (g: PromptGroupDto) => void; onDelete: (id: string) => void;
 }
 
-type TreeItem =
+type FlatItem =
   | { kind: "genre"; id: string; label: string; count: number }
   | { kind: "group"; group: PromptGroupDto; isAdded: boolean }
-  | { kind: "entry"; groupId: string; tagId: string; label: string; isSys: false }
+  | { kind: "entry"; groupId: string; tagId: string; label: string }
   | { kind: "sysSearch"; groupId: string; category: number }
   | { kind: "sysTag"; groupId: string; tagName: string };
 
 export default function PromptGroupGrid({
   genres, groups, searchQuery, showSystem, existingGroupIds, targetId,
   onSearchChange, onShowSystemChange, onAdd, onToggleSidebar, onEdit, onDelete,
-}: PromptGroupGridProps) {
+}: Props) {
   const { t } = useTranslation();
-  const [expandedGenres, setExpandedGenres] = useState<Set<string>>(new Set());
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expGenres, setExpGenres] = useState<Set<string>>(new Set());
+  const [expGroups, setExpGroups] = useState<Set<string>>(new Set());
   const [focusIdx, setFocusIdx] = useState(-1);
   const [sysSearches, setSysSearches] = useState<Record<string, string>>({});
   const [sysResults, setSysResults] = useState<Record<string, string[]>>({});
   const [sysTotals, setSysTotals] = useState<Record<string, number>>({});
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
   const treeRef = useRef<HTMLDivElement>(null);
+  const sysCheckRef = useRef<HTMLButtonElement>(null);
 
   const addGroupToTarget = useSidebarPromptStore((s) => s.addGroupToTarget);
   const toggleTag = useSidebarPromptStore((s) => s.toggleTag);
@@ -58,266 +49,221 @@ export default function PromptGroupGrid({
   const removeSystemTag = useSidebarPromptStore((s) => s.removeSystemTag);
   const sidebarTargets = useSidebarPromptStore((s) => s.targets[targetId]);
 
-  const filteredGroups = showSystem ? groups : groups.filter((g) => !g.isSystem);
+  const filtered = showSystem ? groups : groups.filter((g) => !g.isSystem);
 
-  // Build genre map
   const genreEntries = useMemo(() => {
     const m = new Map<string, { label: string; groups: PromptGroupDto[] }>();
     for (const g of genres) m.set(g.id, { label: g.name, groups: [] });
     m.set("__none__", { label: "—", groups: [] });
     m.set("__system__", { label: "System", groups: [] });
-    for (const group of filteredGroups) {
-      if (group.isSystem) m.get("__system__")!.groups.push(group);
-      else { const k = group.genreId ?? "__none__"; if (!m.has(k)) m.set(k, { label: "—", groups: [] }); m.get(k)!.groups.push(group); }
+    for (const gr of filtered) {
+      if (gr.isSystem) m.get("__system__")!.groups.push(gr);
+      else { const k = gr.genreId ?? "__none__"; if (!m.has(k)) m.set(k, { label: "—", groups: [] }); m.get(k)!.groups.push(gr); }
     }
     return [...m.entries()].filter(([, v]) => v.groups.length > 0);
-  }, [genres, filteredGroups]);
+  }, [genres, filtered]);
 
-  // Build flat item list
-  const items: TreeItem[] = useMemo(() => {
-    const list: TreeItem[] = [];
+  const items: FlatItem[] = useMemo(() => {
+    const list: FlatItem[] = [];
     for (const [gid, { label, groups: gg }] of genreEntries) {
       list.push({ kind: "genre", id: gid, label, count: gg.length });
-      if (expandedGenres.has(gid)) {
-        for (const group of gg) {
-          const isAdded = existingGroupIds.includes(group.id);
-          list.push({ kind: "group", group, isAdded });
-          if (expandedGroups.has(group.id)) {
-            const isSys = group.isSystem && group.category != null;
-            if (isSys) {
-              list.push({ kind: "sysSearch", groupId: group.id, category: group.category! });
-              for (const name of (sysResults[group.id] ?? [])) {
-                list.push({ kind: "sysTag", groupId: group.id, tagName: name });
-              }
-            } else {
-              for (const tag of group.tags) {
-                list.push({ kind: "entry", groupId: group.id, tagId: tag.id, label: tag.name || tag.tag, isSys: false });
-              }
-            }
-          }
+      if (expGenres.has(gid)) for (const gr of gg) {
+        list.push({ kind: "group", group: gr, isAdded: existingGroupIds.includes(gr.id) });
+        if (expGroups.has(gr.id)) {
+          if (gr.isSystem && gr.category != null) {
+            list.push({ kind: "sysSearch", groupId: gr.id, category: gr.category });
+            for (const n of (sysResults[gr.id] ?? [])) list.push({ kind: "sysTag", groupId: gr.id, tagName: n });
+          } else for (const tag of gr.tags) list.push({ kind: "entry", groupId: gr.id, tagId: tag.id, label: tag.name || tag.tag });
         }
       }
     }
     return list;
-  }, [genreEntries, expandedGenres, expandedGroups, existingGroupIds, sysResults]);
+  }, [genreEntries, expGenres, expGroups, existingGroupIds, sysResults]);
 
-  const toggleSet = (s: Set<string>, id: string) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; };
+  const tog = (s: Set<string>, id: string) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; };
 
-  const handleSysSearch = async (groupId: string, category: number, q: string) => {
-    setSysSearches((p) => ({ ...p, [groupId]: q }));
-    if (!q.trim()) { setSysResults((p) => ({ ...p, [groupId]: [] })); return; }
-    try {
-      const r = await ipc.listSystemGroupTags(category, q, 0, 20);
-      setSysResults((p) => ({ ...p, [groupId]: r.tags.map((t) => t.name) }));
-    } catch { setSysResults((p) => ({ ...p, [groupId]: [] })); }
+  const handleExpandGroup = async (gr: PromptGroupDto) => {
+    setExpGroups((s) => tog(s, gr.id));
+    if (!expGroups.has(gr.id) && gr.isSystem && gr.category != null && !(gr.id in sysTotals))
+      try { const r = await ipc.listSystemGroupTags(gr.category, undefined, 0, 0); setSysTotals((p) => ({ ...p, [gr.id]: r.totalCount })); } catch {/**/}
   };
 
-  const handleExpandGroup = async (group: PromptGroupDto) => {
-    setExpandedGroups((s) => toggleSet(s, group.id));
-    if (!expandedGroups.has(group.id) && group.isSystem && group.category != null && !(group.id in sysTotals)) {
-      try { const r = await ipc.listSystemGroupTags(group.category, undefined, 0, 0); setSysTotals((p) => ({ ...p, [group.id]: r.totalCount })); } catch {/**/}
-    }
+  const doSysSearch = async (gid: string, cat: number, q: string) => {
+    setSysSearches((p) => ({ ...p, [gid]: q }));
+    if (!q.trim()) { setSysResults((p) => ({ ...p, [gid]: [] })); return; }
+    try { const r = await ipc.listSystemGroupTags(cat, q, 0, 20); setSysResults((p) => ({ ...p, [gid]: r.tags.map((t) => t.name) })); } catch { setSysResults((p) => ({ ...p, [gid]: [] })); }
   };
 
-  const isEntryEnabled = (groupId: string, tagId: string) =>
-    sidebarTargets?.groups.find((g) => g.groupId === groupId)?.tags.find((t) => t.tagId === tagId)?.enabled ?? false;
+  const isEnabled = (gid: string, tid: string) => sidebarTargets?.groups.find((g) => g.groupId === gid)?.tags.find((t) => t.tagId === tid)?.enabled ?? false;
+  const isSysAdded = (gid: string, name: string) => sidebarTargets?.groups.find((g) => g.groupId === gid)?.tags.some((t) => t.tag === name) ?? false;
+  const enabledCount = (gid: string) => sidebarTargets?.groups.find((g) => g.groupId === gid)?.tags.filter((t) => t.enabled).length ?? 0;
 
-  const isSysTagAdded = (groupId: string, tagName: string) =>
-    sidebarTargets?.groups.find((g) => g.groupId === groupId)?.tags.some((t) => t.tag === tagName) ?? false;
-
-  const handleEntryClick = (group: PromptGroupDto, tagId: string) => {
-    if (!existingGroupIds.includes(group.id)) {
-      addGroupToTarget(targetId, group);
-      setTimeout(() => toggleTag(targetId, group.id, tagId), 0);
-    } else {
-      toggleTag(targetId, group.id, tagId);
-    }
+  const clickEntry = (gr: PromptGroupDto, tid: string) => {
+    if (!existingGroupIds.includes(gr.id)) { addGroupToTarget(targetId, gr); setTimeout(() => toggleTag(targetId, gr.id, tid), 0); }
+    else toggleTag(targetId, gr.id, tid);
+  };
+  const clickSysTag = (gr: PromptGroupDto, name: string) => {
+    if (!existingGroupIds.includes(gr.id)) { addGroupToTarget(targetId, gr); setTimeout(() => addSystemTag(targetId, gr.id, { name, category: gr.category! }), 0); }
+    else { const ex = sidebarTargets?.groups.find((g) => g.groupId === gr.id)?.tags.find((t) => t.tag === name); if (ex) removeSystemTag(targetId, gr.id, ex.tagId); else addSystemTag(targetId, gr.id, { name, category: gr.category! }); }
   };
 
-  const handleSysTagClick = (group: PromptGroupDto, tagName: string) => {
-    if (!existingGroupIds.includes(group.id)) {
-      addGroupToTarget(targetId, group);
-      setTimeout(() => addSystemTag(targetId, group.id, { name: tagName, category: group.category! }), 0);
-    } else {
-      const existing = sidebarTargets?.groups.find((g) => g.groupId === group.id)?.tags.find((t) => t.tag === tagName);
-      if (existing) removeSystemTag(targetId, group.id, existing.tagId);
-      else addSystemTag(targetId, group.id, { name: tagName, category: group.category! });
-    }
-  };
-
-  const activateItem = useCallback((idx: number) => {
-    const item = items[idx];
-    if (!item) return;
-    if (item.kind === "genre") setExpandedGenres((s) => toggleSet(s, item.id));
-    else if (item.kind === "group") handleExpandGroup(item.group);
-    else if (item.kind === "entry") {
-      const gItem = items.slice(0, idx).reverse().find((i) => i.kind === "group");
-      if (gItem?.kind === "group") handleEntryClick(gItem.group, item.tagId);
-    } else if (item.kind === "sysTag") {
-      const gItem = items.slice(0, idx).reverse().find((i) => i.kind === "group");
-      if (gItem?.kind === "group") handleSysTagClick(gItem.group, item.tagName);
-    }
+  const activate = useCallback((idx: number) => {
+    const it = items[idx]; if (!it) return;
+    if (it.kind === "genre") setExpGenres((s) => tog(s, it.id));
+    else if (it.kind === "group") handleExpandGroup(it.group);
+    else if (it.kind === "entry") { const g = findGroup(items, idx); if (g) clickEntry(g, it.tagId); }
+    else if (it.kind === "sysTag") { const g = findGroup(items, idx); if (g) clickSysTag(g, it.tagName); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, existingGroupIds, sidebarTargets]);
 
-  const sysCheckRef = useRef<HTMLButtonElement>(null);
-
-  const handleTreeKeyDown = (e: React.KeyboardEvent) => {
+  const onKey = (e: React.KeyboardEvent) => {
     if ((e.target as HTMLElement).tagName === "INPUT") return;
-
-    const move = (delta: number) => {
+    const mv = (d: number) => {
       e.preventDefault();
-      setFocusIdx((p) => {
-        let n = p + delta;
-        while (n >= 0 && n < items.length && items[n].kind === "sysSearch") n += delta;
-        if (n < 0) { sysCheckRef.current?.focus(); return -1; }
-        n = Math.min(n, items.length - 1);
-        itemRefs.current[n]?.scrollIntoView({ block: "nearest" });
-        return n;
-      });
+      setFocusIdx((p) => { let n = p + d; while (n >= 0 && n < items.length && items[n].kind === "sysSearch") n += d; if (n < 0) { sysCheckRef.current?.focus(); return -1; } n = Math.min(n, items.length - 1); itemRefs.current[n]?.scrollIntoView({ block: "nearest" }); return n; });
     };
-
-    if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) move(1);
-    else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) move(-1);
-    else if (e.key === "ArrowRight") {
-      const item = items[focusIdx];
-      if (item?.kind === "genre" && !expandedGenres.has(item.id)) { e.preventDefault(); setExpandedGenres((s) => toggleSet(s, item.id)); }
-      else if (item?.kind === "group" && !expandedGroups.has(item.group.id)) { e.preventDefault(); handleExpandGroup(item.group); }
-      else move(1);
-    } else if (e.key === "ArrowLeft") {
-      const item = items[focusIdx];
-      if (item?.kind === "genre" && expandedGenres.has(item.id)) { e.preventDefault(); setExpandedGenres((s) => toggleSet(s, item.id)); }
-      else if (item?.kind === "group" && expandedGroups.has(item.group.id)) { e.preventDefault(); setExpandedGroups((s) => toggleSet(s, item.group.id)); }
-      else move(-1);
-    } else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activateItem(focusIdx); }
+    if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) mv(1);
+    else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) mv(-1);
+    else if (e.key === "ArrowRight") { const it = items[focusIdx]; if (it?.kind === "genre" && !expGenres.has(it.id)) { e.preventDefault(); setExpGenres((s) => tog(s, it.id)); } else if (it?.kind === "group" && !expGroups.has(it.group.id)) { e.preventDefault(); handleExpandGroup(it.group); } else mv(1); }
+    else if (e.key === "ArrowLeft") { const it = items[focusIdx]; if (it?.kind === "genre" && expGenres.has(it.id)) { e.preventDefault(); setExpGenres((s) => tog(s, it.id)); } else if (it?.kind === "group" && expGroups.has(it.group.id)) { e.preventDefault(); setExpGroups((s) => tog(s, it.group.id)); } else mv(-1); }
+    else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(focusIdx); }
   };
 
-  const enabledCountFor = (groupId: string) =>
-    sidebarTargets?.groups.find((g) => g.groupId === groupId)?.tags.filter((t) => t.enabled).length ?? 0;
+  const ul = "underline decoration-primary/40 decoration-1 underline-offset-2";
 
-  const underline = "underline decoration-primary/40 decoration-1 underline-offset-2";
+  // Render: group children (entries/sysTags) in a flex-wrap container with border-l
+  const rendered: React.ReactNode[] = [];
+  let i = 0;
+  while (i < items.length) {
+    const it = items[i];
+    const f = i === focusIdx;
+
+    if (it.kind === "genre") {
+      const open = expGenres.has(it.id);
+      rendered.push(
+        <div key={`g-${it.id}`} ref={(el) => { itemRefs.current[i] = el; }}
+          className="flex items-center gap-1 py-1 font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+          onClick={() => { setExpGenres((s) => tog(s, it.id)); setFocusIdx(i); }}>
+          <ChevronRight className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`} />
+          <span className={f ? ul : ""}>{it.label}</span>
+          <span className="text-[10px] text-muted-foreground/60">{it.count}</span>
+        </div>
+      );
+      i++; continue;
+    }
+
+    if (it.kind === "group") {
+      const { group: gr, isAdded } = it;
+      const open = expGroups.has(gr.id);
+      const ec = enabledCount(gr.id);
+      const isSys = gr.isSystem && gr.category != null;
+      const gi = i;
+
+      // Collect children
+      const kids: { it: FlatItem; idx: number }[] = [];
+      let j = i + 1;
+      while (j < items.length && items[j].kind !== "genre" && items[j].kind !== "group") { kids.push({ it: items[j], idx: j }); j++; }
+
+      rendered.push(
+        <div key={`grp-${gr.id}`}>
+          <ContextMenu>
+            <ContextMenuTrigger>
+              <div ref={(el) => { itemRefs.current[gi] = el; }} className="ml-3 flex items-center py-0.5 gap-0.5">
+                <button type="button" className="flex items-center gap-1 flex-1 min-w-0 hover:text-foreground"
+                  onClick={() => { handleExpandGroup(gr); setFocusIdx(gi); }}>
+                  <ChevronRight className={`h-2.5 w-2.5 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
+                  <span className={`truncate ${isAdded && ec > 0 ? "font-semibold text-primary" : ""} ${gi === focusIdx ? ul : ""}`}>{gr.name}</span>
+                  <span className="text-[9px] text-muted-foreground/60 shrink-0">{isSys && gr.id in sysTotals ? sysTotals[gr.id].toLocaleString() : gr.tags.length}</span>
+                  {isAdded && ec > 0 && <Badge variant="default" className="text-[7px] px-1 py-0 shrink-0">{ec}</Badge>}
+                </button>
+                <button type="button" className={`shrink-0 rounded p-0.5 transition-colors ${isAdded ? "text-primary hover:bg-destructive/10 hover:text-destructive" : "text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
+                  onClick={() => onToggleSidebar(gr)}>{isAdded ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}</button>
+              </div>
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+              <ContextMenuItem onClick={() => onEdit(gr)}>{t("common.edit")}</ContextMenuItem>
+              {!gr.isSystem && <ContextMenuItem className="text-destructive" onClick={() => onDelete(gr.id)}>{t("common.delete")}</ContextMenuItem>}
+            </ContextMenuContent>
+          </ContextMenu>
+
+          {kids.length > 0 && (
+            <div className="ml-6 border-l border-border/50 pl-2 py-0.5">
+              {/* Sys search */}
+              {kids.filter((k) => k.it.kind === "sysSearch").map((k) => {
+                const s = k.it as Extract<FlatItem, { kind: "sysSearch" }>;
+                return (
+                  <div key={`ss-${s.groupId}`} ref={(el) => { itemRefs.current[k.idx] = el; }} className="space-y-0.5 mb-1">
+                    {s.groupId in sysTotals && <span className="text-[8px] text-muted-foreground">{sysTotals[s.groupId].toLocaleString()} tags</span>}
+                    <div className="flex items-center gap-1">
+                      <Search className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+                      <input value={sysSearches[s.groupId] ?? ""} onChange={(e) => doSysSearch(s.groupId, s.category, e.target.value)}
+                        placeholder="..." className="h-5 w-full bg-transparent text-[10px] outline-none placeholder:text-muted-foreground/40" />
+                    </div>
+                  </div>
+                );
+              })}
+              {/* Badges in flex-wrap */}
+              <div className="flex flex-wrap gap-0.5">
+                {kids.filter((k) => k.it.kind === "sysTag" || k.it.kind === "entry").map((k) => {
+                  const fi = k.idx === focusIdx;
+                  if (k.it.kind === "sysTag") {
+                    const added = isSysAdded(k.it.groupId, k.it.tagName);
+                    return <Badge key={`st-${k.it.tagName}`} ref={(el) => { itemRefs.current[k.idx] = el; }}
+                      variant={added ? "default" : "outline"} className={`cursor-pointer text-[9px] px-1 py-0 select-none transition-colors ${fi ? ul : ""}`}
+                      onClick={() => { clickSysTag(gr, k.it.kind === "sysTag" ? k.it.tagName : ""); setFocusIdx(k.idx); }}>{(k.it as Extract<FlatItem, {kind:"sysTag"}>).tagName}</Badge>;
+                  }
+                  if (k.it.kind === "entry") {
+                    const en = isEnabled(k.it.groupId, k.it.tagId);
+                    return (
+                      <ContextMenu key={`e-${k.it.tagId}`}>
+                        <ContextMenuTrigger>
+                          <Badge ref={(el) => { itemRefs.current[k.idx] = el; }} variant={en ? "default" : "outline"}
+                            className={`cursor-pointer text-[9px] px-1 py-0 select-none transition-colors ${fi ? ul : ""}`}
+                            onClick={() => { clickEntry(gr, (k.it as Extract<FlatItem, {kind:"entry"}>).tagId); setFocusIdx(k.idx); }}>
+                            {(k.it as Extract<FlatItem, {kind:"entry"}>).label}
+                          </Badge>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem onClick={() => onEdit(gr)}>{t("common.edit")}</ContextMenuItem>
+                          {!gr.isSystem && <ContextMenuItem className="text-destructive" onClick={() => onDelete(gr.id)}>{t("common.delete")}</ContextMenuItem>}
+                        </ContextMenuContent>
+                      </ContextMenu>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+      i = j; continue;
+    }
+    i++;
+  }
 
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <Input value={searchQuery} onChange={(e) => onSearchChange(e.target.value)}
-          placeholder={t("common.search")} className="h-7 flex-1 text-xs" />
-        <Button size="icon" className="h-7 w-7 shrink-0" onClick={onAdd} title={t("promptGroup.newGroup")}>
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
+        <Input value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} placeholder={t("common.search")} className="h-7 flex-1 text-xs" />
+        <Button size="icon" className="h-7 w-7 shrink-0" onClick={onAdd} title={t("promptGroup.newGroup")}><Plus className="h-3.5 w-3.5" /></Button>
       </div>
       <div className="flex items-center gap-2">
         <Checkbox id="show-system" ref={sysCheckRef} checked={showSystem} onCheckedChange={(v) => onShowSystemChange(v === true)}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
-              e.preventDefault();
-              if (items.length > 0) { setFocusIdx(0); treeRef.current?.focus(); itemRefs.current[0]?.scrollIntoView({ block: "nearest" }); }
-            }
-          }} />
+          onKeyDown={(e) => { if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) { e.preventDefault(); if (items.length > 0) { setFocusIdx(0); treeRef.current?.focus(); } } }} />
         <label htmlFor="show-system" className="text-[10px] text-muted-foreground cursor-pointer">System</label>
       </div>
-
       <ScrollArea className="h-72">
-        <div ref={treeRef} className="pr-3 text-xs outline-none" tabIndex={0}
-          onKeyDown={handleTreeKeyDown}
+        <div ref={treeRef} className="pr-3 text-xs outline-none" tabIndex={0} onKeyDown={onKey}
           onFocus={() => { if (focusIdx < 0 && items.length > 0) setFocusIdx(0); }}>
-          {items.map((item, idx) => {
-            const focused = idx === focusIdx;
-            if (item.kind === "genre") {
-              const open = expandedGenres.has(item.id);
-              return (
-                <div key={`g-${item.id}`} ref={(el) => { itemRefs.current[idx] = el; }}
-                  className="flex items-center gap-1 py-1 font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-                  onClick={() => { setExpandedGenres((s) => toggleSet(s, item.id)); setFocusIdx(idx); }}>
-                  <ChevronRight className={`h-3 w-3 transition-transform ${open ? "rotate-90" : ""}`} />
-                  <span className={focused ? underline : ""}>{item.label}</span>
-                  <span className="text-[10px] text-muted-foreground/60">{item.count}</span>
-                </div>
-              );
-            }
-            if (item.kind === "group") {
-              const { group, isAdded } = item;
-              const open = expandedGroups.has(group.id);
-              const ec = enabledCountFor(group.id);
-              const isSys = group.isSystem && group.category != null;
-              return (
-                <ContextMenu key={`grp-${group.id}`}>
-                  <ContextMenuTrigger>
-                    <div ref={(el) => { itemRefs.current[idx] = el; }}
-                      className="ml-3 flex items-center py-0.5 gap-0.5">
-                      <button type="button" className="flex items-center gap-1 flex-1 min-w-0 hover:text-foreground"
-                        onClick={() => { handleExpandGroup(group); setFocusIdx(idx); }}>
-                        <ChevronRight className={`h-2.5 w-2.5 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
-                        <span className={`truncate ${isAdded && ec > 0 ? "font-semibold text-primary" : ""} ${focused ? underline : ""}`}>{group.name}</span>
-                        <span className="text-[9px] text-muted-foreground/60 shrink-0">
-                          {isSys && group.id in sysTotals ? sysTotals[group.id].toLocaleString() : group.tags.length}
-                        </span>
-                        {isAdded && ec > 0 && <Badge variant="default" className="text-[7px] px-1 py-0 shrink-0">{ec}</Badge>}
-                      </button>
-                      <button type="button"
-                        className={`shrink-0 rounded p-0.5 transition-colors ${isAdded ? "text-primary hover:bg-destructive/10 hover:text-destructive" : "text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
-                        onClick={() => onToggleSidebar(group)}>
-                        {isAdded ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
-                      </button>
-                    </div>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    <ContextMenuItem onClick={() => onEdit(group)}>{t("common.edit")}</ContextMenuItem>
-                    {!group.isSystem && <ContextMenuItem className="text-destructive" onClick={() => onDelete(group.id)}>{t("common.delete")}</ContextMenuItem>}
-                  </ContextMenuContent>
-                </ContextMenu>
-              );
-            }
-            if (item.kind === "sysSearch") {
-              return (
-                <div key={`ss-${item.groupId}`} ref={(el) => { itemRefs.current[idx] = el; }} className="ml-7 py-0.5 space-y-0.5">
-                  {item.groupId in sysTotals && <span className="text-[8px] text-muted-foreground">{sysTotals[item.groupId].toLocaleString()} tags</span>}
-                  <div className="flex items-center gap-1">
-                    <Search className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-                    <input value={sysSearches[item.groupId] ?? ""}
-                      onChange={(e) => handleSysSearch(item.groupId, item.category, e.target.value)}
-                      placeholder="..." className="h-5 w-full bg-transparent text-[10px] outline-none placeholder:text-muted-foreground/40" />
-                  </div>
-                </div>
-              );
-            }
-            if (item.kind === "sysTag") {
-              const added = isSysTagAdded(item.groupId, item.tagName);
-              const gItem = items.slice(0, idx).reverse().find((i) => i.kind === "group");
-              return (
-                <Badge key={`st-${item.groupId}-${item.tagName}`}
-                  ref={(el) => { itemRefs.current[idx] = el; }}
-                  variant={added ? "default" : "outline"}
-                  className={`ml-7 cursor-pointer text-[9px] px-1 py-0 select-none transition-colors inline-block mr-0.5 mb-0.5 ${focused ? underline : ""}`}
-                  onClick={() => { if (gItem?.kind === "group") handleSysTagClick(gItem.group, item.tagName); setFocusIdx(idx); }}>
-                  {item.tagName}
-                </Badge>
-              );
-            }
-            if (item.kind === "entry") {
-              const enabled = isEntryEnabled(item.groupId, item.tagId);
-              const gItem = items.slice(0, idx).reverse().find((i) => i.kind === "group");
-              return (
-                <ContextMenu key={`e-${item.tagId}`}>
-                  <ContextMenuTrigger>
-                    <Badge ref={(el) => { itemRefs.current[idx] = el; }}
-                      variant={enabled ? "default" : "outline"}
-                      className={`ml-7 cursor-pointer text-[9px] px-1 py-0 select-none transition-colors inline-block mr-0.5 mb-0.5 ${focused ? underline : ""}`}
-                      onClick={() => { if (gItem?.kind === "group") handleEntryClick(gItem.group, item.tagId); setFocusIdx(idx); }}>
-                      {item.label}
-                    </Badge>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    {gItem?.kind === "group" && <ContextMenuItem onClick={() => onEdit(gItem.group)}>{t("common.edit")}</ContextMenuItem>}
-                    {gItem?.kind === "group" && !gItem.group.isSystem && <ContextMenuItem className="text-destructive" onClick={() => onDelete(gItem.group.id)}>{t("common.delete")}</ContextMenuItem>}
-                  </ContextMenuContent>
-                </ContextMenu>
-              );
-            }
-            return null;
-          })}
+          {rendered}
         </div>
       </ScrollArea>
     </div>
   );
+}
+
+function findGroup(items: FlatItem[], idx: number): PromptGroupDto | null {
+  for (let k = idx - 1; k >= 0; k--) if (items[k].kind === "group") return (items[k] as Extract<FlatItem, {kind:"group"}>).group;
+  return null;
 }
