@@ -118,7 +118,7 @@ export default function PromptGroupGrid({
                   <ContextMenuTrigger>
                     <button
                       type="button"
-                      className={`relative flex flex-col items-center gap-0.5 rounded-md border p-1.5 text-center overflow-hidden transition-colors ${
+                      className={`relative flex h-24 w-full flex-col items-center justify-center gap-0.5 rounded-md border p-1.5 text-center overflow-hidden transition-colors ${
                         isAdded
                           ? "border-primary/40 bg-primary/5"
                           : "border-border hover:bg-accent"
@@ -142,9 +142,15 @@ export default function PromptGroupGrid({
                         )}
                       </div>
                       <span className="text-[10px] font-medium line-clamp-1 w-full">{group.name}</span>
-                      <span className="text-[8px] text-muted-foreground">
-                        {group.tags.length}
-                      </span>
+                      <div className="flex flex-wrap justify-center gap-0.5">
+                        {group.isDefault && (
+                          <Badge variant="outline" className="text-[7px] px-1 py-0">{t("promptGroup.defaultForGenre")}</Badge>
+                        )}
+                        {group.isSystem && (
+                          <Badge variant="secondary" className="text-[7px] px-1 py-0">Sys</Badge>
+                        )}
+                        <Badge variant="secondary" className="text-[7px] px-1 py-0">{group.tags.length}</Badge>
+                      </div>
                     </button>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
