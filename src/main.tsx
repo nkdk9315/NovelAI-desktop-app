@@ -11,6 +11,14 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 
+// Log uncaught errors to Tauri terminal
+window.onerror = (message, source, lineno, colno, error) => {
+  console.error("[window.onerror]", message, source, lineno, colno, error?.stack);
+};
+window.onunhandledrejection = (event) => {
+  console.error("[unhandledrejection]", event.reason);
+};
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />
