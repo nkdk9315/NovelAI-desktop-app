@@ -110,7 +110,7 @@ export default function PromptGroupGrid({
             {t("promptGroup.noGroups")}
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-2 pr-3 sm:grid-cols-3">
+          <div className="grid grid-cols-4 gap-1.5 pr-3 sm:grid-cols-5">
             {filteredGroups.map((group) => {
               const isAdded = existingGroupIds.includes(group.id);
               return (
@@ -118,7 +118,7 @@ export default function PromptGroupGrid({
                   <ContextMenuTrigger>
                     <button
                       type="button"
-                      className={`relative flex flex-col items-start gap-1 rounded-lg border p-2 text-left overflow-hidden transition-colors ${
+                      className={`relative flex flex-col items-center gap-0.5 rounded-md border p-1.5 text-center overflow-hidden transition-colors ${
                         isAdded
                           ? "border-primary/40 bg-primary/5"
                           : "border-border hover:bg-accent"
@@ -126,11 +126,11 @@ export default function PromptGroupGrid({
                       onClick={() => onToggleSidebar(group)}
                     >
                       {isAdded && (
-                        <div className="absolute right-1 top-1 rounded-full bg-primary p-0.5">
-                          <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                        <div className="absolute right-0.5 top-0.5 rounded-full bg-primary p-0.5">
+                          <Check className="h-2 w-2 text-primary-foreground" />
                         </div>
                       )}
-                      <div className="flex h-16 w-full items-center justify-center rounded bg-muted/50 shrink-0">
+                      <div className="flex h-8 w-8 items-center justify-center rounded bg-muted/50 shrink-0">
                         {group.thumbnailPath ? (
                           <img
                             src={group.thumbnailPath}
@@ -138,23 +138,13 @@ export default function PromptGroupGrid({
                             className="h-full w-full rounded object-cover"
                           />
                         ) : (
-                          <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
+                          <ImageIcon className="h-4 w-4 text-muted-foreground/30" />
                         )}
                       </div>
-                      <span className="text-xs font-medium line-clamp-1 w-full">{group.name}</span>
-                      <div className="flex flex-wrap gap-0.5">
-                        {group.isDefault && (
-                          <Badge variant="outline" className="text-[8px]">
-                            {t("promptGroup.defaultForGenre")}
-                          </Badge>
-                        )}
-                        {group.isSystem && (
-                          <Badge variant="secondary" className="text-[8px]">System</Badge>
-                        )}
-                        <Badge variant="secondary" className="text-[8px]">
-                          {group.tags.length}
-                        </Badge>
-                      </div>
+                      <span className="text-[10px] font-medium line-clamp-1 w-full">{group.name}</span>
+                      <span className="text-[8px] text-muted-foreground">
+                        {group.tags.length}
+                      </span>
                     </button>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
