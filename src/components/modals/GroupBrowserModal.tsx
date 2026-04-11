@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Plus, Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import {
   Dialog,
   DialogContent,
