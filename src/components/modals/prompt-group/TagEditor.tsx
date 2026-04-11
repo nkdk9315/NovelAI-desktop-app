@@ -82,11 +82,10 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
 
         <Badge
           variant="outline"
-          className="cursor-pointer text-xs hover:bg-accent gap-0.5"
+          className="cursor-pointer hover:bg-accent px-1.5"
           onClick={openAdd}
         >
-          <Plus className="h-2.5 w-2.5" />
-          {t("promptGroup.addPromptEntry")}
+          <Plus className="h-3 w-3" />
         </Badge>
       </div>
 
@@ -95,28 +94,22 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-sm">
-              {editingIndex !== null ? t("promptGroup.editGroup") : t("promptGroup.addPromptEntry")}
+              {editingIndex !== null ? t("common.edit") : t("common.create")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs">{t("promptGroup.entryName")}</Label>
-              <Input
-                value={modalName}
-                onChange={(e) => setModalName(e.target.value)}
-                placeholder={t("promptGroup.entryName")}
-                className="h-8 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">{t("promptGroup.entryContent")}</Label>
-              <PromptTextarea
-                value={modalContent}
-                onChange={setModalContent}
-                placeholder={t("promptGroup.entryContent")}
-                rows={4}
-              />
-            </div>
+            <Input
+              value={modalName}
+              onChange={(e) => setModalName(e.target.value)}
+              placeholder={t("promptGroup.entryName")}
+              className="h-8 text-sm"
+            />
+            <PromptTextarea
+              value={modalContent}
+              onChange={setModalContent}
+              placeholder={t("promptGroup.entryContent")}
+              rows={4}
+            />
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowModal(false)}>
                 {t("common.cancel")}
