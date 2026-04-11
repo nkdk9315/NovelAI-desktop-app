@@ -1,16 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
 import {
   Popover,
   PopoverContent,
@@ -26,8 +20,8 @@ interface TagEditorProps {
 
 export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
   const { t } = useTranslation();
-  const [showAddForm, setShowAddForm] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newContent, setNewContent] = useState("");
 
@@ -42,7 +36,8 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
     setShowAddForm(false);
   };
 
-  const handleRemove = (index: number) => {
+  const handleRemove = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
     onTagsChange(tags.filter((_, i) => i !== index));
     if (editingIndex === index) setEditingIndex(null);
   };
@@ -59,62 +54,54 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
     <div className="space-y-1.5">
       <Label className="text-xs">{t("promptGroup.prompts")}</Label>
 
-      {/* Badge grid */}
       <div className="flex flex-wrap gap-1">
         {tags.map((entry, i) => (
-          <ContextMenu key={i}>
-            <ContextMenuTrigger>
-              <Popover
-                open={editingIndex === i}
-                onOpenChange={(open) => { if (!open) setEditingIndex(null); }}
+          <Popover
+            key={i}
+            open={editingIndex === i}
+            onOpenChange={(open) => { if (!open) setEditingIndex(null); }}
+          >
+            <PopoverTrigger asChild>
+              <Badge
+                variant="secondary"
+                className="cursor-pointer text-xs hover:bg-accent gap-1 pr-1"
+                onClick={() => setEditingIndex(i)}
               >
-                <PopoverTrigger asChild>
-                  <Badge
-                    variant="secondary"
-                    className="cursor-pointer text-xs hover:bg-accent"
-                  >
-                    {entry.name || entry.tag}
-                  </Badge>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 space-y-2" align="start">
-                  <Input
-                    value={entry.name ?? ""}
-                    onChange={(e) => handleNameChange(i, e.target.value)}
-                    placeholder={t("promptGroup.entryName")}
-                    className="h-7 text-xs"
-                  />
-                  <PromptTextarea
-                    value={entry.tag}
-                    onChange={(v) => handleContentChange(i, v)}
-                    placeholder={t("promptGroup.entryContent")}
-                    rows={3}
-                  />
-                  <Button
-                    size="sm"
-                    className="h-6 w-full text-xs"
-                    onClick={() => setEditingIndex(null)}
-                  >
-                    {t("common.close")}
-                  </Button>
-                </PopoverContent>
-              </Popover>
-            </ContextMenuTrigger>
-            <ContextMenuContent>
-              <ContextMenuItem onClick={() => setEditingIndex(i)}>
-                {t("common.edit")}
-              </ContextMenuItem>
-              <ContextMenuItem
-                className="text-destructive"
-                onClick={() => handleRemove(i)}
+                {entry.name || entry.tag}
+                <button
+                  type="button"
+                  className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                  onClick={(e) => handleRemove(i, e)}
+                >
+                  <X className="h-2.5 w-2.5 text-muted-foreground" />
+                </button>
+              </Badge>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 space-y-2" align="start">
+              <Input
+                value={entry.name ?? ""}
+                onChange={(e) => handleNameChange(i, e.target.value)}
+                placeholder={t("promptGroup.entryName")}
+                className="h-7 text-xs"
+              />
+              <PromptTextarea
+                value={entry.tag}
+                onChange={(v) => handleContentChange(i, v)}
+                placeholder={t("promptGroup.entryContent")}
+                rows={3}
+              />
+              <Button
+                size="sm"
+                className="h-6 w-full text-xs"
+                onClick={() => setEditingIndex(null)}
               >
-                {t("common.delete")}
-              </ContextMenuItem>
-            </ContextMenuContent>
-          </ContextMenu>
+                {t("common.close")}
+              </Button>
+            </PopoverContent>
+          </Popover>
         ))}
 
-        {/* Add button */}
-        {showAddForm ? null : (
+        {!showAddForm && (
           <Badge
             variant="outline"
             className="cursor-pointer text-xs hover:bg-accent gap-0.5"
@@ -126,7 +113,6 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
         )}
       </div>
 
-      {/* Add new entry form */}
       {showAddForm && (
         <div className="space-y-1 rounded border border-dashed border-border p-2">
           <Input
