@@ -81,11 +81,13 @@ export default function MainPromptSection() {
       )}
 
       <PromptGroupModal open={showGroupModal} onOpenChange={setShowGroupModal} />
-      <GroupBrowserModal
-        open={showGroupBrowser}
-        onOpenChange={setShowGroupBrowser}
-        targetId={MAIN_TARGET_ID}
-      />
+      {showGroupBrowser && (
+        <GroupBrowserModal
+          open={showGroupBrowser}
+          onOpenChange={setShowGroupBrowser}
+          targetId={MAIN_TARGET_ID}
+        />
+      )}
     </div>
   );
 }

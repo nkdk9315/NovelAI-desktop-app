@@ -82,11 +82,13 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
         </>
       )}
 
-      <GroupBrowserModal
-        open={showGroupBrowser}
-        onOpenChange={setShowGroupBrowser}
-        targetId={character.id}
-      />
+      {showGroupBrowser && (
+        <GroupBrowserModal
+          open={showGroupBrowser}
+          onOpenChange={setShowGroupBrowser}
+          targetId={character.id}
+        />
+      )}
     </div>
   );
 }
