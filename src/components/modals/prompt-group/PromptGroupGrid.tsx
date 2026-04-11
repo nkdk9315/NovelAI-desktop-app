@@ -129,7 +129,7 @@ export default function PromptGroupGrid({
     else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(focusIdx); }
   };
 
-  const ul = "underline decoration-primary/40 decoration-1 underline-offset-2";
+  const ul = "border-b border-primary/60";
 
   // Render: group children (entries/sysTags) in a flex-wrap container with border-l
   const rendered: React.ReactNode[] = [];
@@ -187,7 +187,7 @@ export default function PromptGroupGrid({
           </ContextMenu>
 
           {kids.length > 0 && (
-            <div className="ml-6 border-l border-border/50 pl-2 py-0.5">
+            <div className="ml-6 border-l border-border pl-2 py-0.5">
               {/* Sys search */}
               {kids.filter((k) => k.it.kind === "sysSearch").map((k) => {
                 const s = k.it as Extract<FlatItem, { kind: "sysSearch" }>;
