@@ -85,7 +85,7 @@ export default function PromptGroupGrid({
       </div>
 
       {/* Card grid */}
-      <ScrollArea className="max-h-80">
+      <ScrollArea className="h-72">
         {filteredGroups.length === 0 ? (
           <p className="py-8 text-center text-xs text-muted-foreground">
             {t("promptGroup.noGroups")}

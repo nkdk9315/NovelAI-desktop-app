@@ -2,12 +2,18 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight, Plus, Trash2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import PromptTextarea from "@/components/shared/PromptTextarea";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
-import type { SidebarPromptGroup } from "@/stores/sidebar-prompt-store";
+import type { SidebarPromptGroup, SidebarPromptTag } from "@/stores/sidebar-prompt-store";
 import { assembleFullPrompt } from "@/lib/prompt-assembly";
 
 const EMPTY_GROUPS: SidebarPromptGroup[] = [];
@@ -38,7 +44,6 @@ export default function CharacterPromptGroups({
 
   return (
     <div className="space-y-2">
-      {/* Groups list */}
       {groups.map((group) => (
         <GroupItem
           key={group.groupId}
@@ -51,7 +56,6 @@ export default function CharacterPromptGroups({
         />
       ))}
 
-      {/* Add group button */}
       <Button
         variant="outline"
         size="sm"
@@ -62,7 +66,6 @@ export default function CharacterPromptGroups({
         {t("promptGroup.selectGroup")}
       </Button>
 
-      {/* Free text */}
       <PromptTextarea
         value={freeText}
         onChange={(v) => setFreeText(targetId, v)}
@@ -70,7 +73,6 @@ export default function CharacterPromptGroups({
         rows={2}
       />
 
-      {/* Prompt preview */}
       <button
         type="button"
         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -87,8 +89,6 @@ export default function CharacterPromptGroups({
     </div>
   );
 }
-
-// ---- Sub-component for a single group ----
 
 interface GroupItemProps {
   targetId: string;
@@ -116,56 +116,81 @@ function GroupItem({
           className="flex items-center gap-1 text-xs font-medium"
           onClick={onToggleExpanded}
         >
-          {group.expanded ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronRight className="h-3 w-3" />
-          )}
+          {group.expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
           <span>{group.groupName}</span>
-          <Badge variant="secondary" className="ml-1 text-[9px]">
-            {enabledCount}/{group.tags.length}
-          </Badge>
+          <span className="text-[9px] text-muted-foreground">{enabledCount}/{group.tags.length}</span>
         </button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 w-5 p-0"
-          onClick={onRemove}
-        >
+        <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={onRemove}>
           <Trash2 className="h-3 w-3 text-destructive" />
         </Button>
       </div>
 
       {group.expanded && (
-        <div className="mt-2 space-y-1.5">
+        <div className="mt-1.5 flex flex-wrap gap-1">
           {group.tags.map((tag) => (
-            <div key={tag.tagId} className="flex items-center gap-2">
-              <Switch
-                checked={tag.enabled}
-                onCheckedChange={() => onToggleTag(tag.tagId)}
-                className="h-4 w-7"
-              />
-              <span className={`flex-1 text-xs ${tag.enabled ? "" : "text-muted-foreground line-through"}`}>
-                {tag.name || tag.tag}
-              </span>
-              <div className="flex w-24 items-center gap-1">
-                <Slider
-                  value={[tag.strength]}
-                  min={-10}
-                  max={10}
-                  step={0.1}
-                  onValueChange={([v]) => onSetStrength(tag.tagId, Math.round(v * 10) / 10)}
-                  className="flex-1"
-                  disabled={!tag.enabled}
-                />
-                <span className="w-8 text-right text-[10px] text-muted-foreground">
-                  {tag.strength.toFixed(1)}
-                </span>
-              </div>
-            </div>
+            <TagBadge
+              key={tag.tagId}
+              tag={tag}
+              onToggle={() => onToggleTag(tag.tagId)}
+              onSetStrength={(s) => onSetStrength(tag.tagId, s)}
+            />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function TagBadge({
+  tag,
+  onToggle,
+  onSetStrength,
+}: {
+  tag: SidebarPromptTag;
+  onToggle: () => void;
+  onSetStrength: (s: number) => void;
+}) {
+  const [strength, setLocalStrength] = useState(tag.strength);
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <Badge
+          variant={tag.enabled ? "secondary" : "outline"}
+          className={`cursor-pointer text-[11px] select-none ${
+            tag.enabled ? "" : "opacity-40 line-through"
+          }`}
+          onClick={onToggle}
+        >
+          {tag.name || tag.tag}
+          {tag.strength !== 0 && (
+            <span className="ml-0.5 text-[9px] text-muted-foreground">
+              {tag.strength > 0 ? "+" : ""}{tag.strength.toFixed(1)}
+            </span>
+          )}
+        </Badge>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-48">
+        <ContextMenuLabel className="text-[10px]">{tag.name || tag.tag}</ContextMenuLabel>
+        <div className="px-2 py-1.5 flex items-center gap-2">
+          <Slider
+            min={-10} max={10} step={0.1}
+            value={[strength]}
+            onValueChange={([v]) => {
+              const rounded = Math.round(v * 10) / 10;
+              setLocalStrength(rounded);
+              onSetStrength(rounded);
+            }}
+            className="flex-1"
+          />
+          <span className="w-7 text-right text-[10px] text-muted-foreground">
+            {strength.toFixed(1)}
+          </span>
+        </div>
+        <ContextMenuItem onClick={onToggle}>
+          {tag.enabled ? "OFF" : "ON"}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
