@@ -170,9 +170,10 @@ function TagBadge({
           )}
         </Badge>
       </ContextMenuTrigger>
-      <ContextMenuContent className="w-48">
-        <ContextMenuLabel className="text-[10px]">{tag.name || tag.tag}</ContextMenuLabel>
-        <div className="px-2 py-1.5 flex items-center gap-2">
+      <ContextMenuContent className="w-52 p-2 space-y-2">
+        <p className="text-[11px] font-medium truncate">{tag.name || tag.tag}</p>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-muted-foreground w-4">-10</span>
           <Slider
             min={-10} max={10} step={0.1}
             value={[strength]}
@@ -183,13 +184,31 @@ function TagBadge({
             }}
             className="flex-1"
           />
-          <span className="w-7 text-right text-[10px] text-muted-foreground">
+          <span className="text-[10px] text-muted-foreground w-4 text-right">10</span>
+          <span className="w-9 text-center text-xs font-mono bg-muted rounded px-1 py-0.5">
             {strength.toFixed(1)}
           </span>
         </div>
-        <ContextMenuItem onClick={onToggle}>
-          {tag.enabled ? "OFF" : "ON"}
-        </ContextMenuItem>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            className="flex-1 rounded bg-muted px-2 py-1 text-[10px] text-muted-foreground hover:bg-accent"
+            onClick={() => { setLocalStrength(0); onSetStrength(0); }}
+          >
+            Reset
+          </button>
+          <button
+            type="button"
+            className={`flex-1 rounded px-2 py-1 text-[10px] ${
+              tag.enabled
+                ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                : "bg-primary/10 text-primary hover:bg-primary/20"
+            }`}
+            onClick={onToggle}
+          >
+            {tag.enabled ? "OFF" : "ON"}
+          </button>
+        </div>
       </ContextMenuContent>
     </ContextMenu>
   );
