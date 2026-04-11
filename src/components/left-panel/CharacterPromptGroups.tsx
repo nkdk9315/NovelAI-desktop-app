@@ -7,8 +7,6 @@ import { Slider } from "@/components/ui/slider";
 import {
   ContextMenu,
   ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuLabel,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import PromptTextarea from "@/components/shared/PromptTextarea";
