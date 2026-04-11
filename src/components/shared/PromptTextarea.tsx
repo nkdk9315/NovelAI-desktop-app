@@ -18,6 +18,7 @@ export default function PromptTextarea({
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const getCurrentToken = useCallback(() => {
     const textarea = textareaRef.current;
@@ -85,13 +86,21 @@ export default function PromptTextarea({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showDropdown || results.length === 0) return;
 
-    if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
       e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
-    } else if (e.key === "ArrowUp") {
+      setSelectedIndex((prev) => {
+        const next = Math.min(prev + 1, results.length - 1);
+        suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
+        return next;
+      });
+    } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
       e.preventDefault();
-      setSelectedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" || e.key === "Tab") {
+      setSelectedIndex((prev) => {
+        const next = Math.max(prev - 1, 0);
+        suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
+        return next;
+      });
+    } else if (e.key === "Enter") {
       e.preventDefault();
       insertTag(results[selectedIndex].name);
     } else if (e.key === "Escape") {
@@ -116,6 +125,7 @@ export default function PromptTextarea({
           {results.map((tag, i) => (
             <button
               key={tag.name}
+              ref={(el) => { suggestionRefs.current[i] = el; }}
               type="button"
               className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-xs hover:bg-accent ${
                 i === selectedIndex ? "bg-accent" : ""
