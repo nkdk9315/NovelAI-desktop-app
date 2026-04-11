@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { GENRE_ICONS, GENRE_COLORS, getGenreIcon } from "@/lib/genre-icons";
 
 interface GenreEditorPopoverProps {
-  onSave: (name: string, icon: string, color: string) => void;
+  onSave: (name: string, icon: string, color: string) => void | Promise<void>;
   trigger?: React.ReactNode;
   initialName?: string;
   initialIcon?: string;
@@ -41,9 +41,9 @@ export default function GenreEditorPopover({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) return;
-    onSave(name.trim(), icon, color);
+    await onSave(name.trim(), icon, color);
     setOpen(false);
   };
 

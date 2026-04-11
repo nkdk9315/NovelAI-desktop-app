@@ -59,8 +59,7 @@ export default function CharacterAddButtons() {
 
   const handleCreateGenre = async (name: string, icon: string, color: string) => {
     try {
-      const genre = await createGenre({ name, icon, color });
-      await handleAdd(genre);
+      await createGenre({ name, icon, color });
     } catch {
       // toast handled by caller if needed
     }
