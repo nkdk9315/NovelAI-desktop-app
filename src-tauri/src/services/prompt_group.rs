@@ -51,13 +51,14 @@ pub fn create_prompt_group(
     };
     pg_repo::insert(conn, &row)?;
 
-    let tag_tuples: Vec<(String, String, i32, i32, Option<String>)> = req
+    let tag_tuples: Vec<(String, String, String, i32, i32, Option<String>)> = req
         .tags
         .iter()
         .enumerate()
         .map(|(i, t)| {
             (
                 uuid::Uuid::new_v4().to_string(),
+                t.name.clone().unwrap_or_default(),
                 t.tag.clone(),
                 i as i32,
                 t.default_strength.unwrap_or(0),
@@ -93,12 +94,13 @@ pub fn update_prompt_group(
     pg_repo::update(conn, &existing)?;
 
     if let Some(tags) = req.tags {
-        let tag_tuples: Vec<(String, String, i32, i32, Option<String>)> = tags
+        let tag_tuples: Vec<(String, String, String, i32, i32, Option<String>)> = tags
             .iter()
             .enumerate()
             .map(|(i, t)| {
                 (
                     uuid::Uuid::new_v4().to_string(),
+                    t.name.clone().unwrap_or_default(),
                     t.tag.clone(),
                     i as i32,
                     t.default_strength.unwrap_or(0),
@@ -152,9 +154,9 @@ mod tests {
                 name: "Test Group".to_string(),
                 genre_id: Some(genre.id.clone()),
                 tags: vec![
-                    TagInput { tag: "tag1".to_string(), default_strength: None, thumbnail_path: None },
-                    TagInput { tag: "tag2".to_string(), default_strength: Some(3), thumbnail_path: None },
-                    TagInput { tag: "tag3".to_string(), default_strength: Some(-2), thumbnail_path: Some("/tmp/t.png".to_string()) },
+                    TagInput { name: None, tag: "tag1".to_string(), default_strength: None, thumbnail_path: None },
+                    TagInput { name: None, tag: "tag2".to_string(), default_strength: Some(3), thumbnail_path: None },
+                    TagInput { name: None, tag: "tag3".to_string(), default_strength: Some(-2), thumbnail_path: Some("/tmp/t.png".to_string()) },
                 ],
             },
         )
@@ -271,7 +273,7 @@ mod tests {
             CreatePromptGroupRequest {
                 name: "Deletable".to_string(),
                 genre_id: Some(genre.id),
-                tags: vec![TagInput { tag: "a".to_string(), default_strength: None, thumbnail_path: None }],
+                tags: vec![TagInput { name: None, tag: "a".to_string(), default_strength: None, thumbnail_path: None }],
             },
         )
         .unwrap();

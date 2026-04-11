@@ -6,6 +6,7 @@ import * as ipc from "@/lib/ipc";
 
 export interface SidebarPromptTag {
   tagId: string;
+  name: string;
   tag: string;
   enabled: boolean;
   strength: number;
@@ -60,6 +61,7 @@ function groupDtoToSidebar(dto: PromptGroupDto): SidebarPromptGroup {
     category: dto.category,
     tags: dto.tags.map((t) => ({
       tagId: t.id,
+      name: t.name || t.tag,
       tag: t.tag,
       enabled: true,
       strength: t.defaultStrength,
@@ -179,6 +181,7 @@ export const useSidebarPromptStore = create<SidebarPromptState>()((set) => ({
           if (group.tags.some((t) => t.tag === tag.name)) return group;
           const newTag: SidebarPromptTag = {
             tagId: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            name: tag.name,
             tag: tag.name,
             enabled: true,
             strength: 0,

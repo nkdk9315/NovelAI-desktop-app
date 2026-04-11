@@ -201,6 +201,10 @@
     "newGenre": "New Genre",
     "genreNamePlaceholder": "Enter genre name",
     "deleteGenreConfirm": "Delete this genre?",
-    "systemCannotDelete": "System data cannot be deleted"
+    "systemCannotDelete": "System data cannot be deleted",
+    "prompts": "Prompt Entries",
+    "entryName": "Entry name (display label)",
+    "entryContent": "Prompt content (tags, text...)",
+    "addPromptEntry": "Add Prompt Entry"
   }
 }

@@ -81,34 +81,35 @@ pub fn find_tags_by_group(
     prompt_group_id: &str,
 ) -> Result<Vec<PromptGroupTagRow>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, tag, sort_order, default_strength, thumbnail_path FROM prompt_group_tags WHERE prompt_group_id = ?1 ORDER BY sort_order ASC",
+        "SELECT id, name, tag, sort_order, default_strength, thumbnail_path FROM prompt_group_tags WHERE prompt_group_id = ?1 ORDER BY sort_order ASC",
     )?;
     let rows = stmt.query_map([prompt_group_id], |row| {
         Ok(PromptGroupTagRow {
             id: row.get(0)?,
-            tag: row.get(1)?,
-            sort_order: row.get(2)?,
-            default_strength: row.get(3)?,
-            thumbnail_path: row.get(4)?,
+            name: row.get(1)?,
+            tag: row.get(2)?,
+            sort_order: row.get(3)?,
+            default_strength: row.get(4)?,
+            thumbnail_path: row.get(5)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
 }
 
-/// Tag tuple: (id, tag, sort_order, default_strength, thumbnail_path)
+/// Tag tuple: (id, name, tag, sort_order, default_strength, thumbnail_path)
 pub fn replace_tags(
     conn: &Connection,
     prompt_group_id: &str,
-    tags: &[(String, String, i32, i32, Option<String>)],
+    tags: &[(String, String, String, i32, i32, Option<String>)],
 ) -> Result<(), AppError> {
     conn.execute(
         "DELETE FROM prompt_group_tags WHERE prompt_group_id = ?1",
         [prompt_group_id],
     )?;
-    for (id, tag, sort_order, default_strength, thumbnail_path) in tags {
+    for (id, name, tag, sort_order, default_strength, thumbnail_path) in tags {
         conn.execute(
-            "INSERT INTO prompt_group_tags (id, prompt_group_id, tag, sort_order, default_strength, thumbnail_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            rusqlite::params![id, prompt_group_id, tag, sort_order, default_strength, thumbnail_path],
+            "INSERT INTO prompt_group_tags (id, prompt_group_id, name, tag, sort_order, default_strength, thumbnail_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            rusqlite::params![id, prompt_group_id, name, tag, sort_order, default_strength, thumbnail_path],
         )?;
     }
     Ok(())
@@ -188,6 +189,7 @@ mod tests {
         // Add tags to verify CASCADE
         let tags = vec![(
             uuid::Uuid::new_v4().to_string(),
+            "".to_string(),
             "tag1".to_string(),
             0,
             0,
@@ -210,8 +212,8 @@ mod tests {
 
         // Insert initial tags with default_strength
         let tags1 = vec![
-            (uuid::Uuid::new_v4().to_string(), "tag_a".to_string(), 0, 3, None),
-            (uuid::Uuid::new_v4().to_string(), "tag_b".to_string(), 1, -2, Some("/tmp/thumb.png".to_string())),
+            (uuid::Uuid::new_v4().to_string(), "Entry A".to_string(), "tag_a".to_string(), 0, 3, None),
+            (uuid::Uuid::new_v4().to_string(), "Entry B".to_string(), "tag_b".to_string(), 1, -2, Some("/tmp/thumb.png".to_string())),
         ];
         replace_tags(&conn, &pg.id, &tags1).unwrap();
         let found = find_tags_by_group(&conn, &pg.id).unwrap();
@@ -225,7 +227,7 @@ mod tests {
 
         // Replace with new tags
         let tags2 = vec![
-            (uuid::Uuid::new_v4().to_string(), "tag_x".to_string(), 0, 0, None),
+            (uuid::Uuid::new_v4().to_string(), "Entry X".to_string(), "tag_x".to_string(), 0, 0, None),
         ];
         replace_tags(&conn, &pg.id, &tags2).unwrap();
         let found = find_tags_by_group(&conn, &pg.id).unwrap();

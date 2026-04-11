@@ -38,6 +38,7 @@ pub struct PromptGroupRow {
 
 pub struct PromptGroupTagRow {
     pub id: String,
+    pub name: String,
     pub tag: String,
     pub sort_order: i32,
     pub default_strength: i32,
@@ -140,6 +141,7 @@ pub struct PromptGroupDto {
 #[serde(rename_all = "camelCase")]
 pub struct PromptGroupTagDto {
     pub id: String,
+    pub name: String,
     pub tag: String,
     pub sort_order: i32,
     pub default_strength: i32,
@@ -324,6 +326,7 @@ pub struct CostEstimateRequest {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TagInput {
+    pub name: Option<String>,
     pub tag: String,
     pub default_strength: Option<i32>,
     pub thumbnail_path: Option<String>,
@@ -488,6 +491,7 @@ impl From<PromptGroupTagRow> for PromptGroupTagDto {
     fn from(row: PromptGroupTagRow) -> Self {
         Self {
             id: row.id,
+            name: row.name,
             tag: row.tag,
             sort_order: row.sort_order,
             default_strength: row.default_strength,

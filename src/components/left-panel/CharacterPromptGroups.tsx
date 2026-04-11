@@ -146,7 +146,7 @@ function GroupItem({
                 className="h-4 w-7"
               />
               <span className={`flex-1 text-xs ${tag.enabled ? "" : "text-muted-foreground line-through"}`}>
-                {tag.tag}
+                {tag.name || tag.tag}
               </span>
               <div className="flex w-24 items-center gap-1">
                 <Slider

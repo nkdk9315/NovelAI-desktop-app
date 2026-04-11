@@ -1,11 +1,11 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { useAutocomplete } from "@/hooks/use-autocomplete";
+import PromptTextarea from "@/components/shared/PromptTextarea";
 import type { TagInput } from "@/types";
 
 interface TagEditorProps {
@@ -15,27 +15,25 @@ interface TagEditorProps {
 
 export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
   const { t } = useTranslation();
-  const [tagInput, setTagInput] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(-1);
-  const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const { results: suggestions, search } = useAutocomplete(300);
-  const filtered = suggestions.slice(0, 8);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newContent, setNewContent] = useState("");
+  const [newStrength, setNewStrength] = useState(0);
 
-  const handleInputChange = (value: string) => {
-    setTagInput(value);
-    search(value);
-    setShowSuggestions(value.trim().length > 0);
-    setHighlightIndex(-1);
-  };
-
-  const handleAdd = (tagName: string) => {
-    const trimmed = tagName.trim();
-    if (trimmed && !tags.some((t) => t.tag === trimmed)) {
-      onTagsChange([...tags, { tag: trimmed, defaultStrength: 0 }]);
-    }
-    setTagInput("");
-    setShowSuggestions(false);
+  const handleAdd = () => {
+    if (!newContent.trim()) return;
+    onTagsChange([
+      ...tags,
+      {
+        name: newName.trim() || undefined,
+        tag: newContent.trim(),
+        defaultStrength: newStrength,
+      },
+    ]);
+    setNewName("");
+    setNewContent("");
+    setNewStrength(0);
+    setShowAddForm(false);
   };
 
   const handleRemove = (index: number) => {
@@ -46,89 +44,98 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
     onTagsChange(tags.map((t, i) => (i === index ? { ...t, defaultStrength: strength } : t)));
   };
 
+  const handleNameChange = (index: number, name: string) => {
+    onTagsChange(tags.map((t, i) => (i === index ? { ...t, name: name || undefined } : t)));
+  };
+
+  const handleContentChange = (index: number, tag: string) => {
+    onTagsChange(tags.map((t, i) => (i === index ? { ...t, tag } : t)));
+  };
+
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs">{t("promptGroup.tags")}</Label>
+    <div className="space-y-2">
+      <Label className="text-xs">{t("promptGroup.prompts")}</Label>
 
-      {/* Autocomplete input */}
-      <div className="relative">
-        <Input
-          value={tagInput}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              setHighlightIndex((prev) => {
-                const next = Math.min(prev + 1, filtered.length - 1);
-                suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
-                return next;
-              });
-            } else if (e.key === "ArrowUp") {
-              e.preventDefault();
-              setHighlightIndex((prev) => {
-                const next = Math.max(prev - 1, -1);
-                if (next >= 0) suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
-                return next;
-              });
-            } else if (e.key === "Enter") {
-              e.preventDefault();
-              if (highlightIndex >= 0 && highlightIndex < filtered.length) {
-                handleAdd(filtered[highlightIndex].name);
-              } else {
-                handleAdd(tagInput);
-              }
-            } else if (e.key === "Escape") {
-              setShowSuggestions(false);
-            }
-          }}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-          placeholder={t("promptGroup.tagPlaceholder")}
-          className="h-8 text-xs"
-        />
-        {showSuggestions && filtered.length > 0 && (
-          <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md">
-            {filtered.map((s, i) => (
-              <button
-                key={s.name}
-                ref={(el) => { suggestionRefs.current[i] = el; }}
-                type="button"
-                className={`w-full px-2 py-1 text-left text-xs ${i === highlightIndex ? "bg-accent" : "hover:bg-accent"}`}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleAdd(s.name)}
-              >
-                <span>{s.name}</span>
-                <span className="ml-2 text-muted-foreground">{s.postCount.toLocaleString()}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Tag list with strength */}
-      {tags.length > 0 && (
-        <div className="space-y-1.5 mt-2">
-          {tags.map((tag, i) => (
-            <div key={tag.tag} className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-[10px] shrink-0">
-                {tag.tag}
-                <button type="button" onClick={() => handleRemove(i)} className="ml-1">
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </Badge>
+      {/* Existing entries */}
+      {tags.map((entry, i) => (
+        <div key={i} className="space-y-1 rounded border border-border p-2">
+          <div className="flex items-center gap-2">
+            <Input
+              value={entry.name ?? ""}
+              onChange={(e) => handleNameChange(i, e.target.value)}
+              placeholder={t("promptGroup.entryName")}
+              className="h-7 flex-1 text-xs"
+            />
+            <div className="flex w-28 items-center gap-1">
               <Slider
-                min={-10}
-                max={10}
-                step={0.1}
-                value={[tag.defaultStrength ?? 0]}
+                min={-10} max={10} step={0.1}
+                value={[entry.defaultStrength ?? 0]}
                 onValueChange={([v]) => handleStrength(i, Math.round(v * 10) / 10)}
                 className="flex-1"
               />
-              <span className="text-[10px] text-muted-foreground w-8 text-right">
-                {(tag.defaultStrength ?? 0).toFixed(1)}
+              <span className="w-8 text-right text-[10px] text-muted-foreground">
+                {(entry.defaultStrength ?? 0).toFixed(1)}
               </span>
             </div>
-          ))}
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleRemove(i)}>
+              <Trash2 className="h-3 w-3 text-destructive" />
+            </Button>
+          </div>
+          <PromptTextarea
+            value={entry.tag}
+            onChange={(v) => handleContentChange(i, v)}
+            placeholder={t("promptGroup.entryContent")}
+            rows={2}
+          />
         </div>
+      ))}
+
+      {/* Add new entry form */}
+      {showAddForm ? (
+        <div className="space-y-1 rounded border border-dashed border-border p-2">
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder={t("promptGroup.entryName")}
+            className="h-7 text-xs"
+          />
+          <PromptTextarea
+            value={newContent}
+            onChange={setNewContent}
+            placeholder={t("promptGroup.entryContent")}
+            rows={2}
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t("vibe.strength")}</span>
+            <Slider
+              min={-10} max={10} step={0.1}
+              value={[newStrength]}
+              onValueChange={([v]) => setNewStrength(Math.round(v * 10) / 10)}
+              className="flex-1"
+            />
+            <span className="w-8 text-right text-[10px] text-muted-foreground">
+              {newStrength.toFixed(1)}
+            </span>
+          </div>
+          <div className="flex gap-1 pt-1">
+            <Button size="sm" className="h-6 text-xs" onClick={handleAdd} disabled={!newContent.trim()}>
+              {t("promptGroup.addTag")}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowAddForm(false)}>
+              {t("common.cancel")}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-1 text-xs"
+          onClick={() => setShowAddForm(true)}
+        >
+          <Plus className="h-3 w-3" />
+          {t("promptGroup.addPromptEntry")}
+        </Button>
       )}
     </div>
   );

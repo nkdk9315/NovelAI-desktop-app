@@ -10,8 +10,8 @@ const mockGroup: PromptGroupDto = {
   isSystem: false,
   usageType: "both",
   tags: [
-    { id: "t-1", tag: "smile", sortOrder: 0, defaultStrength: 2, thumbnailPath: null },
-    { id: "t-2", tag: "blush", sortOrder: 1, defaultStrength: 0, thumbnailPath: "/thumb.png" },
+    { id: "t-1", name: "Smile", tag: "smile", sortOrder: 0, defaultStrength: 2, thumbnailPath: null },
+    { id: "t-2", name: "Blush", tag: "blush", sortOrder: 1, defaultStrength: 0, thumbnailPath: "/thumb.png" },
   ],
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
@@ -28,7 +28,7 @@ const mockGroup2: PromptGroupDto = {
   isSystem: true,
   usageType: "both",
   tags: [
-    { id: "t-3", tag: "long_hair", sortOrder: 0, defaultStrength: -1, thumbnailPath: null },
+    { id: "t-3", name: "Long Hair", tag: "long_hair", sortOrder: 0, defaultStrength: -1, thumbnailPath: null },
   ],
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
