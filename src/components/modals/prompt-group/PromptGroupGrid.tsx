@@ -114,6 +114,9 @@ function GroupRow({ group, isAdded, isExpanded, targetId, onToggleExpand, onTogg
   const [sysTotal, setSysTotal] = useState<number | null>(null);
   const [sysHighlight, setSysHighlight] = useState(-1);
   const sysTagRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const [entryHighlight, setEntryHighlight] = useState(-1);
+  const entryRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const entryFocusRef = useRef<HTMLDivElement>(null);
 
   const addGroupToTarget = useSidebarPromptStore((s) => s.addGroupToTarget);
   const toggleTag = useSidebarPromptStore((s) => s.toggleTag);
@@ -245,15 +248,41 @@ function GroupRow({ group, isAdded, isExpanded, targetId, onToggleExpand, onTogg
           )}
 
           {!isSys && group.tags.length > 0 && (
-            <div className="flex flex-wrap gap-0.5">
-              {group.tags.map((tag) => {
+            <div
+              ref={entryFocusRef}
+              tabIndex={0}
+              className="flex flex-wrap gap-0.5 outline-none"
+              onFocus={() => { if (entryHighlight < 0) setEntryHighlight(0); }}
+              onBlur={() => setEntryHighlight(-1)}
+              onKeyDown={(e) => {
+                const len = group.tags.length;
+                if (len === 0) return;
+                const move = (delta: number) => {
+                  e.preventDefault();
+                  setEntryHighlight((p) => {
+                    const n = Math.max(0, Math.min(p + delta, len - 1));
+                    entryRefs.current[n]?.scrollIntoView({ block: "nearest" });
+                    return n;
+                  });
+                };
+                if (e.key === "ArrowRight" || e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) move(1);
+                else if (e.key === "ArrowLeft" || e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) move(-1);
+                else if (e.key === "Enter" && entryHighlight >= 0 && entryHighlight < len) {
+                  e.preventDefault();
+                  handleEntryClick(group.tags[entryHighlight].id);
+                }
+              }}
+            >
+              {group.tags.map((tag, idx) => {
                 const enabled = isEntryEnabled(tag.id);
                 return (
                   <ContextMenu key={tag.id}>
                     <ContextMenuTrigger>
-                      <Badge variant={enabled ? "default" : "outline"}
-                        className="cursor-pointer text-[9px] px-1 py-0 select-none transition-colors"
-                        onClick={() => handleEntryClick(tag.id)}>
+                      <Badge
+                        ref={(el) => { entryRefs.current[idx] = el; }}
+                        variant={enabled ? "default" : "outline"}
+                        className={`cursor-pointer text-[9px] px-1 py-0 select-none transition-colors ${idx === entryHighlight ? "ring-1 ring-primary" : ""}`}
+                        onClick={() => { handleEntryClick(tag.id); entryFocusRef.current?.focus(); setEntryHighlight(idx); }}>
                         {tag.name || tag.tag}
                       </Badge>
                     </ContextMenuTrigger>
