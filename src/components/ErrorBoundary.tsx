@@ -54,12 +54,20 @@ export default class ErrorBoundary extends Component<Props, State> {
               {this.state.error?.stack}
             </pre>
           </div>
-          <button
-            className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground"
-            onClick={() => this.setState({ hasError: false, error: null })}
-          >
-            Retry
-          </button>
+          <div className="flex gap-2">
+            <button
+              className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground"
+              onClick={() => this.setState({ hasError: false, error: null })}
+            >
+              Retry
+            </button>
+            <button
+              className="rounded border border-border bg-background px-4 py-2 text-sm hover:bg-accent"
+              onClick={this.handleCopy}
+            >
+              {copied ? "Copied!" : "Copy"}
+            </button>
+          </div>
         </div>
       );
     }
