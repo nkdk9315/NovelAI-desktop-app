@@ -7,7 +7,7 @@ import PromptTextarea from "@/components/shared/PromptTextarea";
 import PositionEditor from "./PositionEditor";
 import CharacterHeader from "./CharacterHeader";
 import CharacterPromptGroups from "./CharacterPromptGroups";
-import GroupBrowserModal from "@/components/modals/GroupBrowserModal";
+import PromptGroupModal from "@/components/modals/PromptGroupModal";
 
 interface CharacterSectionProps {
   index: number;
@@ -83,7 +83,7 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
       )}
 
       {showGroupBrowser && (
-        <GroupBrowserModal
+        <PromptGroupModal
           open={showGroupBrowser}
           onOpenChange={setShowGroupBrowser}
           targetId={character.id}

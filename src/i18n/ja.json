@@ -202,6 +202,7 @@
     "genreNamePlaceholder": "ジャンル名を入力",
     "deleteGenreConfirm": "このジャンルを削除しますか？",
     "systemCannotDelete": "システムデータは削除できません",
+    "showEntries": "エントリ一覧",
     "prompts": "プロンプトエントリ",
     "entryName": "エントリ名（表示用ラベル）",
     "entryContent": "プロンプト内容（タグ、文章...）",

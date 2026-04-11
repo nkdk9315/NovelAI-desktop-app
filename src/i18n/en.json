@@ -202,6 +202,7 @@
     "genreNamePlaceholder": "Enter genre name",
     "deleteGenreConfirm": "Delete this genre?",
     "systemCannotDelete": "System data cannot be deleted",
+    "showEntries": "Show Entries",
     "prompts": "Prompt Entries",
     "entryName": "Entry name (display label)",
     "entryContent": "Prompt content (tags, text...)",

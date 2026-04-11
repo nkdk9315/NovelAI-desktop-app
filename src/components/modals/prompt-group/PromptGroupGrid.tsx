@@ -1,9 +1,22 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Image as ImageIcon } from "lucide-react";
+import { Plus, Image as ImageIcon, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -20,11 +33,14 @@ interface PromptGroupGridProps {
   selectedGenreId: string | undefined;
   searchQuery: string;
   showSystem: boolean;
+  existingGroupIds: string[];
   onGenreChange: (id: string | undefined) => void;
   onSearchChange: (query: string) => void;
   onShowSystemChange: (show: boolean) => void;
   onAdd: () => void;
+  onToggleSidebar: (group: PromptGroupDto) => void;
   onEdit: (group: PromptGroupDto) => void;
+  onDelete: (id: string) => void;
 }
 
 export default function PromptGroupGrid({
@@ -33,13 +49,17 @@ export default function PromptGroupGrid({
   selectedGenreId,
   searchQuery,
   showSystem,
+  existingGroupIds,
   onGenreChange,
   onSearchChange,
   onShowSystemChange,
   onAdd,
+  onToggleSidebar,
   onEdit,
+  onDelete,
 }: PromptGroupGridProps) {
   const { t } = useTranslation();
+  const [previewGroup, setPreviewGroup] = useState<PromptGroupDto | null>(null);
 
   const filteredGroups = showSystem ? groups : groups.filter((g) => !g.isSystem);
 
@@ -72,7 +92,6 @@ export default function PromptGroupGrid({
         </Button>
       </div>
 
-      {/* System filter toggle */}
       <div className="flex items-center gap-2">
         <Checkbox
           id="show-system"
@@ -92,44 +111,95 @@ export default function PromptGroupGrid({
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-2 pr-3 sm:grid-cols-3">
-            {filteredGroups.map((group) => (
-              <button
-                key={group.id}
-                type="button"
-                className="flex flex-col items-start gap-1 rounded-lg border border-border p-2 text-left hover:bg-accent overflow-hidden"
-                onClick={() => onEdit(group)}
-              >
-                {/* Thumbnail */}
-                <div className="flex h-16 w-full items-center justify-center rounded bg-muted/50 shrink-0">
-                  {group.thumbnailPath ? (
-                    <img
-                      src={group.thumbnailPath}
-                      alt={group.name}
-                      className="h-full w-full rounded object-cover"
-                    />
-                  ) : (
-                    <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
-                  )}
-                </div>
-                <span className="text-xs font-medium line-clamp-1 w-full">{group.name}</span>
-                <div className="flex flex-wrap gap-0.5">
-                  {group.isDefault && (
-                    <Badge variant="outline" className="text-[8px]">
-                      {t("promptGroup.defaultForGenre")}
-                    </Badge>
-                  )}
-                  {group.isSystem && (
-                    <Badge variant="secondary" className="text-[8px]">System</Badge>
-                  )}
-                  <Badge variant="secondary" className="text-[8px]">
-                    {group.tags.length} tags
-                  </Badge>
-                </div>
-              </button>
-            ))}
+            {filteredGroups.map((group) => {
+              const isAdded = existingGroupIds.includes(group.id);
+              return (
+                <ContextMenu key={group.id}>
+                  <ContextMenuTrigger>
+                    <button
+                      type="button"
+                      className={`relative flex flex-col items-start gap-1 rounded-lg border p-2 text-left overflow-hidden transition-colors ${
+                        isAdded
+                          ? "border-primary/40 bg-primary/5"
+                          : "border-border hover:bg-accent"
+                      }`}
+                      onClick={() => onToggleSidebar(group)}
+                    >
+                      {isAdded && (
+                        <div className="absolute right-1 top-1 rounded-full bg-primary p-0.5">
+                          <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                        </div>
+                      )}
+                      <div className="flex h-16 w-full items-center justify-center rounded bg-muted/50 shrink-0">
+                        {group.thumbnailPath ? (
+                          <img
+                            src={group.thumbnailPath}
+                            alt={group.name}
+                            className="h-full w-full rounded object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
+                        )}
+                      </div>
+                      <span className="text-xs font-medium line-clamp-1 w-full">{group.name}</span>
+                      <div className="flex flex-wrap gap-0.5">
+                        {group.isDefault && (
+                          <Badge variant="outline" className="text-[8px]">
+                            {t("promptGroup.defaultForGenre")}
+                          </Badge>
+                        )}
+                        {group.isSystem && (
+                          <Badge variant="secondary" className="text-[8px]">System</Badge>
+                        )}
+                        <Badge variant="secondary" className="text-[8px]">
+                          {group.tags.length}
+                        </Badge>
+                      </div>
+                    </button>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem onClick={() => onEdit(group)}>
+                      {t("common.edit")}
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => setPreviewGroup(group)}>
+                      {t("promptGroup.showEntries")}
+                    </ContextMenuItem>
+                    {!group.isSystem && (
+                      <ContextMenuItem
+                        className="text-destructive"
+                        onClick={() => onDelete(group.id)}
+                      >
+                        {t("common.delete")}
+                      </ContextMenuItem>
+                    )}
+                  </ContextMenuContent>
+                </ContextMenu>
+              );
+            })}
           </div>
         )}
       </ScrollArea>
+
+      {/* Entry preview dialog */}
+      {previewGroup && (
+        <Dialog open onOpenChange={() => setPreviewGroup(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-sm">{previewGroup.name}</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-wrap gap-1">
+              {previewGroup.tags.map((tag) => (
+                <Badge key={tag.id} variant="outline" className="text-xs">
+                  {tag.name || tag.tag}
+                </Badge>
+              ))}
+              {previewGroup.tags.length === 0 && (
+                <span className="text-xs text-muted-foreground">—</span>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
