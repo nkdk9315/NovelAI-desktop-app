@@ -63,7 +63,7 @@ function groupDtoToSidebar(dto: PromptGroupDto): SidebarPromptGroup {
       tagId: t.id,
       name: t.name || t.tag,
       tag: t.tag,
-      enabled: true,
+      enabled: false,
       strength: t.defaultStrength,
       defaultStrength: t.defaultStrength,
       thumbnailPath: t.thumbnailPath,
