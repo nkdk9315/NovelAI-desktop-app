@@ -1,4 +1,8 @@
-use crate::models::dto::{CategoryDto, SystemTagDto};
+use rusqlite::Connection;
+
+use crate::error::AppError;
+use crate::models::dto::{CategoryDto, PromptGroupRow, SystemTagDto};
+use crate::repositories::prompt_group as pg_repo;
 use crate::state::{SystemPromptDB, SystemTag};
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
@@ -137,6 +141,92 @@ pub fn search_system_prompts(
     results
 }
 
+/// System prompt group categories to seed
+const SYSTEM_CATEGORIES: &[(u8, &str)] = &[
+    (0, "General Tags"),
+    (1, "Artist Tags"),
+    (3, "Works Tags"),
+    (4, "Character Tags"),
+    (5, "Meta Tags"),
+];
+
+/// Seeds system prompt groups into DB on first launch.
+/// Each group represents one CSV category; tags are served from in-memory SystemPromptDB.
+pub fn seed_system_prompt_groups(conn: &Connection) -> Result<(), AppError> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM prompt_groups WHERE is_system = 1",
+        [],
+        |row| row.get(0),
+    )?;
+    if count > 0 {
+        return Ok(());
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    for &(cat_id, name) in SYSTEM_CATEGORIES {
+        let row = PromptGroupRow {
+            id: format!("system-group-cat-{cat_id}"),
+            name: name.to_string(),
+            genre_id: None,
+            is_default_for_genre: 0,
+            is_system: 1,
+            usage_type: "both".to_string(),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+            thumbnail_path: None,
+            is_default: 0,
+            category: Some(cat_id as i32),
+        };
+        pg_repo::insert(conn, &row)?;
+    }
+    Ok(())
+}
+
+/// List tags for a system prompt group by category, with optional search and pagination.
+pub fn list_system_group_tags(
+    db: &SystemPromptDB,
+    category: u8,
+    query: Option<&str>,
+    offset: usize,
+    limit: usize,
+) -> (Vec<SystemTagDto>, usize) {
+    let indices = match db.by_category.get(&category) {
+        Some(indices) => indices,
+        None => return (Vec::new(), 0),
+    };
+
+    let query_lower = query.map(|q| q.to_lowercase());
+
+    let filtered: Vec<&SystemTag> = indices
+        .iter()
+        .map(|&idx| &db.tags[idx])
+        .filter(|tag| {
+            if let Some(ref q) = query_lower {
+                let name_lower = tag.name.to_lowercase();
+                name_lower.contains(q)
+                    || tag.aliases.iter().any(|a| a.to_lowercase().contains(q))
+            } else {
+                true
+            }
+        })
+        .collect();
+
+    let total_count = filtered.len();
+    let results: Vec<SystemTagDto> = filtered
+        .into_iter()
+        .skip(offset)
+        .take(limit)
+        .map(|tag| SystemTagDto {
+            name: tag.name.clone(),
+            category: tag.category,
+            post_count: tag.post_count,
+            aliases: tag.aliases.clone(),
+        })
+        .collect();
+
+    (results, total_count)
+}
+
 pub fn get_random_tags(db: &SystemPromptDB, category: u8, count: usize) -> Vec<SystemTagDto> {
     let indices = match db.by_category.get(&category) {
         Some(indices) => indices,
@@ -227,6 +317,55 @@ long_hair,0,5915693,
         // Filter by non-existent category
         let results = search_system_prompts(&db, "girl", Some(99), 50);
         assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_seed_system_prompt_groups() {
+        let conn = crate::test_utils::setup_test_db();
+        seed_system_prompt_groups(&conn).unwrap();
+
+        // Should create 5 system groups
+        let groups = crate::repositories::prompt_group::list(&conn, None, None).unwrap();
+        let system_groups: Vec<_> = groups.iter().filter(|g| g.is_system != 0).collect();
+        assert_eq!(system_groups.len(), 5);
+
+        // Verify categories
+        let cats: Vec<Option<i32>> = system_groups.iter().map(|g| g.category).collect();
+        assert!(cats.contains(&Some(0)));
+        assert!(cats.contains(&Some(1)));
+        assert!(cats.contains(&Some(3)));
+        assert!(cats.contains(&Some(4)));
+        assert!(cats.contains(&Some(5)));
+
+        // Idempotent — running again should not create duplicates
+        seed_system_prompt_groups(&conn).unwrap();
+        let groups2 = crate::repositories::prompt_group::list(&conn, None, None).unwrap();
+        let system_groups2: Vec<_> = groups2.iter().filter(|g| g.is_system != 0).collect();
+        assert_eq!(system_groups2.len(), 5);
+    }
+
+    #[test]
+    fn test_list_system_group_tags() {
+        let db = test_db();
+        // Category 0 has 3 tags: 1girl, solo, long_hair
+        let (tags, total) = list_system_group_tags(&db, 0, None, 0, 50);
+        assert_eq!(total, 3);
+        assert_eq!(tags.len(), 3);
+
+        // With search filter
+        let (tags, total) = list_system_group_tags(&db, 0, Some("girl"), 0, 50);
+        assert_eq!(total, 1);
+        assert_eq!(tags[0].name, "1girl");
+
+        // With pagination
+        let (tags, total) = list_system_group_tags(&db, 0, None, 1, 1);
+        assert_eq!(total, 3);
+        assert_eq!(tags.len(), 1);
+
+        // Non-existent category
+        let (tags, total) = list_system_group_tags(&db, 99, None, 0, 50);
+        assert_eq!(total, 0);
+        assert!(tags.is_empty());
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use tauri::State;
 
-use crate::models::dto::{CategoryDto, SystemTagDto};
+use crate::models::dto::{CategoryDto, ListSystemGroupTagsResponse, SystemTagDto};
 use crate::state::AppState;
 
 #[tauri::command]
@@ -23,6 +23,24 @@ pub fn search_system_prompts(
         category,
         limit.unwrap_or(50),
     ))
+}
+
+#[tauri::command]
+pub fn list_system_group_tags(
+    state: State<'_, AppState>,
+    category: u8,
+    query: Option<String>,
+    offset: Option<usize>,
+    limit: Option<usize>,
+) -> Result<ListSystemGroupTagsResponse, String> {
+    let (tags, total_count) = crate::services::system_prompt::list_system_group_tags(
+        &state.system_tags,
+        category,
+        query.as_deref(),
+        offset.unwrap_or(0),
+        limit.unwrap_or(50),
+    );
+    Ok(ListSystemGroupTagsResponse { tags, total_count })
 }
 
 #[tauri::command]

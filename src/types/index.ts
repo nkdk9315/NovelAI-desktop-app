@@ -16,6 +16,8 @@ export interface GenreDto {
   isSystem: boolean;
   sortOrder: number;
   createdAt: string;
+  icon: string;
+  color: string;
 }
 
 export interface PromptGroupDto {
@@ -24,16 +26,21 @@ export interface PromptGroupDto {
   genreId: string | null;
   isDefaultForGenre: boolean;
   isSystem: boolean;
-  usageType: "main" | "character" | "both";
+  usageType: string;
   tags: PromptGroupTagDto[];
   createdAt: string;
   updatedAt: string;
+  thumbnailPath: string | null;
+  isDefault: boolean;
+  category: number | null;
 }
 
 export interface PromptGroupTagDto {
   id: string;
   tag: string;
   sortOrder: number;
+  defaultStrength: number;
+  thumbnailPath: string | null;
 }
 
 export interface GeneratedImageDto {
@@ -171,23 +178,43 @@ export interface CostEstimateRequest {
   tier: number;
 }
 
+export interface TagInput {
+  tag: string;
+  defaultStrength?: number;
+  thumbnailPath?: string;
+}
+
 export interface CreatePromptGroupRequest {
   name: string;
   genreId?: string;
-  usageType: string;
-  tags: string[];
+  tags: TagInput[];
 }
 
 export interface UpdatePromptGroupRequest {
   id: string;
   name?: string;
   genreId?: string | null;
-  tags?: string[];
-  isDefaultForGenre?: boolean;
+  tags?: TagInput[];
+  isDefault?: boolean;
+  thumbnailPath?: string | null;
 }
 
 export interface CreateGenreRequest {
   name: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface UpdateGenreRequest {
+  id: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface ListSystemGroupTagsResponse {
+  tags: SystemTagDto[];
+  totalCount: number;
 }
 
 export interface AddVibeRequest {

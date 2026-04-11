@@ -63,6 +63,10 @@ pub fn run() {
                 }
             };
 
+            // Seed system prompt groups on first launch
+            services::system_prompt::seed_system_prompt_groups(&conn)
+                .expect("Failed to seed system prompt groups");
+
             let app_state = AppState {
                 db: Mutex::new(conn),
                 api_client: tokio::sync::Mutex::new(api_client_val),
@@ -124,6 +128,7 @@ pub fn run() {
             commands::system_prompts::get_system_prompt_categories,
             commands::system_prompts::search_system_prompts,
             commands::system_prompts::get_random_artist_tags,
+            commands::system_prompts::list_system_group_tags,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

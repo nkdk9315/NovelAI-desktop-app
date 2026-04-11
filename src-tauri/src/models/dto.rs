@@ -217,6 +217,13 @@ pub struct SystemTagDto {
     pub aliases: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListSystemGroupTagsResponse {
+    pub tags: Vec<SystemTagDto>,
+    pub total_count: usize,
+}
+
 // ---- Request DTOs (from frontend) ----
 
 #[derive(Debug, Deserialize)]

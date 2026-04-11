@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import type {
   PromptGroupDto, GenreDto,
-  CreatePromptGroupRequest, UpdatePromptGroupRequest, CreateGenreRequest,
+  CreatePromptGroupRequest, UpdatePromptGroupRequest,
+  CreateGenreRequest, UpdateGenreRequest,
 } from "@/types";
 import * as ipc from "@/lib/ipc";
 
@@ -11,8 +12,9 @@ interface PromptState {
   isLoading: boolean;
   loadGenres: () => Promise<void>;
   createGenre: (req: CreateGenreRequest) => Promise<GenreDto>;
+  updateGenre: (req: UpdateGenreRequest) => Promise<GenreDto>;
   deleteGenre: (id: string) => Promise<void>;
-  loadPromptGroups: (genreId?: string, usageType?: string, search?: string) => Promise<void>;
+  loadPromptGroups: (genreId?: string, search?: string) => Promise<void>;
   createPromptGroup: (req: CreatePromptGroupRequest) => Promise<PromptGroupDto>;
   updatePromptGroup: (req: UpdatePromptGroupRequest) => Promise<void>;
   deletePromptGroup: (id: string) => Promise<void>;
@@ -31,13 +33,20 @@ export const usePromptStore = create<PromptState>()((set) => ({
     set((state) => ({ genres: [...state.genres, genre] }));
     return genre;
   },
+  updateGenre: async (req) => {
+    const updated = await ipc.updateGenre(req);
+    set((state) => ({
+      genres: state.genres.map((g) => (g.id === updated.id ? updated : g)),
+    }));
+    return updated;
+  },
   deleteGenre: async (id) => {
     await ipc.deleteGenre(id);
     set((state) => ({ genres: state.genres.filter((g) => g.id !== id) }));
   },
-  loadPromptGroups: async (genreId, usageType, search) => {
+  loadPromptGroups: async (genreId, search) => {
     set({ isLoading: true });
-    const promptGroups = await ipc.listPromptGroups(genreId, usageType, search);
+    const promptGroups = await ipc.listPromptGroups(genreId, search);
     set({ promptGroups, isLoading: false });
   },
   createPromptGroup: async (req) => {

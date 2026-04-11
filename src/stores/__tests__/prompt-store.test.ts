@@ -20,6 +20,8 @@ const mockGenre: GenreDto = {
   isSystem: false,
   sortOrder: 0,
   createdAt: "2026-01-01T00:00:00Z",
+  icon: "user",
+  color: "#888888",
 };
 
 const mockGroup: PromptGroupDto = {
@@ -29,9 +31,12 @@ const mockGroup: PromptGroupDto = {
   isDefaultForGenre: false,
   isSystem: false,
   usageType: "both",
-  tags: [{ id: "t-1", tag: "tag1", sortOrder: 0 }],
+  tags: [{ id: "t-1", tag: "tag1", sortOrder: 0, defaultStrength: 0, thumbnailPath: null }],
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
+  thumbnailPath: null,
+  isDefault: false,
+  category: null,
 };
 
 beforeEach(() => {
@@ -71,10 +76,10 @@ describe("promptGroup actions", () => {
   it("loadPromptGroups fetches with filters", async () => {
     vi.mocked(ipc.listPromptGroups).mockResolvedValue([mockGroup]);
 
-    await usePromptStore.getState().loadPromptGroups("genre-1", "both", "test");
+    await usePromptStore.getState().loadPromptGroups("genre-1", "test");
     expect(usePromptStore.getState().promptGroups).toEqual([mockGroup]);
     expect(usePromptStore.getState().isLoading).toBe(false);
-    expect(ipc.listPromptGroups).toHaveBeenCalledWith("genre-1", "both", "test");
+    expect(ipc.listPromptGroups).toHaveBeenCalledWith("genre-1", "test");
   });
 
   it("createPromptGroup adds to state", async () => {
@@ -83,8 +88,7 @@ describe("promptGroup actions", () => {
     const result = await usePromptStore.getState().createPromptGroup({
       name: "Test Group",
       genreId: "genre-1",
-      usageType: "both",
-      tags: ["tag1"],
+      tags: [{ tag: "tag1" }],
     });
     expect(result).toEqual(mockGroup);
     expect(usePromptStore.getState().promptGroups).toHaveLength(1);

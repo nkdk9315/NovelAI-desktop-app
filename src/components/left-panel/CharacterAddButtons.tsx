@@ -30,7 +30,7 @@ export default function CharacterAddButtons() {
 
     try {
       const groups = await ipc.listPromptGroups(genreId);
-      const defaultGroup = groups.find((g) => g.isDefaultForGenre);
+      const defaultGroup = groups.find((g) => g.isDefault);
       if (defaultGroup && defaultGroup.tags.length > 0) {
         const tagStr = defaultGroup.tags.map((t) => t.tag).join(", ");
         updateCharacter(idx, { prompt: tagStr });

@@ -31,8 +31,6 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
   const createPromptGroup = usePromptStore((s) => s.createPromptGroup);
   const updatePromptGroup = usePromptStore((s) => s.updatePromptGroup);
   const deletePromptGroup = usePromptStore((s) => s.deletePromptGroup);
-  const createGenre = usePromptStore((s) => s.createGenre);
-  const deleteGenre = usePromptStore((s) => s.deleteGenre);
 
   const [selectedGenreId, setSelectedGenreId] = useState<string | undefined>(undefined);
   const [editing, setEditing] = useState<PromptGroupDto | null>(null);
@@ -41,10 +39,8 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
   // Form state
   const [formName, setFormName] = useState("");
   const [formGenreId, setFormGenreId] = useState<string | null>(null);
-  const [formUsageType, setFormUsageType] = useState("both");
   const [formTags, setFormTags] = useState<string[]>([]);
   const [formTagInput, setFormTagInput] = useState("");
-  const [newGenreName, setNewGenreName] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -56,7 +52,6 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
   const resetForm = () => {
     setFormName("");
     setFormGenreId(null);
-    setFormUsageType("both");
     setFormTags([]);
     setFormTagInput("");
     setEditing(null);
@@ -67,7 +62,6 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
     setEditing(group);
     setFormName(group.name);
     setFormGenreId(group.genreId);
-    setFormUsageType(group.usageType);
     setFormTags(group.tags.map((t) => t.tag));
     setShowCreateForm(true);
   };
@@ -92,14 +86,13 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
           id: editing.id,
           name: formName.trim(),
           genreId: formGenreId,
-          tags: formTags,
+          tags: formTags.map((tag) => ({ tag })),
         });
       } else {
         await createPromptGroup({
           name: formName.trim(),
           ...(formGenreId ? { genreId: formGenreId } : {}),
-          usageType: formUsageType,
-          tags: formTags,
+          tags: formTags.map((tag) => ({ tag })),
         });
       }
       resetForm();
@@ -122,29 +115,6 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
     }
   };
 
-  const handleCreateGenre = async () => {
-    if (!newGenreName.trim()) return;
-    try {
-      await createGenre({ name: newGenreName.trim() });
-      setNewGenreName("");
-    } catch (e) {
-      toastError(String(e));
-    }
-  };
-
-  const handleDeleteGenre = async (id: string, isSystem: boolean) => {
-    if (isSystem) {
-      toastError(t("promptGroup.systemCannotDelete"));
-      return;
-    }
-    try {
-      await deleteGenre(id);
-      if (selectedGenreId === id) setSelectedGenreId(undefined);
-    } catch (e) {
-      toastError(String(e));
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
@@ -156,10 +126,6 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
           genres={genres}
           selectedGenreId={selectedGenreId}
           onSelectGenre={setSelectedGenreId}
-          newGenreName={newGenreName}
-          onNewGenreNameChange={setNewGenreName}
-          onCreateGenre={handleCreateGenre}
-          onDeleteGenre={handleDeleteGenre}
         />
 
         <Separator />
@@ -186,9 +152,14 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
                       onClick={() => handleEdit(group)}
                     >
                       <span>{group.name}</span>
-                      {group.isDefaultForGenre && (
+                      {group.isDefault && (
                         <Badge variant="outline" className="ml-1 text-[9px]">
                           {t("promptGroup.defaultForGenre")}
+                        </Badge>
+                      )}
+                      {group.isSystem && (
+                        <Badge variant="secondary" className="ml-1 text-[9px]">
+                          System
                         </Badge>
                       )}
                     </button>
@@ -229,8 +200,6 @@ export default function PromptGroupModal({ open, onOpenChange }: PromptGroupModa
               onFormNameChange={setFormName}
               formGenreId={formGenreId}
               onFormGenreIdChange={setFormGenreId}
-              formUsageType={formUsageType}
-              onFormUsageTypeChange={setFormUsageType}
               formTags={formTags}
               formTagInput={formTagInput}
               onFormTagInputChange={setFormTagInput}

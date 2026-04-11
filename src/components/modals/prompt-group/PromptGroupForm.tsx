@@ -20,8 +20,6 @@ interface PromptGroupFormProps {
   onFormNameChange: (name: string) => void;
   formGenreId: string | null;
   onFormGenreIdChange: (id: string | null) => void;
-  formUsageType: string;
-  onFormUsageTypeChange: (type: string) => void;
   formTags: string[];
   formTagInput: string;
   onFormTagInputChange: (input: string) => void;
@@ -38,8 +36,6 @@ export default function PromptGroupForm({
   onFormNameChange,
   formGenreId,
   onFormGenreIdChange,
-  formUsageType,
-  onFormUsageTypeChange,
   formTags,
   formTagInput,
   onFormTagInputChange,
@@ -87,20 +83,6 @@ export default function PromptGroupForm({
                 {g.name}
               </SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1">
-        <Label className="text-xs">{t("promptGroup.usage")}</Label>
-        <Select value={formUsageType} onValueChange={onFormUsageTypeChange}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="both">{t("promptGroup.usageBoth")}</SelectItem>
-            <SelectItem value="main">{t("promptGroup.usageMain")}</SelectItem>
-            <SelectItem value="character">{t("promptGroup.usageCharacter")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

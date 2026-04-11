@@ -3,8 +3,9 @@ import type {
   ProjectDto, GenreDto, PromptGroupDto, GeneratedImageDto,
   VibeDto, StylePresetDto, AnlasBalanceDto, CostResultDto,
   CategoryDto, SystemTagDto, GenerateImageResponse, ProjectVibeDto,
+  ListSystemGroupTagsResponse,
   CreateProjectRequest, UpdateProjectRequest, GenerateImageRequest, CostEstimateRequest,
-  CreatePromptGroupRequest, UpdatePromptGroupRequest, CreateGenreRequest,
+  CreatePromptGroupRequest, UpdatePromptGroupRequest, CreateGenreRequest, UpdateGenreRequest,
   AddVibeRequest, EncodeVibeRequest, UpdateVibeNameRequest,
   UpdateVibeThumbnailRequest, CreateStylePresetRequest,
   UpdateStylePresetRequest, UpdatePresetThumbnailRequest,
@@ -104,10 +105,9 @@ export function cleanupUnsavedImages(projectId: string): Promise<void> {
 
 export function listPromptGroups(
   genreId?: string,
-  usageType?: string,
   search?: string,
 ): Promise<PromptGroupDto[]> {
-  return invoke("list_prompt_groups", { genreId, usageType, search });
+  return invoke("list_prompt_groups", { genreId, search });
 }
 
 export function getPromptGroup(id: string): Promise<PromptGroupDto> {
@@ -134,6 +134,10 @@ export function listGenres(): Promise<GenreDto[]> {
 
 export function createGenre(req: CreateGenreRequest): Promise<GenreDto> {
   return invoke("create_genre", { req });
+}
+
+export function updateGenre(req: UpdateGenreRequest): Promise<GenreDto> {
+  return invoke("update_genre", { req });
 }
 
 export function deleteGenre(id: string): Promise<void> {
@@ -244,4 +248,13 @@ export function searchSystemPrompts(
 
 export function getRandomArtistTags(count: number): Promise<SystemTagDto[]> {
   return invoke("get_random_artist_tags", { count });
+}
+
+export function listSystemGroupTags(
+  category: number,
+  query?: string,
+  offset?: number,
+  limit?: number,
+): Promise<ListSystemGroupTagsResponse> {
+  return invoke("list_system_group_tags", { category, query, offset, limit });
 }
