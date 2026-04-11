@@ -122,6 +122,13 @@ export function updatePromptGroup(req: UpdatePromptGroupRequest): Promise<void> 
   return invoke("update_prompt_group", { req });
 }
 
+export function updatePromptGroupThumbnail(
+  id: string,
+  thumbnailPath?: string | null,
+): Promise<void> {
+  return invoke("update_prompt_group_thumbnail", { id, thumbnailPath });
+}
+
 export function deletePromptGroup(id: string): Promise<void> {
   return invoke("delete_prompt_group", { id });
 }

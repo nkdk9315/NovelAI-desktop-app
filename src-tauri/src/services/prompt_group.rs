@@ -112,6 +112,18 @@ pub fn update_prompt_group(
     Ok(())
 }
 
+pub fn update_prompt_group_thumbnail(
+    conn: &Connection,
+    id: &str,
+    thumbnail_path: Option<&str>,
+) -> Result<(), AppError> {
+    let mut existing = pg_repo::find_by_id(conn, id)?;
+    existing.thumbnail_path = thumbnail_path.map(|s| s.to_string());
+    existing.updated_at = chrono::Utc::now().to_rfc3339();
+    pg_repo::update(conn, &existing)?;
+    Ok(())
+}
+
 pub fn delete_prompt_group(conn: &Connection, id: &str) -> Result<(), AppError> {
     let row = pg_repo::find_by_id(conn, id)?;
     if row.is_system != 0 {

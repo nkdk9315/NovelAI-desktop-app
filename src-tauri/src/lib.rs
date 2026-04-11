@@ -99,6 +99,7 @@ pub fn run() {
             commands::prompt_groups::get_prompt_group,
             commands::prompt_groups::create_prompt_group,
             commands::prompt_groups::update_prompt_group,
+            commands::prompt_groups::update_prompt_group_thumbnail,
             commands::prompt_groups::delete_prompt_group,
             commands::genres::list_genres,
             commands::genres::create_genre,

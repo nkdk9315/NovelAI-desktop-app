@@ -46,6 +46,21 @@ pub fn update_prompt_group(
 }
 
 #[tauri::command]
+pub fn update_prompt_group_thumbnail(
+    state: State<'_, AppState>,
+    id: String,
+    thumbnail_path: Option<String>,
+) -> Result<(), String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    crate::services::prompt_group::update_prompt_group_thumbnail(
+        &conn,
+        &id,
+        thumbnail_path.as_deref(),
+    )
+    .map_err(|e| e.into())
+}
+
+#[tauri::command]
 pub fn delete_prompt_group(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     crate::services::prompt_group::delete_prompt_group(&conn, &id).map_err(|e| e.into())
