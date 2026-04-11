@@ -208,21 +208,17 @@ function GroupRow({ group, isAdded, isExpanded, targetId, onToggleExpand, onTogg
                   className="h-5 w-full bg-transparent text-[10px] outline-none placeholder:text-muted-foreground/40"
                   onKeyDown={(e) => {
                     if (sysTags.length === 0) return;
-                    if (e.key === "Tab" || e.key === "ArrowDown") {
+                    const move = (delta: number) => {
                       e.preventDefault();
                       setSysHighlight((p) => {
-                        const n = e.shiftKey ? Math.max(p - 1, 0) : Math.min(p + 1, sysTags.length - 1);
+                        const n = Math.max(0, Math.min(p + delta, sysTags.length - 1));
                         sysTagRefs.current[n]?.scrollIntoView({ block: "nearest" });
                         return n;
                       });
-                    } else if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      setSysHighlight((p) => {
-                        const n = Math.max(p - 1, 0);
-                        sysTagRefs.current[n]?.scrollIntoView({ block: "nearest" });
-                        return n;
-                      });
-                    } else if (e.key === "Enter" && sysHighlight >= 0 && sysHighlight < sysTags.length) {
+                    };
+                    if (e.key === "ArrowDown" || e.key === "ArrowRight" || (e.key === "Tab" && !e.shiftKey)) move(1);
+                    else if (e.key === "ArrowUp" || e.key === "ArrowLeft" || (e.key === "Tab" && e.shiftKey)) move(-1);
+                    else if (e.key === "Enter" && sysHighlight >= 0 && sysHighlight < sysTags.length) {
                       e.preventDefault();
                       handleSysTagClick(sysTags[sysHighlight]);
                     }
