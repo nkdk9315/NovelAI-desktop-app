@@ -10,6 +10,8 @@ import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import type { SidebarPromptGroup } from "@/stores/sidebar-prompt-store";
 import { assembleFullPrompt } from "@/lib/prompt-assembly";
 
+const EMPTY_GROUPS: SidebarPromptGroup[] = [];
+
 interface CharacterPromptGroupsProps {
   targetId: string;
   onOpenGroupBrowser: () => void;
@@ -20,7 +22,7 @@ export default function CharacterPromptGroups({
   onOpenGroupBrowser,
 }: CharacterPromptGroupsProps) {
   const { t } = useTranslation();
-  const groups = useSidebarPromptStore((s) => s.targets[targetId]?.groups ?? []);
+  const groups = useSidebarPromptStore((s) => s.targets[targetId]?.groups ?? EMPTY_GROUPS);
   const freeText = useSidebarPromptStore((s) => s.targets[targetId]?.freeText ?? "");
   const toggleTag = useSidebarPromptStore((s) => s.toggleTag);
   const setTagStrength = useSidebarPromptStore((s) => s.setTagStrength);
