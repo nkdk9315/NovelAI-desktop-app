@@ -20,7 +20,7 @@ export default function ArtistTagInput({ artistTags, onArtistTagsChange }: Props
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { results: suggestions, search } = useAutocomplete(300, 1);
-  const filteredSuggestions = suggestions.filter((s) => s.category === 1).slice(0, 8);
+  const filteredSuggestions = suggestions.filter((s) => s.csvCategory === 1).slice(0, 8);
 
   const handleTagInputChange = (value: string) => {
     setTagInput(value);
