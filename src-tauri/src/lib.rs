@@ -30,7 +30,23 @@ pub fn run() {
             let db_path_str = db_path
                 .to_str()
                 .ok_or("Database path contains non-UTF-8 characters")?;
-            let conn = db::init_db(db_path_str).expect("Failed to initialize database");
+            let mut conn = db::init_db(db_path_str).expect("Failed to initialize database");
+
+            // Seed the tag database on first run (migration 013).
+            // Idempotent: skips if the `tags` table already has rows.
+            let resources_dir = app
+                .path()
+                .resource_dir()
+                .expect("Failed to resolve resource dir")
+                .join("resources");
+            match services::tag_seed::seed_if_empty(&mut conn, &resources_dir) {
+                Ok(Some(stats)) => eprintln!(
+                    "tag_seed: inserted {} tags, {} groups, {} members",
+                    stats.tags, stats.groups, stats.members
+                ),
+                Ok(None) => {}
+                Err(e) => eprintln!("tag_seed: failed: {:?}", e),
+            }
 
             // Restore API client from saved key
             let mut api_client_val: Option<NovelAIClient> = None;
@@ -123,6 +139,17 @@ pub fn run() {
             commands::system_prompts::get_system_prompt_categories,
             commands::system_prompts::search_system_prompts,
             commands::system_prompts::get_random_artist_tags,
+            commands::tags::search_tags,
+            commands::tags::list_tag_group_roots,
+            commands::tags::list_tag_group_children,
+            commands::tags::list_tag_group_tags,
+            commands::tags::list_unclassified_character_tags,
+            commands::tags::create_user_tag_group,
+            commands::tags::rename_tag_group,
+            commands::tags::delete_tag_group,
+            commands::tags::move_tag_group,
+            commands::tags::add_tags_to_group,
+            commands::tags::remove_tags_from_group,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

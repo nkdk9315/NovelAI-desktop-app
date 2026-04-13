@@ -12,6 +12,7 @@ const MIGRATION_005: &str = include_str!("../migrations/005_preset_vibe_strength
 const MIGRATION_006: &str = include_str!("../migrations/006_preset_favorite.sql");
 const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
 const MIGRATION_008: &str = include_str!("../migrations/008_project_thumbnail.sql");
+const MIGRATION_013: &str = include_str!("../migrations/013_tag_database.sql");
 
 pub fn setup_test_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
@@ -28,6 +29,7 @@ pub fn setup_test_db() -> Connection {
     conn.execute_batch(MIGRATION_006).unwrap();
     conn.execute_batch(MIGRATION_007).unwrap();
     conn.execute_batch(MIGRATION_008).unwrap();
+    conn.execute_batch(MIGRATION_013).unwrap();
     conn
 }
 
