@@ -1,6 +1,23 @@
 import { useRef, useState, useCallback } from "react";
 import { useAutocomplete } from "@/hooks/use-autocomplete";
 
+function csvCategoryLabel(id: number): string {
+  switch (id) {
+    case 0:
+      return "general";
+    case 1:
+      return "artist";
+    case 3:
+      return "works";
+    case 4:
+      return "character";
+    case 5:
+      return "meta";
+    default:
+      return "";
+  }
+}
+
 interface PromptTextareaProps {
   value: string;
   onChange: (value: string) => void;
@@ -126,9 +143,11 @@ export default function PromptTextarea({
               }}
             >
               <span className="font-medium">{tag.name}</span>
-              <span className="text-muted-foreground">
-                {tag.postCount.toLocaleString()}
-              </span>
+              {tag.csvCategory != null && (
+                <span className="text-muted-foreground">
+                  {csvCategoryLabel(tag.csvCategory)}
+                </span>
+              )}
             </button>
           ))}
         </div>
