@@ -14,6 +14,7 @@ const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
 const MIGRATION_008: &str = include_str!("../migrations/008_project_thumbnail.sql");
 const MIGRATION_009: &str = include_str!("../migrations/009_prompt_group_overhaul.sql");
 const MIGRATION_010: &str = include_str!("../migrations/010_prompt_entry_name.sql");
+const MIGRATION_013: &str = include_str!("../migrations/013_tag_database.sql");
 
 pub fn setup_test_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
@@ -32,6 +33,7 @@ pub fn setup_test_db() -> Connection {
     conn.execute_batch(MIGRATION_008).unwrap();
     conn.execute_batch(MIGRATION_009).unwrap();
     conn.execute_batch(MIGRATION_010).unwrap();
+    conn.execute_batch(MIGRATION_013).unwrap();
     conn
 }
 
