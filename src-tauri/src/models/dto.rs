@@ -203,6 +203,73 @@ pub struct SystemTagDto {
     pub aliases: Vec<String>,
 }
 
+// ---- Tag database (migration 009) ----
+
+#[derive(Debug, Clone)]
+pub struct TagRow {
+    pub id: i64,
+    pub name: String,
+    pub csv_category: Option<i64>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TagGroupRow {
+    pub id: i64,
+    pub slug: String,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub kind: String,
+    pub source: String,
+    pub sort_key: i64,
+    pub child_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TagDto {
+    pub id: i64,
+    pub name: String,
+    pub csv_category: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TagGroupDto {
+    pub id: i64,
+    pub slug: String,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub kind: String,
+    pub source: String,
+    pub sort_key: i64,
+    pub child_count: i64,
+}
+
+impl From<TagRow> for TagDto {
+    fn from(row: TagRow) -> Self {
+        Self {
+            id: row.id,
+            name: row.name,
+            csv_category: row.csv_category,
+        }
+    }
+}
+
+impl From<TagGroupRow> for TagGroupDto {
+    fn from(row: TagGroupRow) -> Self {
+        Self {
+            id: row.id,
+            slug: row.slug,
+            title: row.title,
+            parent_id: row.parent_id,
+            kind: row.kind,
+            source: row.source,
+            sort_key: row.sort_key,
+            child_count: row.child_count,
+        }
+    }
+}
+
 // ---- Request DTOs (from frontend) ----
 
 #[derive(Debug, Deserialize)]

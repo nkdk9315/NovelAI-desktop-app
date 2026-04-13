@@ -10,6 +10,9 @@ const MIGRATION_005: &str = include_str!("../migrations/005_preset_vibe_strength
 const MIGRATION_006: &str = include_str!("../migrations/006_preset_favorite.sql");
 const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
 const MIGRATION_008: &str = include_str!("../migrations/008_project_thumbnail.sql");
+// Note: migrations 009-012 are owned by the `feat/prompt-group-overhaul` branch.
+// The tag database was assigned 013 to stay out of their way at merge time.
+const MIGRATION_013: &str = include_str!("../migrations/013_tag_database.sql");
 
 pub fn init_db(path: &str) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;
@@ -97,6 +100,14 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
             rusqlite::params!["schema_version", "8"],
+        )?;
+    }
+
+    if version < 13 {
+        conn.execute_batch(MIGRATION_013)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "13"],
         )?;
     }
 
