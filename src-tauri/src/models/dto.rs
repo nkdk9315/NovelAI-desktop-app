@@ -34,6 +34,7 @@ pub struct PromptGroupRow {
     pub thumbnail_path: Option<String>,
     pub is_default: i32,
     pub category: Option<i32>,
+    pub default_strength: f64,
 }
 
 pub struct PromptGroupTagRow {
@@ -135,6 +136,7 @@ pub struct PromptGroupDto {
     pub thumbnail_path: Option<String>,
     pub is_default: bool,
     pub category: Option<i32>,
+    pub default_strength: f64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -338,6 +340,7 @@ pub struct CreatePromptGroupRequest {
     pub name: String,
     pub genre_id: Option<String>,
     pub tags: Vec<TagInput>,
+    pub default_strength: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -351,6 +354,7 @@ pub struct UpdatePromptGroupRequest {
     pub is_default: Option<bool>,
     #[serde(default, deserialize_with = "deserialize_double_option")]
     pub thumbnail_path: Option<Option<String>>,
+    pub default_strength: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -483,6 +487,7 @@ impl PromptGroupRow {
             thumbnail_path: self.thumbnail_path,
             is_default: self.is_default != 0,
             category: self.category,
+            default_strength: self.default_strength,
         }
     }
 }

@@ -37,6 +37,7 @@ const mockGroup: PromptGroupDto = {
   thumbnailPath: null,
   isDefault: false,
   category: null,
+  defaultStrength: 0,
 };
 
 beforeEach(() => {

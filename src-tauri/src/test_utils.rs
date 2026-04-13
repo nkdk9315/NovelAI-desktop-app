@@ -14,6 +14,8 @@ const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
 const MIGRATION_008: &str = include_str!("../migrations/008_project_thumbnail.sql");
 const MIGRATION_009: &str = include_str!("../migrations/009_prompt_group_overhaul.sql");
 const MIGRATION_010: &str = include_str!("../migrations/010_prompt_entry_name.sql");
+const MIGRATION_011: &str = include_str!("../migrations/011_prompt_group_default_strength.sql");
+const MIGRATION_012: &str = include_str!("../migrations/012_add_main_genre.sql");
 
 pub fn setup_test_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
@@ -32,6 +34,8 @@ pub fn setup_test_db() -> Connection {
     conn.execute_batch(MIGRATION_008).unwrap();
     conn.execute_batch(MIGRATION_009).unwrap();
     conn.execute_batch(MIGRATION_010).unwrap();
+    conn.execute_batch(MIGRATION_011).unwrap();
+    conn.execute_batch(MIGRATION_012).unwrap();
     conn
 }
 
@@ -76,6 +80,7 @@ pub fn create_test_prompt_group(conn: &Connection, genre_id: &str) -> PromptGrou
         thumbnail_path: None,
         is_default: 0,
         category: None,
+        default_strength: 0.0,
     };
     crate::repositories::prompt_group::insert(conn, &row).unwrap();
     row

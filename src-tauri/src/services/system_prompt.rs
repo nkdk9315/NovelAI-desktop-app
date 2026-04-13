@@ -176,6 +176,7 @@ pub fn seed_system_prompt_groups(conn: &Connection) -> Result<(), AppError> {
             thumbnail_path: None,
             is_default: 0,
             category: Some(cat_id as i32),
+            default_strength: 0.0,
         };
         pg_repo::insert(conn, &row)?;
     }

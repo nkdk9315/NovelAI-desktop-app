@@ -21,11 +21,14 @@ export interface SidebarPromptGroup {
   category: number | null;
   tags: SidebarPromptTag[];
   expanded: boolean;
+  defaultStrength: number;
+  savedEnabledTags: { tagId: string; strength: number }[] | null;
 }
 
 export interface TargetPromptState {
   groups: SidebarPromptGroup[];
   freeText: string;
+  promptOverride: string | null;
 }
 
 // ---- Store ----
@@ -43,11 +46,15 @@ interface SidebarPromptState {
   setTagStrength: (targetId: string, groupId: string, tagId: string, strength: number) => void;
   toggleAllTags: (targetId: string, groupId: string, enabled: boolean) => void;
   toggleGroupExpanded: (targetId: string, groupId: string) => void;
+  setGroupDefaultStrength: (targetId: string, groupId: string, strength: number) => void;
+  toggleGroupEnabled: (targetId: string, groupId: string) => void;
 
   addSystemTag: (targetId: string, groupId: string, tag: { name: string; category: number }) => void;
   removeSystemTag: (targetId: string, groupId: string, tagId: string) => void;
 
   setFreeText: (targetId: string, text: string) => void;
+  setPromptOverride: (targetId: string, text: string) => void;
+  clearPromptOverride: (targetId: string) => void;
 
   saveSidebarPromptState: (projectId: string) => void;
   loadSidebarPromptState: (projectId: string) => Promise<void>;
@@ -64,11 +71,13 @@ function groupDtoToSidebar(dto: PromptGroupDto): SidebarPromptGroup {
       name: t.name || t.tag,
       tag: t.tag,
       enabled: false,
-      strength: t.defaultStrength,
-      defaultStrength: t.defaultStrength,
+      strength: dto.defaultStrength,
+      defaultStrength: dto.defaultStrength,
       thumbnailPath: t.thumbnailPath,
     })),
     expanded: false,
+    defaultStrength: dto.defaultStrength,
+    savedEnabledTags: null,
   };
 }
 
@@ -103,7 +112,7 @@ export const useSidebarPromptStore = create<SidebarPromptState>()((set) => ({
       return {
         targets: {
           ...state.targets,
-          [targetId]: { groups, freeText: "" },
+          [targetId]: { groups, freeText: "", promptOverride: null },
         },
       };
     }),
@@ -135,9 +144,13 @@ export const useSidebarPromptStore = create<SidebarPromptState>()((set) => ({
       updateTarget(state, targetId, (target) =>
         updateGroupInTarget(target, groupId, (group) => ({
           ...group,
-          tags: group.tags.map((t) =>
-            t.tagId === tagId ? { ...t, enabled: !t.enabled } : t,
-          ),
+          tags: group.tags.map((t) => {
+            if (t.tagId !== tagId) return t;
+            const nextEnabled = !t.enabled;
+            return nextEnabled
+              ? { ...t, enabled: true, strength: group.defaultStrength }
+              : { ...t, enabled: false };
+          }),
         })),
       ),
     ),
@@ -174,6 +187,48 @@ export const useSidebarPromptStore = create<SidebarPromptState>()((set) => ({
       ),
     ),
 
+  setGroupDefaultStrength: (targetId, groupId, strength) =>
+    set((state) =>
+      updateTarget(state, targetId, (target) =>
+        updateGroupInTarget(target, groupId, (group) => ({
+          ...group,
+          defaultStrength: strength,
+        })),
+      ),
+    ),
+
+  toggleGroupEnabled: (targetId, groupId) =>
+    set((state) =>
+      updateTarget(state, targetId, (target) =>
+        updateGroupInTarget(target, groupId, (group) => {
+          const anyEnabled = group.tags.some((t) => t.enabled);
+          if (anyEnabled) {
+            const saved = group.tags
+              .filter((t) => t.enabled)
+              .map((t) => ({ tagId: t.tagId, strength: t.strength }));
+            return {
+              ...group,
+              savedEnabledTags: saved,
+              tags: group.tags.map((t) => ({ ...t, enabled: false })),
+            };
+          }
+          if (!group.savedEnabledTags || group.savedEnabledTags.length === 0) {
+            return group;
+          }
+          const savedMap = new Map(group.savedEnabledTags.map((s) => [s.tagId, s.strength]));
+          return {
+            ...group,
+            savedEnabledTags: null,
+            tags: group.tags.map((t) =>
+              savedMap.has(t.tagId)
+                ? { ...t, enabled: true, strength: savedMap.get(t.tagId)! }
+                : t,
+            ),
+          };
+        }),
+      ),
+    ),
+
   addSystemTag: (targetId, groupId, tag) =>
     set((state) =>
       updateTarget(state, targetId, (target) =>
@@ -184,8 +239,8 @@ export const useSidebarPromptStore = create<SidebarPromptState>()((set) => ({
             name: tag.name,
             tag: tag.name,
             enabled: true,
-            strength: 0,
-            defaultStrength: 0,
+            strength: group.defaultStrength,
+            defaultStrength: group.defaultStrength,
             thumbnailPath: null,
           };
           return { ...group, tags: [...group.tags, newTag] };
@@ -208,6 +263,16 @@ export const useSidebarPromptStore = create<SidebarPromptState>()((set) => ({
       updateTarget(state, targetId, (target) => ({ ...target, freeText: text })),
     ),
 
+  setPromptOverride: (targetId, text) =>
+    set((state) =>
+      updateTarget(state, targetId, (target) => ({ ...target, promptOverride: text })),
+    ),
+
+  clearPromptOverride: (targetId) =>
+    set((state) =>
+      updateTarget(state, targetId, (target) => ({ ...target, promptOverride: null })),
+    ),
+
   saveSidebarPromptState: (projectId) => {
     const { targets } = useSidebarPromptStore.getState();
     ipc.setSetting(`sidebar_prompts_${projectId}`, JSON.stringify(targets)).catch(() => {});
@@ -218,8 +283,16 @@ export const useSidebarPromptStore = create<SidebarPromptState>()((set) => ({
       const settings = await ipc.getSettings();
       const raw = settings[`sidebar_prompts_${projectId}`];
       if (raw) {
-        const targets: Record<string, TargetPromptState> = JSON.parse(raw);
-        set({ targets });
+        const parsed: Record<string, TargetPromptState> = JSON.parse(raw);
+        const migrated: Record<string, TargetPromptState> = {};
+        for (const [id, t] of Object.entries(parsed)) {
+          migrated[id] = {
+            groups: t.groups ?? [],
+            freeText: t.freeText ?? "",
+            promptOverride: t.promptOverride ?? null,
+          };
+        }
+        set({ targets: migrated });
       } else {
         set({ targets: {} });
       }

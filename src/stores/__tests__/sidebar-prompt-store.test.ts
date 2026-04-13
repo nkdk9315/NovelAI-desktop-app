@@ -18,6 +18,7 @@ const mockGroup: PromptGroupDto = {
   thumbnailPath: null,
   isDefault: false,
   category: null,
+  defaultStrength: 0,
 };
 
 const mockGroup2: PromptGroupDto = {
@@ -35,6 +36,7 @@ const mockGroup2: PromptGroupDto = {
   thumbnailPath: null,
   isDefault: false,
   category: 0,
+  defaultStrength: 0,
 };
 
 beforeEach(() => {

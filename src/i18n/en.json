@@ -52,7 +52,15 @@
     "scale": "Scale",
     "seed": "Seed",
     "prompt": "Prompt",
+    "qualityTags": "Quality Tags",
     "negativePrompt": "Negative Prompt",
+    "negativePresetNone": "None",
+    "negativePresetHumanMain": "Human Main",
+    "negativePresetLight": "Light",
+    "negativePresetHeavy": "Heavy",
+    "negativePresetFurry": "Furry",
+    "negativePresetShow": "Show preset",
+    "negativePresetHide": "Hide preset",
     "cost": "Cost",
     "anlas": "Anlas",
     "tooManyVibes": "Too many vibes ({{count}}/{{max}}). Reduce enabled vibes or presets.",
@@ -61,6 +69,10 @@
     "confirmTitle": "Anlas will be consumed",
     "confirmDescription": "This generation requires {{cost}} Anlas. Proceed?",
     "confirmGenerate": "Generate"
+  },
+  "prompt": {
+    "clearOverride": "Clear override",
+    "sendPreview": "Send Preview"
   },
   "normalize": {
     "balanceStrength": "Balance Strength",
@@ -99,7 +111,7 @@
     "female": "Female",
     "other": "Other",
     "maxReached": "Maximum 6 characters reached",
-    "freeTextPlaceholder": "Additional prompt...",
+    "freeTextPlaceholder": "Prompt",
     "promptPreview": "Prompt Preview",
     "addGroup": "Add",
     "added": "Added"
@@ -206,6 +218,8 @@
     "prompts": "Prompt Entries",
     "entryName": "Entry name (display label)",
     "entryContent": "Prompt content (tags, text...)",
-    "addPromptEntry": "Add Prompt Entry"
+    "addPromptEntry": "Add Prompt Entry",
+    "defaultStrength": "Default Strength",
+    "saveAndAddAnother": "Save & Add Another"
   }
 }

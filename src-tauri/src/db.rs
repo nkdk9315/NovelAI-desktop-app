@@ -12,6 +12,8 @@ const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
 const MIGRATION_008: &str = include_str!("../migrations/008_project_thumbnail.sql");
 const MIGRATION_009: &str = include_str!("../migrations/009_prompt_group_overhaul.sql");
 const MIGRATION_010: &str = include_str!("../migrations/010_prompt_entry_name.sql");
+const MIGRATION_011: &str = include_str!("../migrations/011_prompt_group_default_strength.sql");
+const MIGRATION_012: &str = include_str!("../migrations/012_add_main_genre.sql");
 
 pub fn init_db(path: &str) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;
@@ -115,6 +117,22 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
             rusqlite::params!["schema_version", "10"],
+        )?;
+    }
+
+    if version < 11 {
+        conn.execute_batch(MIGRATION_011)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "11"],
+        )?;
+    }
+
+    if version < 12 {
+        conn.execute_batch(MIGRATION_012)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "12"],
         )?;
     }
 

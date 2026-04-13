@@ -19,7 +19,7 @@ import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useHistoryStore } from "@/stores/history-store";
 import { useSettingsStore } from "@/stores/settings-store";
-import { MAX_TOTAL_VIBES } from "@/lib/constants";
+import { MAX_TOTAL_VIBES, NEGATIVE_PRESETS, QUALITY_TAGS } from "@/lib/constants";
 import { calculateCost } from "@/lib/cost";
 import { normalizeStrengths } from "@/lib/normalize-strength";
 import { assembleFullPrompt } from "@/lib/prompt-assembly";
@@ -98,16 +98,15 @@ export default function ActionBar() {
         }).join(", ") + ", "
       : "";
 
-    // Assemble main prompt: artist prefix + main textarea + sidebar group tags + sidebar free text
+    // Assemble main prompt: artist prefix + main target override (or assembled groups)
     const sidebarState = useSidebarPromptStore.getState();
     const mainTarget = sidebarState.targets["main"];
-    const combinedFreeText = [params.prompt, mainTarget?.freeText]
-      .filter((s) => s?.trim())
-      .join(", ");
-    const assembledMain = mainTarget
-      ? assembleFullPrompt(combinedFreeText, mainTarget.groups)
-      : combinedFreeText;
-    const fullPrompt = artistPrefix + assembledMain;
+    const assembledMain = mainTarget?.promptOverride
+      ?? (mainTarget ? assembleFullPrompt("", mainTarget.groups) : "");
+    const qualitySuffix = params.qualityTagsEnabled
+      ? (assembledMain ? `, ${QUALITY_TAGS}` : QUALITY_TAGS)
+      : "";
+    const fullPrompt = artistPrefix + assembledMain + qualitySuffix;
 
     let enabledVibes = allVibes.map((v) => ({
       vibeId: v.vibeId,
@@ -118,17 +117,21 @@ export default function ActionBar() {
       enabledVibes = enabledVibes.map((v, i) => ({ ...v, strength: normalized[i] }));
     }
 
+    const negPresetText = NEGATIVE_PRESETS[params.negativePreset];
+    const combinedNeg = negPresetText
+      ? (params.negativePrompt ? `${negPresetText}, ${params.negativePrompt}` : negPresetText)
+      : params.negativePrompt;
+
     const req: GenerateImageRequest = {
       projectId,
       prompt: fullPrompt,
-      negativePrompt: params.negativePrompt || undefined,
+      negativePrompt: combinedNeg || undefined,
       characters:
         params.characters.length > 0
           ? params.characters.map((c) => {
               const charTarget = sidebarState.targets[c.id];
-              const charPrompt = charTarget
-                ? assembleFullPrompt(charTarget.freeText, charTarget.groups)
-                : c.prompt;
+              const charPrompt = charTarget?.promptOverride
+                ?? (charTarget ? assembleFullPrompt("", charTarget.groups) : c.prompt);
               return {
                 prompt: charPrompt,
                 centerX: c.centerX,

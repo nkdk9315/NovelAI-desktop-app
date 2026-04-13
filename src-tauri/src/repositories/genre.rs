@@ -81,14 +81,16 @@ mod tests {
     fn test_list_all_sorted() {
         let conn = setup_test_db();
         let genres = list_all(&conn).unwrap();
-        // Migration seeds 3 system genres with sort_order 0, 1, 2
-        assert_eq!(genres.len(), 3);
-        assert_eq!(genres[0].name, "男");
-        assert_eq!(genres[1].name, "女");
-        assert_eq!(genres[2].name, "その他");
+        // Migration seeds 4 system genres: メイン(-1), 男(0), 女(1), その他(2)
+        assert_eq!(genres.len(), 4);
+        assert_eq!(genres[0].name, "メイン");
+        assert_eq!(genres[1].name, "男");
+        assert_eq!(genres[2].name, "女");
+        assert_eq!(genres[3].name, "その他");
         // Verify sort_order is ascending
         assert!(genres[0].sort_order <= genres[1].sort_order);
         assert!(genres[1].sort_order <= genres[2].sort_order);
+        assert!(genres[2].sort_order <= genres[3].sort_order);
     }
 
     #[test]
@@ -101,7 +103,7 @@ mod tests {
         assert_eq!(found.is_system, 0);
 
         let all = list_all(&conn).unwrap();
-        assert_eq!(all.len(), 4); // 3 system + 1 user
+        assert_eq!(all.len(), 5); // 4 system + 1 user
     }
 
     #[test]

@@ -33,6 +33,7 @@ export interface PromptGroupDto {
   thumbnailPath: string | null;
   isDefault: boolean;
   category: number | null;
+  defaultStrength: number;
 }
 
 export interface PromptGroupTagDto {
@@ -190,6 +191,7 @@ export interface CreatePromptGroupRequest {
   name: string;
   genreId?: string;
   tags: TagInput[];
+  defaultStrength?: number;
 }
 
 export interface UpdatePromptGroupRequest {
@@ -199,6 +201,7 @@ export interface UpdatePromptGroupRequest {
   tags?: TagInput[];
   isDefault?: boolean;
   thumbnailPath?: string | null;
+  defaultStrength?: number;
 }
 
 export interface CreateGenreRequest {

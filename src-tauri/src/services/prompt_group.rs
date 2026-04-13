@@ -48,6 +48,7 @@ pub fn create_prompt_group(
         thumbnail_path: None,
         is_default: 0,
         category: None,
+        default_strength: req.default_strength.unwrap_or(0.0),
     };
     pg_repo::insert(conn, &row)?;
 
@@ -88,6 +89,9 @@ pub fn update_prompt_group(
     }
     if let Some(thumbnail_path) = req.thumbnail_path {
         existing.thumbnail_path = thumbnail_path;
+    }
+    if let Some(default_strength) = req.default_strength {
+        existing.default_strength = default_strength;
     }
 
     existing.updated_at = chrono::Utc::now().to_rfc3339();
@@ -158,6 +162,7 @@ mod tests {
                     TagInput { name: None, tag: "tag2".to_string(), default_strength: Some(3), thumbnail_path: None },
                     TagInput { name: None, tag: "tag3".to_string(), default_strength: Some(-2), thumbnail_path: Some("/tmp/t.png".to_string()) },
                 ],
+                default_strength: None,
             },
         )
         .unwrap();
@@ -186,6 +191,7 @@ mod tests {
                 name: "Group A".to_string(),
                 genre_id: Some(genre.id.clone()),
                 tags: vec![],
+                default_strength: None,
             },
         )
         .unwrap();
@@ -196,6 +202,7 @@ mod tests {
                 name: "Group B".to_string(),
                 genre_id: Some(genre.id.clone()),
                 tags: vec![],
+                default_strength: None,
             },
         )
         .unwrap();
@@ -210,6 +217,7 @@ mod tests {
                 tags: None,
                 is_default: Some(true),
                 thumbnail_path: None,
+                default_strength: None,
             },
         )
         .unwrap();
@@ -224,6 +232,7 @@ mod tests {
                 tags: None,
                 is_default: Some(true),
                 thumbnail_path: None,
+                default_strength: None,
             },
         )
         .unwrap();
@@ -252,6 +261,7 @@ mod tests {
                 thumbnail_path: None,
                 is_default: 0,
                 category: None,
+                default_strength: 0.0,
             },
         )
         .unwrap();
@@ -274,6 +284,7 @@ mod tests {
                 name: "Deletable".to_string(),
                 genre_id: Some(genre.id),
                 tags: vec![TagInput { name: None, tag: "a".to_string(), default_strength: None, thumbnail_path: None }],
+                default_strength: None,
             },
         )
         .unwrap();
@@ -293,6 +304,7 @@ mod tests {
                 name: "Has Genre".to_string(),
                 genre_id: Some(genre.id.clone()),
                 tags: vec![],
+                default_strength: None,
             },
         )
         .unwrap();
@@ -307,6 +319,7 @@ mod tests {
                 tags: None,
                 is_default: None,
                 thumbnail_path: None,
+                default_strength: None,
             },
         )
         .unwrap();

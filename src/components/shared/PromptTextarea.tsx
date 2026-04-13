@@ -6,6 +6,8 @@ interface PromptTextareaProps {
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 export default function PromptTextarea({
@@ -13,11 +15,14 @@ export default function PromptTextarea({
   onChange,
   placeholder,
   rows = 3,
+  onKeyDown: onKeyDownProp,
+  textareaRef: externalRef,
 }: PromptTextareaProps) {
   const { results, search } = useAutocomplete();
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const internalRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = externalRef ?? internalRef;
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const getCurrentToken = useCallback(() => {
@@ -83,8 +88,11 @@ export default function PromptTextarea({
     textareaRef.current?.focus();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || results.length === 0) return;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!showDropdown || results.length === 0) {
+      onKeyDownProp?.(e);
+      return;
+    }
 
     if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
       e.preventDefault();

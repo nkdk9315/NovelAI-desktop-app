@@ -49,6 +49,8 @@ export default function VibeModal({ open, onOpenChange, onVibesChanged }: VibeMo
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const currentModel = useGenerationParamsStore((s) => s.model);
+  const addVibeToSidebar = useGenerationParamsStore((s) => s.addVibe);
+  const removeVibeFromSidebar = useGenerationParamsStore((s) => s.removeVibe);
   const currentVibeKey = MODEL_TO_VIBE_KEY[currentModel] ?? null;
   const [filterModel, setFilterModel] = useState<string | null>(currentVibeKey);
 
@@ -134,9 +136,18 @@ export default function VibeModal({ open, onOpenChange, onVibesChanged }: VibeMo
     try {
       if (projectVibeIds.has(vibe.id)) {
         await ipc.removeVibeFromProject(currentProject.id, vibe.id);
+        removeVibeFromSidebar(vibe.id);
       } else {
         if (currentVibeKey && vibe.model !== currentVibeKey) { toast.error(t("vibe.modelMismatch")); return; }
         await ipc.addVibeToProject(currentProject.id, vibe.id);
+        addVibeToSidebar(vibe.id);
+        const scrollToBottom = () => {
+          const el = document.getElementById("left-sidebar");
+          if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+        };
+        setTimeout(scrollToBottom, 100);
+        setTimeout(scrollToBottom, 400);
+        setTimeout(scrollToBottom, 800);
       }
       await refresh();
     } catch (e) { toastError(String(e)); }

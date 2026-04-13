@@ -9,7 +9,7 @@ pub fn list(
     search: Option<&str>,
 ) -> Result<Vec<PromptGroupRow>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, genre_id, is_default_for_genre, is_system, usage_type, created_at, updated_at, thumbnail_path, is_default, category FROM prompt_groups WHERE (?1 IS NULL OR genre_id = ?1) AND (?2 IS NULL OR name LIKE '%' || ?2 || '%') ORDER BY created_at DESC",
+        "SELECT id, name, genre_id, is_default_for_genre, is_system, usage_type, created_at, updated_at, thumbnail_path, is_default, category, default_strength FROM prompt_groups WHERE (?1 IS NULL OR genre_id = ?1) AND (?2 IS NULL OR name LIKE '%' || ?2 || '%') ORDER BY created_at DESC",
     )?;
     let rows = stmt.query_map(rusqlite::params![genre_id, search], |row| {
         Ok(PromptGroupRow {
@@ -24,6 +24,7 @@ pub fn list(
             thumbnail_path: row.get(8)?,
             is_default: row.get(9)?,
             category: row.get(10)?,
+            default_strength: row.get(11)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
@@ -31,7 +32,7 @@ pub fn list(
 
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<PromptGroupRow, AppError> {
     conn.query_row(
-        "SELECT id, name, genre_id, is_default_for_genre, is_system, usage_type, created_at, updated_at, thumbnail_path, is_default, category FROM prompt_groups WHERE id = ?1",
+        "SELECT id, name, genre_id, is_default_for_genre, is_system, usage_type, created_at, updated_at, thumbnail_path, is_default, category, default_strength FROM prompt_groups WHERE id = ?1",
         [id],
         |row| {
             Ok(PromptGroupRow {
@@ -46,6 +47,7 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<PromptGroupRow, AppErro
                 thumbnail_path: row.get(8)?,
                 is_default: row.get(9)?,
                 category: row.get(10)?,
+                default_strength: row.get(11)?,
             })
         },
     )
@@ -57,16 +59,16 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<PromptGroupRow, AppErro
 
 pub fn insert(conn: &Connection, row: &PromptGroupRow) -> Result<(), AppError> {
     conn.execute(
-        "INSERT INTO prompt_groups (id, name, genre_id, is_default_for_genre, is_system, usage_type, created_at, updated_at, thumbnail_path, is_default, category) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
-        rusqlite::params![row.id, row.name, row.genre_id, row.is_default_for_genre, row.is_system, row.usage_type, row.created_at, row.updated_at, row.thumbnail_path, row.is_default, row.category],
+        "INSERT INTO prompt_groups (id, name, genre_id, is_default_for_genre, is_system, usage_type, created_at, updated_at, thumbnail_path, is_default, category, default_strength) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+        rusqlite::params![row.id, row.name, row.genre_id, row.is_default_for_genre, row.is_system, row.usage_type, row.created_at, row.updated_at, row.thumbnail_path, row.is_default, row.category, row.default_strength],
     )?;
     Ok(())
 }
 
 pub fn update(conn: &Connection, row: &PromptGroupRow) -> Result<(), AppError> {
     conn.execute(
-        "UPDATE prompt_groups SET name = ?2, genre_id = ?3, is_default = ?4, thumbnail_path = ?5, updated_at = ?6 WHERE id = ?1",
-        rusqlite::params![row.id, row.name, row.genre_id, row.is_default, row.thumbnail_path, row.updated_at],
+        "UPDATE prompt_groups SET name = ?2, genre_id = ?3, is_default = ?4, thumbnail_path = ?5, updated_at = ?6, default_strength = ?7 WHERE id = ?1",
+        rusqlite::params![row.id, row.name, row.genre_id, row.is_default, row.thumbnail_path, row.updated_at, row.default_strength],
     )?;
     Ok(())
 }

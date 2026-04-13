@@ -32,6 +32,8 @@ function makeGroup(
     category: null,
     tags: [],
     expanded: false,
+    defaultStrength: 0,
+    savedEnabledTags: null,
     ...overrides,
   };
 }
