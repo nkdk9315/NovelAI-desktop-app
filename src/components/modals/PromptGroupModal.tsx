@@ -15,6 +15,9 @@ import PromptGroupGrid from "./prompt-group/PromptGroupGrid";
 import PromptGroupAddModal from "./prompt-group/PromptGroupAddModal";
 import PromptGroupEditModal from "./prompt-group/PromptGroupEditModal";
 import SidebarEntryEditModal from "@/components/left-panel/SidebarEntryEditModal";
+import TagDatabaseModal from "./tag-database/TagDatabaseModal";
+import { Button } from "@/components/ui/button";
+import { Database } from "lucide-react";
 
 interface PromptGroupModalProps {
   open: boolean;
@@ -43,6 +46,7 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
   const [editingEntry, setEditingEntry] = useState<
     { groupId: string; tagId: string; name: string; tag: string } | null
   >(null);
+  const [showTagDb, setShowTagDb] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -165,7 +169,19 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-lg left-[8.5rem]! translate-x-0! max-h-[calc(100vh-4rem)] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t("promptGroup.title")}</DialogTitle>
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle>{t("promptGroup.title")}</DialogTitle>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="mr-6"
+                onClick={() => setShowTagDb(true)}
+              >
+                <Database className="h-4 w-4 mr-1" />
+                {t("tagDb.openBrowser")}
+              </Button>
+            </div>
           </DialogHeader>
 
           <PromptGroupGrid
@@ -212,6 +228,8 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
         initialTag={editingEntry?.tag ?? ""}
         onSave={handleSaveEntry}
       />
+
+      <TagDatabaseModal open={showTagDb} onOpenChange={setShowTagDb} />
     </>
   );
 }

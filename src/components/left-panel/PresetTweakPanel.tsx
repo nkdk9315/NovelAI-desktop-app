@@ -37,7 +37,7 @@ export default function PresetTweakPanel({ presetId, preset, vibes, onPresetsCha
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { results: suggestions, search } = useAutocomplete(300, 1);
-  const filteredSuggestions = suggestions.filter((s) => s.category === 1).slice(0, 8);
+  const filteredSuggestions = suggestions.filter((s) => s.csvCategory === 1).slice(0, 8);
 
   const [vibePickerOpen, setVibePickerOpen] = useState(false);
   const [saveAsOpen, setSaveAsOpen] = useState(false);

@@ -14,6 +14,7 @@ const MIGRATION_009: &str = include_str!("../migrations/009_prompt_group_overhau
 const MIGRATION_010: &str = include_str!("../migrations/010_prompt_entry_name.sql");
 const MIGRATION_011: &str = include_str!("../migrations/011_prompt_group_default_strength.sql");
 const MIGRATION_012: &str = include_str!("../migrations/012_add_main_genre.sql");
+const MIGRATION_013: &str = include_str!("../migrations/013_tag_database.sql");
 
 pub fn init_db(path: &str) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;
@@ -133,6 +134,14 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
             rusqlite::params!["schema_version", "12"],
+        )?;
+    }
+
+    if version < 13 {
+        conn.execute_batch(MIGRATION_013)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "13"],
         )?;
     }
 
