@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { TagDto } from "@/types";
 import { useDebounce } from "./use-debounce";
 import * as ipc from "@/lib/ipc";
+import * as tagIpc from "@/lib/ipc-tags";
 
 /**
  * Free-text tag autocomplete.
@@ -34,7 +35,7 @@ export function useAutocomplete(delay = 300, category?: number) {
         ),
       );
     } else {
-      ipc.searchTags(q).then(setResults);
+      tagIpc.searchTags(q).then(setResults);
     }
   }, [debouncedQuery, category]);
 

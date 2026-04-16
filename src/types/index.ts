@@ -120,6 +120,17 @@ export interface TagGroupDto {
   source: string;
   sortKey: number;
   childCount: number;
+  isFavorite: boolean;
+}
+
+export interface TagWithGroupsDto {
+  tag: TagDto;
+  groups: TagGroupDto[];
+}
+
+export interface CountByIdDto {
+  id: number;
+  count: number;
 }
 
 // ---- Requests ----

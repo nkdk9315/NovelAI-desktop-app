@@ -23,6 +23,38 @@ interface PromptTextareaProps {
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  highlightTokens?: string[];
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function renderHighlighted(value: string, tokens: string[]): React.ReactNode[] {
+  if (tokens.length === 0) return [value];
+  const re = new RegExp(tokens.map(escapeRegex).join("|"), "g");
+  const nodes: React.ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  for (const m of value.matchAll(re)) {
+    if (m.index == null) continue;
+    if (m.index > last) nodes.push(value.slice(last, m.index));
+    nodes.push(
+      <span
+        key={key++}
+        className="rounded bg-primary/25 text-primary"
+      >
+        {m[0]}
+      </span>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last < value.length) nodes.push(value.slice(last));
+  // Trailing space to preserve final line height when text ends with \n.
+  if (value.endsWith("\n")) nodes.push(" ");
+  return nodes;
 }
 
 export default function PromptTextarea({
@@ -30,11 +62,18 @@ export default function PromptTextarea({
   onChange,
   placeholder,
   rows = 3,
+  onKeyDown: onKeyDownProp,
+  textareaRef: externalRef,
+  highlightTokens,
 }: PromptTextareaProps) {
+  const tokens = highlightTokens ?? [];
+  const hasHighlights = tokens.length > 0 && tokens.some((t) => t.length > 0);
   const { results, search } = useAutocomplete();
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const internalRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = externalRef ?? internalRef;
+  const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const getCurrentToken = useCallback(() => {
     const textarea = textareaRef.current;
@@ -99,16 +138,27 @@ export default function PromptTextarea({
     textareaRef.current?.focus();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || results.length === 0) return;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!showDropdown || results.length === 0) {
+      onKeyDownProp?.(e);
+      return;
+    }
 
-    if (e.key === "ArrowDown") {
+    if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
       e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
-    } else if (e.key === "ArrowUp") {
+      setSelectedIndex((prev) => {
+        const next = Math.min(prev + 1, results.length - 1);
+        suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
+        return next;
+      });
+    } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
       e.preventDefault();
-      setSelectedIndex((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" || e.key === "Tab") {
+      setSelectedIndex((prev) => {
+        const next = Math.max(prev - 1, 0);
+        suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
+        return next;
+      });
+    } else if (e.key === "Enter") {
       e.preventDefault();
       insertTag(results[selectedIndex].name);
     } else if (e.key === "Escape") {
@@ -117,10 +167,20 @@ export default function PromptTextarea({
   };
 
   return (
-    <div className="relative">
+    <div className={`relative ${hasHighlights ? "rounded-md bg-background" : ""}`}>
+      {hasHighlights && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words rounded-md border border-transparent px-3 py-2 text-sm text-transparent"
+        >
+          {renderHighlighted(value, tokens.filter((t) => t.length > 0))}
+        </div>
+      )}
       <textarea
         ref={textareaRef}
-        className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        className={`relative w-full resize-none rounded-md border border-input px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
+          hasHighlights ? "bg-transparent" : "bg-background"
+        }`}
         value={value}
         onChange={(e) => handleChange(e.target.value)}
         onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
@@ -133,6 +193,7 @@ export default function PromptTextarea({
           {results.map((tag, i) => (
             <button
               key={tag.name}
+              ref={(el) => { suggestionRefs.current[i] = el; }}
               type="button"
               className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-xs hover:bg-accent ${
                 i === selectedIndex ? "bg-accent" : ""
