@@ -101,7 +101,10 @@ pub fn search_system_prompts(
     category: Option<u8>,
     limit: usize,
 ) -> Vec<SystemTagDto> {
-    let query_lower = query.to_lowercase();
+    let terms: Vec<String> = query.split_whitespace().map(|t| t.to_lowercase()).collect();
+    if terms.is_empty() {
+        return Vec::new();
+    }
     let mut results = Vec::new();
 
     let all_indices: Vec<usize>;
@@ -119,11 +122,10 @@ pub fn search_system_prompts(
     for &idx in indices {
         let tag = &db.tags[idx];
         let name_lower = tag.name.to_lowercase();
-        let matches = name_lower.contains(&query_lower)
-            || tag
-                .aliases
-                .iter()
-                .any(|a: &String| a.to_lowercase().contains(&query_lower));
+        let matches = terms.iter().all(|t| {
+            name_lower.contains(t.as_str())
+                || tag.aliases.iter().any(|a| a.to_lowercase().contains(t.as_str()))
+        });
 
         if matches {
             results.push(SystemTagDto {

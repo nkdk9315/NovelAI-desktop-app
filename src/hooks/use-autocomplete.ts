@@ -13,7 +13,7 @@ import * as tagIpc from "@/lib/ipc-tags";
  *   which still supports csv_category filtering. Results are mapped into
  *   `TagDto` shape for a consistent consumer API.
  */
-export function useAutocomplete(delay = 300, category?: number) {
+export function useAutocomplete(delay = 300, category?: number, excludeCategories?: number[]) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TagDto[]>([]);
   const debouncedQuery = useDebounce(query, delay);
@@ -35,7 +35,12 @@ export function useAutocomplete(delay = 300, category?: number) {
         ),
       );
     } else {
-      tagIpc.searchTags(q).then(setResults);
+      tagIpc.searchTags(q).then((tags) => {
+        const filtered = excludeCategories?.length
+          ? tags.filter((t) => t.csvCategory == null || !excludeCategories.includes(t.csvCategory))
+          : tags;
+        setResults(filtered);
+      });
     }
   }, [debouncedQuery, category]);
 

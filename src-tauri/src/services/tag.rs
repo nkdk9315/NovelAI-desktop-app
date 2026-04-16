@@ -19,15 +19,31 @@ pub fn search(
     if trimmed.is_empty() {
         return Ok(Vec::new());
     }
+    let mut terms: Vec<&str> = trimmed.split_whitespace().collect();
+    // Search by the longest term for best DB filtering, then narrow in Rust.
+    terms.sort_by(|a, b| b.len().cmp(&a.len()));
+    let primary = terms[0];
+    let rest: Vec<String> = terms[1..].iter().map(|t| t.to_lowercase()).collect();
+
+    let fetch_limit = if rest.is_empty() { limit } else { limit * 4 };
     // FTS5 trigram tokenizer requires >= 3 chars to form a trigram; fall
     // back to LIKE for 1-2 char queries so the user gets live results from
     // the very first keystroke.
-    let rows = if trimmed.chars().count() < 3 {
-        repo::search_like(conn, trimmed, group_id, limit)?
+    let rows = if primary.chars().count() < 3 {
+        repo::search_like(conn, primary, group_id, fetch_limit)?
     } else {
-        repo::search(conn, trimmed, group_id, limit)?
+        repo::search(conn, primary, group_id, fetch_limit)?
     };
-    Ok(rows.into_iter().map(Into::into).collect())
+    let results: Vec<TagDto> = rows
+        .into_iter()
+        .map(Into::into)
+        .filter(|tag: &TagDto| {
+            let name_lower = tag.name.to_lowercase();
+            rest.iter().all(|t| name_lower.contains(t.as_str()))
+        })
+        .take(limit)
+        .collect();
+    Ok(results)
 }
 
 pub fn search_with_groups(

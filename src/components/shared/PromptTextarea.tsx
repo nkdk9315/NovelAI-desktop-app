@@ -68,7 +68,7 @@ export default function PromptTextarea({
 }: PromptTextareaProps) {
   const tokens = highlightTokens ?? [];
   const hasHighlights = tokens.length > 0 && tokens.some((t) => t.length > 0);
-  const { results, search } = useAutocomplete();
+  const { results, search } = useAutocomplete(300, undefined, [1]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const internalRef = useRef<HTMLTextAreaElement>(null);
