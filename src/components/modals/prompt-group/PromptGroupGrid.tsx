@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Database, FolderPlus, Plus, Minus, Search } from "lucide-react";
+import { ChevronRight, Database, FolderPlus, Minus, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -8,17 +8,22 @@ import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import HoverSearch from "@/components/shared/HoverSearch";
 import * as ipc from "@/lib/ipc";
 import type { GenreDto, PromptGroupDto, PromptGroupFolderDto, TagDto } from "@/types";
-import { buildFolderTree, FolderAccordionNode, UNCATEGORIZED_FOLDER_ID } from "./PromptGroupGridCards";
-import { buildSysFlatRows, SystemTreeView } from "./PromptGroupGridSystem";
+import {
+  UNCATEGORIZED_FOLDER_ID,
+  buildFolderTree,
+  FolderAccordionNode,
+} from "./PromptGroupGridCards";
+import {
+  buildSysFlatRows,
+  SystemTreeView,
+} from "./PromptGroupGridSystem";
 
-// Re-export for consumers
+// Recursive tree used by the System (favorite tag DB) view.
 export type SystemTreeNode =
   | { kind: "branch"; id: number; title: string; children: SystemTreeNode[]; leafCount: number }
   | { kind: "leaf"; id: number; title: string };
@@ -88,7 +93,6 @@ export default function PromptGroupGrid({
 
   const toggleFolder = (id: number) => setExpFolders((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const togGroup = (id: string) => setExpGroups((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const toggleBranch = (id: number) => setExpBranches((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const handleExpandGroup = async (gr: PromptGroupDto) => {
     togGroup(gr.id);
@@ -106,32 +110,28 @@ export default function PromptGroupGrid({
   const doSysSearch = async (gid: string, cat: number, q: string) => {
     setSysSearches((p) => ({ ...p, [gid]: q }));
     if (!q.trim()) { setSysResults((p) => ({ ...p, [gid]: [] })); return; }
-    try { const r = await ipc.listSystemGroupTags(cat, q, 0, 20); setSysResults((p) => ({ ...p, [gid]: r.tags.map((tt) => tt.name) })); }
-    catch { setSysResults((p) => ({ ...p, [gid]: [] })); }
+    try { const r = await ipc.listSystemGroupTags(cat, q, 0, 20); setSysResults((p) => ({ ...p, [gid]: r.tags.map((tg) => tg.name) })); } catch { setSysResults((p) => ({ ...p, [gid]: [] })); }
   };
 
-  const isEnabled = (gid: string, tid: string) => sidebarTargets?.groups.find((g) => g.groupId === gid)?.tags.find((tt) => tt.tagId === tid)?.enabled ?? false;
-  const isSysAdded = (gid: string, name: string) => sidebarTargets?.groups.find((g) => g.groupId === gid)?.tags.some((tt) => tt.tag === name) ?? false;
+  const isEnabled = (gid: string, tid: string) => sidebarTargets?.groups.find((g) => g.groupId === gid)?.tags.find((t) => t.tagId === tid)?.enabled ?? false;
+  const isSysAdded = (gid: string, name: string) => sidebarTargets?.groups.find((g) => g.groupId === gid)?.tags.some((t) => t.tag === name) ?? false;
+
   const clickEntry = (gr: PromptGroupDto, tid: string) => {
     if (!existingGroupIds.includes(gr.id)) { addGroupToTarget(targetId, gr); setTimeout(() => toggleTag(targetId, gr.id, tid), 0); }
     else toggleTag(targetId, gr.id, tid);
   };
   const clickSysTag = (gr: PromptGroupDto, name: string) => {
     if (!existingGroupIds.includes(gr.id)) { addGroupToTarget(targetId, gr); setTimeout(() => addSystemTag(targetId, gr.id, { name, category: gr.category! }), 0); }
-    else { const ex = sidebarTargets?.groups.find((g) => g.groupId === gr.id)?.tags.find((tt) => tt.tag === name); if (ex) removeSystemTag(targetId, gr.id, ex.tagId); else addSystemTag(targetId, gr.id, { name, category: gr.category! }); }
+    else { const ex = sidebarTargets?.groups.find((g) => g.groupId === gr.id)?.tags.find((t) => t.tag === name); if (ex) removeSystemTag(targetId, gr.id, ex.tagId); else addSystemTag(targetId, gr.id, { name, category: gr.category! }); }
   };
 
   const handleNewSubfolder = (parentId: number) => { setNewFolderInput(""); setNewFolderDialog({ parentId }); };
-  const submitNewFolder = async () => {
-    if (!newFolderDialog) return; const title = newFolderInput.trim(); if (!title) return;
-    try { await onCreateFolder(newFolderDialog.parentId, title); if (newFolderDialog.parentId != null) setExpFolders((s) => new Set(s).add(newFolderDialog.parentId!)); } catch {/**/}
-    setNewFolderDialog(null); setNewFolderInput("");
-  };
+  const submitNewFolder = async () => { if (!newFolderDialog) return; const title = newFolderInput.trim(); if (!title) return; try { await onCreateFolder(newFolderDialog.parentId, title); if (newFolderDialog.parentId != null) setExpFolders((s) => new Set(s).add(newFolderDialog.parentId!)); } catch {/**/} setNewFolderDialog(null); setNewFolderInput(""); };
 
   const renderGroupCard = (gr: PromptGroupDto): React.ReactNode => {
     const isAdded = existingGroupIds.includes(gr.id);
     const isOpen = expGroups.has(gr.id);
-    const ec = sidebarTargets?.groups.find((g) => g.groupId === gr.id)?.tags.filter((tt) => tt.enabled).length ?? 0;
+    const ec = sidebarTargets?.groups.find((g) => g.groupId === gr.id)?.tags.filter((t) => t.enabled).length ?? 0;
     return (
       <ContextMenu>
         <ContextMenuTrigger asChild>
@@ -168,10 +168,7 @@ export default function PromptGroupGrid({
           <input value={sysSearches[gr.id] ?? ""} onChange={(e) => doSysSearch(gr.id, gr.category!, e.target.value)} placeholder="..." className="h-5 w-full bg-transparent text-[10px] outline-none placeholder:text-muted-foreground/40" />
         </div>
         <div className="flex flex-wrap gap-0.5 pt-0.5">
-          {(sysResults[gr.id] ?? []).map((n) => {
-            const added = isSysAdded(gr.id, n);
-            return <Badge key={`st-${gr.id}-${n}`} variant={added ? "default" : "outline"} className="cursor-pointer text-[9px] px-1 py-0 select-none transition-colors" onClick={() => clickSysTag(gr, n)}>{n}</Badge>;
-          })}
+          {(sysResults[gr.id] ?? []).map((n) => { const added = isSysAdded(gr.id, n); return (<Badge key={`st-${gr.id}-${n}`} variant={added ? "default" : "outline"} className="cursor-pointer text-[9px] px-1 py-0 select-none transition-colors" onClick={() => clickSysTag(gr, n)}>{n}</Badge>); })}
         </div>
       </div>
     </div>
@@ -184,20 +181,14 @@ export default function PromptGroupGrid({
     const visible = q ? gr.tags.filter((tg) => (tg.name || tg.tag).toLowerCase().includes(q)) : gr.tags;
     return (
       <div className="ml-6 border-l border-border pl-2 py-0.5 flex flex-wrap gap-0.5 items-center">
-        {visible.map((tg) => {
-          const en = isEnabled(gr.id, tg.id);
-          return (
-            <ContextMenu key={`e-${tg.id}`}>
-              <ContextMenuTrigger asChild>
-                <Badge variant={en ? "default" : "outline"} className="cursor-pointer text-[9px] px-1 py-0 select-none transition-colors" onClick={() => clickEntry(gr, tg.id)}>{tg.name || tg.tag}</Badge>
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem onClick={() => onEditEntry(gr.id, tg.id)}>{t("common.edit")}</ContextMenuItem>
-                <ContextMenuItem className="text-destructive" onClick={() => onDeleteEntry(gr.id, tg.id)}>{t("common.delete")}</ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
-          );
-        })}
+        {visible.map((tg) => { const en = isEnabled(gr.id, tg.id); return (
+          <ContextMenu key={`e-${tg.id}`}><ContextMenuTrigger asChild>
+            <Badge variant={en ? "default" : "outline"} className="cursor-pointer text-[9px] px-1 py-0 select-none transition-colors" onClick={() => clickEntry(gr, tg.id)}>{tg.name || tg.tag}</Badge>
+          </ContextMenuTrigger><ContextMenuContent>
+            <ContextMenuItem onClick={() => onEditEntry(gr.id, tg.id)}>{t("common.edit")}</ContextMenuItem>
+            <ContextMenuItem className="text-destructive" onClick={() => onDeleteEntry(gr.id, tg.id)}>{t("common.delete")}</ContextMenuItem>
+          </ContextMenuContent></ContextMenu>
+        ); })}
       </div>
     );
   };
@@ -208,6 +199,8 @@ export default function PromptGroupGrid({
     if (!showSystem || !systemTree) return [];
     return buildSysFlatRows(systemTree, expBranches, expGroups, tagDbCache, existingGroupIds, leafSearchByGroup);
   }, [showSystem, systemTree, expBranches, expGroups, tagDbCache, existingGroupIds, leafSearchByGroup]);
+
+  const toggleBranch = (id: number) => setExpBranches((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   return (
     <div className="space-y-2">
@@ -225,25 +218,25 @@ export default function PromptGroupGrid({
       {useSystemTree ? (
         <SystemTreeView sysFlatRows={sysFlatRows} tagDbCache={tagDbCache} sidebarTargets={sidebarTargets}
           leafSearchByGroup={leafSearchByGroup} setLeafSearch={setLeafSearch}
-          onToggleBranch={toggleBranch} onExpandGroup={handleExpandGroup} onToggleSidebar={onToggleSidebar}
-          onToggleTag={toggleTag} onAddGroupToTarget={addGroupToTarget} targetId={targetId}
-          onCreateFromTagDb={onCreateFromTagDb} onRemoveFromFavorites={onRemoveFromFavorites}
-          onEditSystemGroupSettings={onEditSystemGroupSettings} />
+          onToggleBranch={toggleBranch} onExpandGroup={handleExpandGroup}
+          onToggleSidebar={onToggleSidebar} onToggleTag={toggleTag} onAddGroupToTarget={addGroupToTarget}
+          targetId={targetId} onCreateFromTagDb={onCreateFromTagDb}
+          onRemoveFromFavorites={onRemoveFromFavorites} onEditSystemGroupSettings={onEditSystemGroupSettings} />
       ) : (
         <div className="h-72 overflow-y-auto pr-3 text-xs">
           {folderTree.map((node) => (
             <FolderAccordionNode key={`f-${node.id}`} node={node} depth={0} isUncategorized={node.id === UNCATEGORIZED_FOLDER_ID}
               expanded={expFolders} toggleExpanded={toggleFolder} renameTarget={renameTarget} setRenameTarget={setRenameTarget}
-              onCreateInFolder={onCreateInFolder} onCreateSubfolder={handleNewSubfolder} onRenameFolder={onRenameFolder} onDeleteFolder={onDeleteFolder}
-              renderGroupCard={renderGroupCardWithChildren} />
+              onCreateInFolder={onCreateInFolder} onCreateSubfolder={handleNewSubfolder} onRenameFolder={onRenameFolder}
+              onDeleteFolder={onDeleteFolder} renderGroupCard={renderGroupCardWithChildren} />
           ))}
         </div>
       )}
       <Dialog open={newFolderDialog !== null} onOpenChange={(o) => { if (!o) { setNewFolderDialog(null); setNewFolderInput(""); } }}>
         <DialogContent className="max-w-xs">
           <DialogHeader><DialogTitle className="text-sm">{newFolderDialog?.parentId == null ? t("promptGroup.folder.newFolder") : t("promptGroup.folder.newSubfolder")}</DialogTitle></DialogHeader>
-          {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
-          <Input autoFocus value={newFolderInput} onChange={(e) => setNewFolderInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void submitNewFolder(); } }} placeholder={t("promptGroup.folder.newFolder")} className="h-8 text-xs" />
+          <Input autoFocus value={newFolderInput} onChange={(e) => setNewFolderInput(e.target.value)} // eslint-disable-line jsx-a11y/no-autofocus
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void submitNewFolder(); } }} placeholder={t("promptGroup.folder.newFolder")} className="h-8 text-xs" />
           <DialogFooter>
             <Button size="sm" variant="outline" onClick={() => { setNewFolderDialog(null); setNewFolderInput(""); }}>{t("common.cancel")}</Button>
             <Button size="sm" disabled={!newFolderInput.trim()} onClick={() => void submitNewFolder()}>{t("common.save")}</Button>

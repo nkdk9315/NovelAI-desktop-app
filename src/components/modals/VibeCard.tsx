@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Check, Download, ImageIcon, Pencil, Star, Trash2, X } from "lucide-react";
+import { Check, Download, FolderInput, ImageIcon, Pencil, Star, Trash2, X } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -25,6 +25,7 @@ export interface VibeCardProps {
   onToggleFavorite: () => void;
   onExport: () => void;
   onDelete: () => void;
+  onMoveToFolder: () => void;
 }
 
 export default function VibeCard({
@@ -42,6 +43,7 @@ export default function VibeCard({
   onToggleFavorite,
   onExport,
   onDelete,
+  onMoveToFolder,
 }: VibeCardProps) {
   const { t } = useTranslation();
 
@@ -84,10 +86,10 @@ export default function VibeCard({
               autoFocus
             />
           ) : (
-            <p className="text-[10px] leading-tight truncate">{vibe.name}</p>
+            <p className="text-[10px] leading-4 truncate">{vibe.name}</p>
           )}
           <div className="flex items-center justify-between">
-            <p className="text-[9px] text-muted-foreground/60 truncate flex-1">{vibe.model}</p>
+            <p className="text-[9px] leading-4 text-muted-foreground/60 truncate flex-1">{vibe.model}</p>
             <button
               className="p-0.5 rounded-full hover:bg-accent transition-colors shrink-0"
               onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
@@ -127,6 +129,10 @@ export default function VibeCard({
           </ContextMenuItem>
         )}
         <ContextMenuSeparator />
+        <ContextMenuItem onClick={(e) => { e.stopPropagation(); onMoveToFolder(); }}>
+          <FolderInput className="mr-2 h-3.5 w-3.5" />
+          {t("folder.moveToFolder")}
+        </ContextMenuItem>
         <ContextMenuItem onClick={(e) => { e.stopPropagation(); onExport(); }}>
           <Download className="mr-2 h-3.5 w-3.5" />
           {t("vibe.download")}

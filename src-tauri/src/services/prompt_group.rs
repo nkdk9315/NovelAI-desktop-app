@@ -55,6 +55,7 @@ pub fn create_prompt_group(
         random_count: 1,
         random_source: "enabled".to_string(),
         wildcard_token: None,
+        folder_id: req.folder_id,
     };
     pg_repo::insert(conn, &row)?;
 
@@ -88,6 +89,9 @@ pub fn update_prompt_group(
 
     if let Some(name) = req.name {
         existing.name = name;
+    }
+    if let Some(folder_id) = req.folder_id {
+        existing.folder_id = folder_id;
     }
     if let Some(is_default) = req.is_default {
         existing.is_default = i32::from(is_default);

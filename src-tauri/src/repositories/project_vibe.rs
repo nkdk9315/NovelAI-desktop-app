@@ -70,11 +70,11 @@ pub fn list_with_vibe_details(
     visible_only: bool,
 ) -> Result<Vec<(crate::models::dto::VibeRow, bool)>, AppError> {
     let sql = if visible_only {
-        "SELECT v.id, v.name, v.file_path, v.model, v.created_at, v.thumbnail_path, v.is_favorite, pv.is_visible \
+        "SELECT v.id, v.name, v.file_path, v.model, v.created_at, v.thumbnail_path, v.is_favorite, v.folder_id, pv.is_visible \
          FROM project_vibes pv JOIN vibes v ON pv.vibe_id = v.id \
          WHERE pv.project_id = ?1 AND pv.is_visible = 1 ORDER BY pv.added_at ASC"
     } else {
-        "SELECT v.id, v.name, v.file_path, v.model, v.created_at, v.thumbnail_path, v.is_favorite, pv.is_visible \
+        "SELECT v.id, v.name, v.file_path, v.model, v.created_at, v.thumbnail_path, v.is_favorite, v.folder_id, pv.is_visible \
          FROM project_vibes pv JOIN vibes v ON pv.vibe_id = v.id \
          WHERE pv.project_id = ?1 ORDER BY pv.added_at ASC"
     };
@@ -89,8 +89,9 @@ pub fn list_with_vibe_details(
                 created_at: row.get(4)?,
                 thumbnail_path: row.get(5)?,
                 is_favorite: row.get::<_, i32>(6)? != 0,
+                folder_id: row.get(7)?,
             },
-            row.get::<_, i32>(7)? != 0,
+            row.get::<_, i32>(8)? != 0,
         ))
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())

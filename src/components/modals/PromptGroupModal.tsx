@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toastError } from "@/lib/toast-error";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePromptStore } from "@/stores/prompt-store";
 import type { TagGroupDto } from "@/types";
 import type { SystemTreeNode } from "./prompt-group/PromptGroupGrid";
@@ -45,51 +43,43 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
   }, [open, showSystem, systemTree, tagDbGenresLoading, t]);
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-lg left-[8.5rem]! translate-x-0! max-h-[calc(100vh-4rem)] overflow-y-auto">
-          <DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg left-[8.5rem]! translate-x-0! max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-1.5">
             <DialogTitle>{t("promptGroup.title")}</DialogTitle>
-          </DialogHeader>
-          <PromptGroupModalContent
-            targetId={targetId}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            showSystem={showSystem}
-            onShowSystemChange={setShowSystem}
-            systemTree={systemTree}
-            setSystemTree={setSystemTree}
-            tagDbGenresLoading={tagDbGenresLoading}
-          />
-        </DialogContent>
-      </Dialog>
-    </>
+          </div>
+        </DialogHeader>
+        <PromptGroupModalContent
+          targetId={targetId}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          showSystem={showSystem}
+          onShowSystemChange={setShowSystem}
+          systemTree={systemTree}
+          setSystemTree={setSystemTree}
+          tagDbGenresLoading={tagDbGenresLoading}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
 
 async function fetchFavoriteTagDbTree(): Promise<SystemTreeNode[]> {
   async function visit(node: TagGroupDto): Promise<SystemTreeNode | null> {
-    if (node.childCount === 0) {
-      return { kind: "leaf", id: node.id, title: node.title };
-    }
+    if (node.childCount === 0) return { kind: "leaf", id: node.id, title: node.title };
     const kids = await ipc.listFavoriteTagGroupChildren(node.id);
     const visited = await Promise.all(kids.map(visit));
     const children = visited.filter((c): c is SystemTreeNode => c !== null);
     if (children.length === 0) return null;
-    const leafCount = children.reduce(
-      (acc, c) => acc + (c.kind === "leaf" ? 1 : c.leafCount), 0,
-    );
+    const leafCount = children.reduce((acc, c) => acc + (c.kind === "leaf" ? 1 : c.leafCount), 0);
     return { kind: "branch", id: node.id, title: node.title, children, leafCount };
   }
-
   const roots = await ipc.listFavoriteTagGroupRoots();
   const topLevel: SystemTreeNode[] = [];
   for (const root of roots) {
     const supers = await ipc.listFavoriteTagGroupChildren(root.id);
-    for (const sup of supers) {
-      const node = await visit(sup);
-      if (node) topLevel.push(node);
-    }
+    for (const sup of supers) { const node = await visit(sup); if (node) topLevel.push(node); }
   }
   topLevel.sort((a, b) => a.title.localeCompare(b.title));
   return topLevel;

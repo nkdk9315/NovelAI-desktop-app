@@ -99,6 +99,7 @@ pub fn add_vibe(
         created_at: chrono::Utc::now().to_rfc3339(),
         thumbnail_path,
         is_favorite: false,
+        folder_id: None,
     };
     crate::repositories::vibe::insert(conn, &row)?;
     Ok(VibeDto::from(row))

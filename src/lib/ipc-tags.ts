@@ -1,22 +1,33 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { TagDto, TagGroupDto, TagWithGroupsDto, CountByIdDto } from "@/types";
 
+// Display-time fix for work group titles whose seed scraper produced a
+// mangled slug (e.g. `work:palentine's_2021)_(pokemon`).
+function fixWorkGroupTitle(g: TagGroupDto): TagGroupDto {
+  if (!g.slug.startsWith("work:")) return g;
+  let core = g.slug.slice("work:".length);
+  if (core === "unknown_work") return g.title === "Unknown / Original" ? g : { ...g, title: "Unknown / Original" };
+  const firstOpen = core.indexOf("(");
+  const firstClose = core.indexOf(")");
+  if (firstClose >= 0 && (firstOpen < 0 || firstClose < firstOpen)) core = `(${core})`;
+  const rebuilt = core.split("_").map((w) => (w.length > 0 ? w[0].toUpperCase() + w.slice(1) : "")).join(" ");
+  return rebuilt === g.title ? g : { ...g, title: rebuilt };
+}
+
+function fixWorkGroupTitles(list: TagGroupDto[]): TagGroupDto[] { return list.map(fixWorkGroupTitle); }
+
 // ---- Tag database (migration 013) ----
 
-export function searchTags(
-  query: string,
-  groupId?: number,
-  limit?: number,
-): Promise<TagDto[]> {
+export function searchTags(query: string, groupId?: number, limit?: number): Promise<TagDto[]> {
   return invoke("search_tags", { query, groupId, limit });
 }
 
 export function listTagGroupRoots(): Promise<TagGroupDto[]> {
-  return invoke("list_tag_group_roots");
+  return invoke<TagGroupDto[]>("list_tag_group_roots").then(fixWorkGroupTitles);
 }
 
 export function listTagGroupChildren(parentId: number): Promise<TagGroupDto[]> {
-  return invoke("list_tag_group_children", { parentId });
+  return invoke<TagGroupDto[]>("list_tag_group_children", { parentId }).then(fixWorkGroupTitles);
 }
 
 export function listTagGroupTags(
@@ -66,11 +77,11 @@ export function removeTagsFromGroup(
 // ---- Tag favorites (migration 014) ----
 
 export function listFavoriteTagGroupRoots(): Promise<TagGroupDto[]> {
-  return invoke("list_favorite_tag_group_roots");
+  return invoke<TagGroupDto[]>("list_favorite_tag_group_roots").then(fixWorkGroupTitles);
 }
 
 export function listFavoriteTagGroupChildren(parentId: number): Promise<TagGroupDto[]> {
-  return invoke("list_favorite_tag_group_children", { parentId });
+  return invoke<TagGroupDto[]>("list_favorite_tag_group_children", { parentId }).then(fixWorkGroupTitles);
 }
 
 export function toggleTagGroupFavorite(groupId: number): Promise<boolean> {
@@ -86,7 +97,7 @@ export function countFavoriteDescendantsPerGroup(): Promise<CountByIdDto[]> {
 }
 
 export function getTagGroup(groupId: number): Promise<TagGroupDto> {
-  return invoke("get_tag_group", { groupId });
+  return invoke<TagGroupDto>("get_tag_group", { groupId }).then((g) => fixWorkGroupTitles([g])[0]);
 }
 
 export function listOrphanTagsByCategory(
