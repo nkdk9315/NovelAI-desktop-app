@@ -358,6 +358,7 @@ App
 | `useProjectStore` | `stores/project-store.ts` | プロジェクト CRUD、現在のプロジェクト | — |
 | `useGenerationStore` | `stores/generation-store.ts` | 生成状態、生成パラメータ、最新結果 | — |
 | `usePromptStore` | `stores/prompt-store.ts` | プロンプト、キャラクター、グループ、ジャンル、Vibe、プリセット | — |
+| `useSidebarPromptStore` | `stores/sidebar-prompt-store.ts` | ターゲット別グループ選択・タグ有効状態・negativeOverride | `persist` |
 | `useHistoryStore` | `stores/history-store.ts` | 生成履歴、フィルタ、選択画像 | — |
 | `useThemeStore` | `stores/theme-store.ts` | テーマ状態（dark/light） | `persist` |
 
@@ -640,13 +641,16 @@ src/
 │   ├── ipc.ts                            # Tauri IPC ラッパー（既存）
 │   ├── cost.ts                           # コスト計算（既存）
 │   ├── constants.ts                      # 定数（既存）
-│   └── utils.ts                          # cn() ユーティリティ（新規）
+│   ├── utils.ts                          # cn() ユーティリティ（新規）
+│   └── prompt-assembly.ts               # プロンプト組立ロジック（assembleFullPrompt, assembleNegativeFromGroups 等）
 │
 ├── stores/
 │   ├── settings-store.ts                 # 設定・API キー・Anlas（既存、拡充）
 │   ├── project-store.ts                  # プロジェクト管理（既存）
 │   ├── generation-store.ts               # 生成状態（既存、拡充）
 │   ├── prompt-store.ts                   # プロンプト・キャラクター・グループ等（既存 stub、要実装）
+│   ├── sidebar-prompt-store.ts           # ターゲット別グループ選択・negativeOverride 管理
+│   ├── sidebar-prompt-utils.ts           # SidebarPromptTag / TargetPromptState 型・変換ロジック
 │   ├── history-store.ts                  # 履歴管理（既存 stub、要実装）
 │   └── theme-store.ts                    # テーマ切替（新規）
 │

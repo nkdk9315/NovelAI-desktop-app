@@ -153,7 +153,7 @@ fn test_create_project_creates_directory() {
 | `test_update` | フィールド更新 |
 | `test_delete` | 削除 (CASCADE でタグも消える) |
 | `test_clear_default_for_genre` | 他グループのデフォルトフラグクリア |
-| `test_replace_tags` | タグ全置換 (既存タグ削除 + 新規挿入) |
+| `test_replace_tags` | タグ全置換 (既存タグ削除 + 新規挿入、negative_prompt 保存確認) |
 
 #### vibe_repo
 
@@ -204,7 +204,7 @@ fn test_create_project_creates_directory() {
 
 | テストケース | 検証内容 |
 |-------------|---------|
-| `test_create_with_tags` | グループ + タグ一括作成 |
+| `test_create_with_tags` | グループ + タグ一括作成 (negative_prompt 含む) |
 | `test_update_default_exclusivity` | デフォルトフラグ排他制御 |
 | `test_delete_system_group_rejected` | システムグループ削除拒否 |
 | `test_delete_user_group` | ユーザーグループ削除成功 |
@@ -334,7 +334,9 @@ src/
 
 6. `lib/cost.ts` テスト
 7. Store テスト: generation-params-store (characters CRUD)
-8. UI テスト: CharacterAddButtons, CharacterSection (描画・操作)
+8. Store テスト: sidebar-prompt-store (negativeOverride 設定・クリア)
+9. `lib/prompt-assembly.ts` テスト: assembleNegativeFromGroups (有効タグ収集、空スキップ、randomMode)
+10. UI テスト: CharacterAddButtons, CharacterSection (描画・操作)
 
 ---
 

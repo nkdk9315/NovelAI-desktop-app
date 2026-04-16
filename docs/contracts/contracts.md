@@ -634,7 +634,8 @@ pub fn list_default_genres(conn, prompt_group_id: &str) -> Result<Vec<String>, A
 pub fn set_default_genres(conn, prompt_group_id: &str, genre_ids: &[String]) -> Result<(), AppError>;
 pub fn list_groups_for_default_genre(conn, genre_id: &str) -> Result<Vec<String>, AppError>;
 pub fn find_tags_by_group(conn, prompt_group_id: &str) -> Result<Vec<PromptGroupTagRow>, AppError>;
-pub fn replace_tags(conn, prompt_group_id: &str, tags: &[(String, String, String, i32, i32, Option<String>)]) -> Result<(), AppError>;
+// tags: (id, name, tag, negative_prompt, sort_order, default_strength, thumbnail_path)
+pub fn replace_tags(conn, prompt_group_id: &str, tags: &[(String, String, String, String, i32, i32, Option<String>)]) -> Result<(), AppError>;
 ```
 
 ### 2.6 vibe_repo
@@ -1939,7 +1940,57 @@ export function searchSystemPrompts(
 
 ## 6. Frontend Utilities
 
-### 6.1 toastError (`src/lib/toast-error.ts`)
+### 6.1 Sidebar Prompt Store (`src/stores/sidebar-prompt-store.ts`, `sidebar-prompt-utils.ts`)
+
+#### SidebarPromptTag
+
+```typescript
+export interface SidebarPromptTag {
+  tagId: string;
+  name: string;
+  tag: string;
+  negativePrompt: string;   // 021: per-entry negative prompt
+  enabled: boolean;
+  strength: number;
+  defaultStrength: number;
+  thumbnailPath: string | null;
+}
+```
+
+#### TargetPromptState
+
+```typescript
+export interface TargetPromptState {
+  groups: SidebarPromptGroup[];
+  freeText: string;
+  promptOverride: string | null;
+  negativeOverride: string | null;  // 021: negative prompt override per target
+}
+```
+
+#### useSidebarPromptStore — アクション (抜粋)
+
+```typescript
+setNegativeOverride(targetId: string, text: string): void
+clearNegativeOverride(targetId: string): void
+```
+
+`negativeOverride` が `null` のとき `assembleNegativeFromGroups()` の結果がネガティブプロンプトとして使われる。非 `null` のとき override 値が優先される。
+
+### 6.2 Prompt Assembly (`src/lib/prompt-assembly.ts`)
+
+```typescript
+export function assembleNegativeFromGroups(
+  groups: SidebarPromptGroup[],
+  opts?: AssembleOptions,
+): string
+```
+
+各グループの有効タグ（`enabled: true`）から `negativePrompt` を収集し `, ` で結合して返す。
+- 空文字列の `negativePrompt` はスキップ
+- `mode: "generate"` かつ `randomMode: true` のグループはランダム選択ロジックを適用
+
+### 6.3 toastError (`src/lib/toast-error.ts`)
 
 ```typescript
 export function toastError(message: string): void
@@ -2031,3 +2082,4 @@ PresetB (enabled): vibe-1 (0.3), vibe-3 (0.6)
 | 2026-04-07 | 初版作成 |
 | 2026-04-10 | Vibe UX強化に伴うDTO/Repository/Service/Command全面更新、Vibeマージ戦略追加 |
 | 2026-04-16 | PR-C: Prompt Group overhaul — schema 009-020、DTO/Repo/Service/Command全面更新、system_group_settings互換シム |
+| 2026-04-16 | PR-E: negative_prompt per entry — migration 021、TagInput/PromptGroupTagRow/Dto更新、SidebarPromptTag.negativePrompt、TargetPromptState.negativeOverride、assembleNegativeFromGroups追加 |
