@@ -25,6 +25,7 @@ export default function HoverSearch({
   const hasValue = value.length > 0;
   return (
     <div
+      role="presentation"
       className={`group inline-flex items-center rounded ${
         hasValue ? "bg-accent/40" : "hover:bg-accent/40"
       } ${className}`}

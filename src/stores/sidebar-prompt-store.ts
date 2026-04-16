@@ -65,6 +65,7 @@ export const useSidebarPromptStore = create<SidebarPromptState>()((set) => ({
 
   removeTarget: (targetId) =>
     set((state) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [targetId]: _, ...rest } = state.targets;
       return { targets: rest };
     }),

@@ -98,6 +98,7 @@ export default function PositionEditor({
       {expanded && (
         <div
           ref={rectRef}
+          role="presentation"
           className="relative rounded border border-border bg-muted/30"
           style={{ width: rectW, height: rectH, cursor: dragging ? "grabbing" : "crosshair" }}
           onMouseDown={handleMouseDown}

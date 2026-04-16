@@ -242,6 +242,7 @@ export default function PromptGroupGrid({
       <Dialog open={newFolderDialog !== null} onOpenChange={(o) => { if (!o) { setNewFolderDialog(null); setNewFolderInput(""); } }}>
         <DialogContent className="max-w-xs">
           <DialogHeader><DialogTitle className="text-sm">{newFolderDialog?.parentId == null ? t("promptGroup.folder.newFolder") : t("promptGroup.folder.newSubfolder")}</DialogTitle></DialogHeader>
+          {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
           <Input autoFocus value={newFolderInput} onChange={(e) => setNewFolderInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void submitNewFolder(); } }} placeholder={t("promptGroup.folder.newFolder")} className="h-8 text-xs" />
           <DialogFooter>
             <Button size="sm" variant="outline" onClick={() => { setNewFolderDialog(null); setNewFolderInput(""); }}>{t("common.cancel")}</Button>

@@ -122,8 +122,9 @@ export function SystemTreeView(props: SystemTreeViewProps) {
     if (row.kind === "sysBranch") return (
       <ContextMenu>
         <ContextMenuTrigger>
-          <div className="flex items-center gap-1 py-1 leading-4 font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-            style={{ paddingLeft: `${row.depth * 10 + 4}px` }} onClick={() => onToggleBranch(row.id)}>
+          <div role="button" tabIndex={0} className="flex items-center gap-1 py-1 leading-4 font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+            style={{ paddingLeft: `${row.depth * 10 + 4}px` }} onClick={() => onToggleBranch(row.id)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleBranch(row.id); } }}>
             <ChevronRight className={`h-3 w-3 transition-transform ${row.isOpen ? "rotate-90" : ""}`} />
             <span className="truncate">{row.title}</span>
             <span className="text-[10px] text-muted-foreground/60">{row.leafCount}</span>

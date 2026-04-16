@@ -89,7 +89,7 @@ export function assembleFullPrompt(
   opts: AssembleOptions = {},
 ): string {
   const mode = opts.mode ?? "preview";
-  let text = freeText;
+  const text = freeText;
   const trailingParts: string[] = [];
   const substitutions: { token: string; value: string }[] = [];
 

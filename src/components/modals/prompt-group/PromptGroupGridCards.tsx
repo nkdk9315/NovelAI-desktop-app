@@ -82,15 +82,18 @@ export function FolderAccordionNode({
 
   const headerRow = (
     <div
+      role="button"
+      tabIndex={0}
       className="flex items-center gap-1 py-1 leading-4 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
       style={{ paddingLeft: `${depth * 12 + 4}px` }}
       onClick={() => toggleExpanded(node.id)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpanded(node.id); } }}
     >
       <ChevronRight className={`h-3 w-3 transition-transform ${isOpen ? "rotate-90" : ""}`} />
       {isOpen ? <FolderOpen className="h-3 w-3" /> : <FolderClosed className="h-3 w-3" />}
       {renameTarget === node.id ? (
         <input
-          autoFocus
+          autoFocus // eslint-disable-line jsx-a11y/no-autofocus
           value={renameDraft}
           onClick={(e) => e.stopPropagation()}
           onChange={(e) => setRenameDraft(e.target.value)}
