@@ -68,7 +68,11 @@
     "free": "無料",
     "confirmTitle": "アンラスを消費します",
     "confirmDescription": "この生成には {{cost}} Anlas が必要です。実行しますか？",
-    "confirmGenerate": "生成"
+    "confirmGenerate": "生成",
+    "tokensPositive": "ポジ",
+    "tokensNegative": "ネガ",
+    "tokenLimitExceeded": "プロンプトが {{max}} トークンの上限を超えています。短くしてください。",
+    "tokenLimitExceededToast": "プロンプトのトークン数が上限（{{max}}）を超えています。"
   },
   "prompt": {
     "clearOverride": "オーバーライドを解除",

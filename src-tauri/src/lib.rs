@@ -196,6 +196,8 @@ pub fn run() {
             commands::tags::list_orphan_tags_by_category,
             commands::tags::count_tag_members_per_group,
             commands::tags::count_favorite_descendants_per_group,
+            commands::tokens::count_tokens,
+            commands::tokens::get_max_prompt_tokens,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

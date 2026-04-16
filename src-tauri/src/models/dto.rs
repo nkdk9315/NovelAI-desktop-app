@@ -459,6 +459,19 @@ pub struct CostEstimateRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CountTokensRequest {
+    pub texts: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CountTokensResponse {
+    pub counts: Vec<usize>,
+    pub max_tokens: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TagInput {
     pub name: Option<String>,
     pub tag: String,

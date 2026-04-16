@@ -15,3 +15,4 @@ pub mod system_group_settings;
 pub mod system_prompt;
 pub mod tag;
 pub mod tag_seed;
+pub mod tokens;
