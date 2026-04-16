@@ -36,6 +36,7 @@ pub struct PromptGroupRow {
     pub usage_type: String,
     pub created_at: String,
     pub updated_at: String,
+    pub folder_id: Option<i64>,        // FK → prompt_group_folders(id), migration 019
 }
 
 pub struct PromptGroupTagRow {
@@ -65,6 +66,7 @@ pub struct VibeRow {
     pub created_at: String,
     pub thumbnail_path: Option<String>,
     pub is_favorite: bool,
+    pub folder_id: Option<i64>,        // FK → vibe_folders(id), migration 017
 }
 
 pub struct StylePresetRow {
@@ -75,6 +77,26 @@ pub struct StylePresetRow {
     pub thumbnail_path: Option<String>,
     pub is_favorite: bool,
     pub model: String,
+    pub folder_id: Option<i64>,        // FK → style_preset_folders(id), migration 018
+}
+
+// ---- Asset Folder Rows (shared by vibe_folders / style_preset_folders) ----
+
+pub struct AssetFolderRow {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i64,
+    pub child_count: i64,              // computed via subquery
+}
+
+// ---- Prompt Group Folder Row (migration 019, no child_count) ----
+
+pub struct PromptGroupFolderRow {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i64,
 }
 
 ```
@@ -117,21 +139,47 @@ pub struct GenreDto {
 pub struct PromptGroupDto {
     pub id: String,
     pub name: String,
-    pub genre_id: Option<String>,
-    pub is_default_for_genre: bool,
+    pub default_genre_ids: Vec<String>,  // from prompt_group_default_genres (020)
     pub is_system: bool,
     pub usage_type: String,
-    pub tags: Vec<PromptGroupTagDto>,  // インライン
+    pub tags: Vec<PromptGroupTagDto>,
     pub created_at: String,
     pub updated_at: String,
+    pub thumbnail_path: Option<String>,  // 009
+    pub is_default: bool,                // 009
+    pub category: Option<i32>,           // 009
+    pub default_strength: f64,           // 011
+    pub random_mode: bool,               // 016
+    pub random_count: i32,               // 016
+    pub random_source: String,           // 016
+    pub wildcard_token: Option<String>,  // 016
+    pub folder_id: Option<i64>,          // 019
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PromptGroupTagDto {
     pub id: String,
+    pub name: String,                    // 010
     pub tag: String,
     pub sort_order: i32,
+    pub default_strength: i32,           // 009
+    pub thumbnail_path: Option<String>,  // 009
+}
+
+// System group genre defaults — compat shim DTOs (post-020)
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemGroupGenreDefaultDto {
+    pub genre_id: String,
+    pub show_by_default: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListSystemGroupTagsResponse {
+    pub tags: Vec<SystemTagDto>,
+    pub total_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -159,6 +207,7 @@ pub struct VibeDto {
     pub created_at: String,
     pub thumbnail_path: Option<String>,
     pub is_favorite: bool,
+    pub folder_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -172,6 +221,28 @@ pub struct StylePresetDto {
     pub thumbnail_path: Option<String>,
     pub is_favorite: bool,
     pub model: String,
+    pub folder_id: Option<i64>,
+}
+
+// ---- Asset Folder DTOs (PR-D, migrations 017-019) ----
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetFolderDto {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i64,
+    pub child_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PromptGroupFolderDto {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -334,26 +405,43 @@ pub struct CostEstimateRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CreatePromptGroupRequest {
-    pub name: String,
-    pub genre_id: Option<String>,
-    pub usage_type: String,
-    pub tags: Vec<String>,
+pub struct TagInput {
+    pub name: Option<String>,
+    pub tag: String,
+    pub default_strength: Option<i32>,
+    pub thumbnail_path: Option<String>,
 }
 
-/// genre_id の3状態:
-/// - フィールド省略 (None) → 変更なし
-/// - 明示的 null (Some(None)) → NULLにクリア
-/// - 値あり (Some(Some("..."))) → 指定IDにセット
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePromptGroupRequest {
+    pub name: String,
+    pub default_genre_ids: Vec<String>,
+    pub tags: Vec<TagInput>,
+    pub default_strength: Option<f64>,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdatePromptGroupRequest {
     pub id: String,
     pub name: Option<String>,
-    #[serde(default, deserialize_with = "deserialize_double_option")]
-    pub genre_id: Option<Option<String>>,
-    pub tags: Option<Vec<String>>,
-    pub is_default_for_genre: Option<bool>,
+    pub default_genre_ids: Option<Vec<String>>,
+    pub tags: Option<Vec<TagInput>>,
+    pub is_default: Option<bool>,
+    pub thumbnail_path: Option<Option<String>>,
+    pub default_strength: Option<f64>,
+    pub random_mode: Option<bool>,
+    pub random_count: Option<i32>,
+    pub random_source: Option<String>,
+    pub wildcard_token: Option<Option<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetSystemGroupGenreDefaultsRequest {
+    pub system_group_id: String,
+    pub entries: Vec<SystemGroupGenreDefaultDto>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -435,15 +523,14 @@ impl From<GenreRow> for GenreDto {
 }
 
 impl PromptGroupRow {
-    /// タグを外部から受け取ってDtoを構築
-    pub fn into_dto(self, tags: Vec<PromptGroupTagDto>) -> PromptGroupDto {
-        // is_default_for_genre: self.is_default_for_genre != 0
-        // is_system: self.is_system != 0
+    /// タグ + default_genre_ids を外部から受け取ってDtoを構築
+    pub fn into_dto(self, tags: Vec<PromptGroupTagDto>, default_genre_ids: Vec<String>) -> PromptGroupDto {
+        // is_system: self.is_system != 0, is_default: self.is_default != 0, random_mode: self.random_mode != 0
     }
 }
 
 impl From<PromptGroupTagRow> for PromptGroupTagDto {
-    fn from(row: PromptGroupTagRow) -> Self { /* id, tag, sort_order */ }
+    fn from(row: PromptGroupTagRow) -> Self { /* id, name, tag, sort_order, default_strength, thumbnail_path */ }
 }
 
 impl From<GeneratedImageRow> for GeneratedImageDto {
@@ -595,60 +682,20 @@ pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError>;
 ```rust
 // --- repositories/prompt_group.rs ---
 
-/// フィルタ付き一覧
-/// SQL: SELECT * FROM prompt_groups
-///      WHERE (?1 IS NULL OR genre_id = ?1)
-///        AND (?2 IS NULL OR usage_type = ?2)
-///        AND (?3 IS NULL OR name LIKE '%' || ?3 || '%')
-///      ORDER BY created_at DESC
-pub fn list(
-    conn: &Connection,
-    genre_id: Option<&str>,
-    usage_type: Option<&str>,
-    search: Option<&str>,
-) -> Result<Vec<PromptGroupRow>, AppError>;
-
-/// ID指定で取得
-/// SQL: SELECT * FROM prompt_groups WHERE id = ?1
+pub fn list(conn: &Connection, search: Option<&str>) -> Result<Vec<PromptGroupRow>, AppError>;
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<PromptGroupRow, AppError>;
-
-/// 挿入
-/// SQL: INSERT INTO prompt_groups (...) VALUES (...)
 pub fn insert(conn: &Connection, row: &PromptGroupRow) -> Result<(), AppError>;
-
-/// 更新
-/// SQL: UPDATE prompt_groups SET name=?2, genre_id=?3, is_default_for_genre=?4,
-///      usage_type=?5, updated_at=?6 WHERE id = ?1
 pub fn update(conn: &Connection, row: &PromptGroupRow) -> Result<(), AppError>;
-
-/// 削除
-/// SQL: DELETE FROM prompt_groups WHERE id = ?1
 pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError>;
 
-/// 指定ジャンルの他グループのデフォルトフラグをクリア
-/// SQL: UPDATE prompt_groups SET is_default_for_genre = 0
-///      WHERE genre_id = ?1 AND id != ?2
-pub fn clear_default_for_genre(
-    conn: &Connection,
-    genre_id: &str,
-    except_id: &str,
-) -> Result<(), AppError>;
+/// デフォルトジャンル (prompt_group_default_genres)
+pub fn list_default_genres(conn: &Connection, prompt_group_id: &str) -> Result<Vec<String>, AppError>;
+pub fn set_default_genres(conn: &Connection, prompt_group_id: &str, genre_ids: &[String]) -> Result<(), AppError>;
+pub fn list_groups_for_default_genre(conn: &Connection, genre_id: &str) -> Result<Vec<String>, AppError>;
 
-/// グループのタグ一覧
-/// SQL: SELECT * FROM prompt_group_tags WHERE prompt_group_id = ?1 ORDER BY sort_order ASC
-pub fn find_tags_by_group(
-    conn: &Connection,
-    prompt_group_id: &str,
-) -> Result<Vec<PromptGroupTagRow>, AppError>;
-
-/// タグを全置換 (DELETE + INSERT)
-/// SQL: DELETE FROM prompt_group_tags WHERE prompt_group_id = ?1
-/// SQL: INSERT INTO prompt_group_tags (id, prompt_group_id, tag, sort_order) VALUES (...)
-pub fn replace_tags(
-    conn: &Connection,
-    prompt_group_id: &str,
-    tags: &[(String, String, i32)], // (id, tag, sort_order)
-) -> Result<(), AppError>;
+/// タグ
+pub fn find_tags_by_group(conn: &Connection, prompt_group_id: &str) -> Result<Vec<PromptGroupTagRow>, AppError>;
+pub fn replace_tags(conn: &Connection, prompt_group_id: &str, tags: &[(String, String, String, i32, i32, Option<String>)]) -> Result<(), AppError>;
 ```
 
 ### 2.6 vibe_repo
@@ -930,46 +977,15 @@ pub fn cleanup_unsaved_images(conn: &Connection, project_id: &str) -> Result<(),
 ```rust
 // --- services/prompt_group.rs ---
 
-/// フィルタ付き一覧 (タグ含む)
-/// 1. prompt_group_repo::list → Vec<PromptGroupRow>
-/// 2. 各グループに対して prompt_group_repo::find_tags_by_group
-/// 3. row.into_dto(tags) → Vec<PromptGroupDto>
-pub fn list_prompt_groups(
-    conn: &Connection,
-    genre_id: Option<&str>,
-    usage_type: Option<&str>,
-    search: Option<&str>,
-) -> Result<Vec<PromptGroupDto>, AppError>;
-
-/// ID指定で取得 (タグ含む)
-/// → prompt_group_repo::find_by_id + find_tags_by_group
+/// 検索付き一覧 (タグ + default_genre_ids 含む)
+pub fn list_prompt_groups(conn: &Connection, search: Option<&str>) -> Result<Vec<PromptGroupDto>, AppError>;
 pub fn get_prompt_group(conn: &Connection, id: &str) -> Result<PromptGroupDto, AppError>;
-
-/// 作成 (グループ + タグ一括)
-/// 1. UUID生成 (グループ用 + タグ×N)
-/// 2. prompt_group_repo::insert
-/// 3. prompt_group_repo::replace_tags
-pub fn create_prompt_group(
-    conn: &Connection,
-    req: CreatePromptGroupRequest,
-) -> Result<PromptGroupDto, AppError>;
-
-/// 更新
-/// 1. prompt_group_repo::find_by_id → 既存取得
-/// 2. is_system チェック (システムグループは更新不可)
-/// 3. is_default_for_genre が true の場合:
-///    prompt_group_repo::clear_default_for_genre(genre_id, id) で排他制御
-/// 4. prompt_group_repo::update
-/// 5. tags が Some の場合: prompt_group_repo::replace_tags
-pub fn update_prompt_group(
-    conn: &Connection,
-    req: UpdatePromptGroupRequest,
-) -> Result<(), AppError>;
-
-/// 削除
-/// 1. prompt_group_repo::find_by_id → is_system チェック
-/// 2. prompt_group_repo::delete (CASCADE で tags も消える)
+pub fn create_prompt_group(conn: &Connection, req: CreatePromptGroupRequest) -> Result<PromptGroupDto, AppError>;
+pub fn update_prompt_group(conn: &Connection, req: UpdatePromptGroupRequest) -> Result<(), AppError>;
+pub fn update_prompt_group_thumbnail(conn: &Connection, id: &str, thumbnail_path: Option<&str>) -> Result<(), AppError>;
 pub fn delete_prompt_group(conn: &Connection, id: &str) -> Result<(), AppError>;
+pub fn list_default_genres(conn: &Connection, prompt_group_id: &str) -> Result<Vec<String>, AppError>;
+pub fn set_default_genres(conn: &Connection, prompt_group_id: &str, genre_ids: &[String]) -> Result<(), AppError>;
 ```
 
 ### 3.6 genre_service
@@ -1118,21 +1134,24 @@ pub fn delete_style_preset(conn: &Connection, id: &str) -> Result<(), AppError>;
 ```rust
 // --- services/system_prompt.rs ---
 
-/// CSV読込 → SystemPromptDB構築
 pub fn load_system_prompt_db<R: BufRead>(reader: R) -> SystemPromptDB;
-
-/// カテゴリ一覧
-/// SystemPromptDB.by_category のキー → CategoryDto 変換
 pub fn get_categories(db: &SystemPromptDB) -> Vec<CategoryDto>;
+pub fn search_system_prompts(db: &SystemPromptDB, query: &str, category: Option<u8>, limit: usize) -> Vec<SystemTagDto>;
+pub fn seed_system_prompt_groups(conn: &Connection) -> Result<(), AppError>;
+pub fn list_system_group_tags(db: &SystemPromptDB, category: u8, query: Option<&str>, offset: usize, limit: usize) -> (Vec<SystemTagDto>, usize);
+pub fn get_random_tags(db: &SystemPromptDB, category: u8, count: usize) -> Vec<SystemTagDto>;
+```
 
-/// タグ検索 (部分一致)
-/// SystemPromptDB.tags をフィルタ + カテゴリフィルタ + limit
-pub fn search_system_prompts(
-    db: &SystemPromptDB,
-    query: &str,
-    category: Option<u8>,
-    limit: usize,
-) -> Vec<SystemTagDto>;
+### 3.10 system_group_settings_service
+
+Compat shim over `prompt_group_default_genres` (post-migration 020).
+
+```rust
+// --- services/system_group_settings.rs ---
+
+pub fn get_defaults(conn: &Connection, system_group_id: &str) -> Result<Vec<SystemGroupGenreDefaultDto>, AppError>;
+pub fn set_defaults(conn: &mut Connection, system_group_id: &str, entries: Vec<SystemGroupGenreDefaultDto>) -> Result<(), AppError>;
+pub fn list_default_groups_for_genre(conn: &Connection, genre_id: &str) -> Result<Vec<String>, AppError>;
 ```
 
 ---
@@ -1255,34 +1274,14 @@ pub fn cleanup_unsaved_images(
 ### 4.4 commands/prompt_groups.rs
 
 ```rust
-#[tauri::command]
-pub fn list_prompt_groups(
-    state: State<'_, AppState>,
-    genre_id: Option<String>,
-    usage_type: Option<String>,
-    search: Option<String>,
-) -> Result<Vec<PromptGroupDto>, String>;
-
-#[tauri::command]
-pub fn get_prompt_group(
-    state: State<'_, AppState>,
-    id: String,
-) -> Result<PromptGroupDto, String>;
-
-#[tauri::command]
-pub fn create_prompt_group(
-    state: State<'_, AppState>,
-    req: CreatePromptGroupRequest,
-) -> Result<PromptGroupDto, String>;
-
-#[tauri::command]
-pub fn update_prompt_group(
-    state: State<'_, AppState>,
-    req: UpdatePromptGroupRequest,
-) -> Result<(), String>;
-
-#[tauri::command]
-pub fn delete_prompt_group(state: State<'_, AppState>, id: String) -> Result<(), String>;
+pub fn list_prompt_groups(state, search: Option<String>) -> Result<Vec<PromptGroupDto>, String>;
+pub fn get_prompt_group(state, id: String) -> Result<PromptGroupDto, String>;
+pub fn create_prompt_group(state, req: CreatePromptGroupRequest) -> Result<PromptGroupDto, String>;
+pub fn update_prompt_group(state, req: UpdatePromptGroupRequest) -> Result<(), String>;
+pub fn update_prompt_group_thumbnail(state, id: String, thumbnail_path: Option<String>) -> Result<(), String>;
+pub fn delete_prompt_group(state, id: String) -> Result<(), String>;
+pub fn list_prompt_group_default_genres(state, group_id: String) -> Result<Vec<String>, String>;
+pub fn set_prompt_group_default_genres(state, group_id: String, genre_ids: Vec<String>) -> Result<(), String>;
 ```
 
 ### 4.5 commands/genres.rs
@@ -1375,20 +1374,18 @@ pub fn clear_preset_thumbnail(state: State<'_, AppState>, id: String) -> Result<
 ### 4.8 commands/system_prompts.rs
 
 ```rust
-#[tauri::command]
-pub fn get_system_prompt_categories(
-    state: State<'_, AppState>,
-) -> Result<Vec<CategoryDto>, String>;
-// → system_prompt_service::get_categories(&state.system_tags)
+pub fn get_system_prompt_categories(state) -> Result<Vec<CategoryDto>, String>;
+pub fn search_system_prompts(state, query: String, category: Option<u8>, limit: Option<usize>) -> Result<Vec<SystemTagDto>, String>;
+pub fn list_system_group_tags(state, category: u8, query: Option<String>, offset: Option<usize>, limit: Option<usize>) -> Result<ListSystemGroupTagsResponse, String>;
+pub fn get_random_artist_tags(state, count: usize) -> Result<Vec<SystemTagDto>, String>;
+```
 
-#[tauri::command]
-pub fn search_system_prompts(
-    state: State<'_, AppState>,
-    query: String,
-    category: Option<u8>,
-    limit: Option<usize>,
-) -> Result<Vec<SystemTagDto>, String>;
-// → system_prompt_service::search_system_prompts(&state.system_tags, &query, category, limit.unwrap_or(50))
+### 4.9 commands/system_group_settings.rs
+
+```rust
+pub fn get_system_group_genre_defaults(state, system_group_id: String) -> Result<Vec<SystemGroupGenreDefaultDto>, String>;
+pub fn set_system_group_genre_defaults(state, req: SetSystemGroupGenreDefaultsRequest) -> Result<(), String>;
+pub fn list_default_system_groups_for_genre(state, genre_id: String) -> Result<Vec<String>, String>;
 ```
 
 ---
@@ -1525,6 +1522,49 @@ pub fn remove_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, App
 ### 起動時シード
 
 `lib.rs` の `setup` 内で `services::tag_seed::seed_if_empty(&mut conn, &resources_dir)` を呼ぶ。`tags` が空のときだけ `tag_groups.json` / `character_groups.json` を読み込んで挿入する。失敗時は startup を bail（半端に seed された状態で起動しない方針）。
+
+---
+
+## 4.Y Asset Folders (PR-D, migrations 017-019)
+
+3 ドメイン（Vibe / StylePreset / PromptGroup）にフォルダ管理を追加。Row/Dto は 1.1-1.2 参照。共通パターン: list_roots, list_children, find, create, rename, move_folder (サイクル検出付き), delete (CASCADE)。
+
+### Repository / Service / Command 一覧
+
+**vibe_folder**: repo (`AssetFolderRow`) -- list_roots, list_children, find, create, rename, move_folder, delete | svc (`AssetFolderDto`) -- 同上 + set_vibe_folder, count_vibes_per_folder, delete は CTE subtree walk + vibe 個別削除
+
+**style_preset_folder**: vibe_folder と同構造（`style_preset_folders` テーブル対象）| svc -- set_preset_folder, count_presets_per_folder
+
+**prompt_group_folder**: repo (`PromptGroupFolderRow`) -- list_roots, list_children, list_all, find_by_id, next_sort_key, insert, update_title, move_to, delete | svc (`PromptGroupFolderDto`) -- list_all, create, rename, move_folder, delete (FK CASCADE), delete_groups_in_folder, count_groups_in_subtree, set_group_folder
+
+### IPC Commands
+
+| Module | Command | Args | Return |
+|---|---|---|---|
+| vibe_folders | `list_vibe_folder_roots` | -- | `Vec<AssetFolderDto>` |
+| | `list_vibe_folder_children` | parentId | `Vec<AssetFolderDto>` |
+| | `create_vibe_folder` | parentId?, title | `AssetFolderDto` |
+| | `rename_vibe_folder` | folderId, title | `()` |
+| | `move_vibe_folder` | folderId, newParentId? | `()` |
+| | `delete_vibe_folder` | folderId | `()` |
+| | `set_vibe_folder` | vibeId, folderId? | `()` |
+| | `count_vibes_per_folder` | -- | `Vec<CountByIdDto>` |
+| style_preset_folders | `list_style_preset_folder_roots` | -- | `Vec<AssetFolderDto>` |
+| | `list_style_preset_folder_children` | parentId | `Vec<AssetFolderDto>` |
+| | `create_style_preset_folder` | parentId?, title | `AssetFolderDto` |
+| | `rename_style_preset_folder` | folderId, title | `()` |
+| | `move_style_preset_folder` | folderId, newParentId? | `()` |
+| | `delete_style_preset_folder` | folderId | `()` |
+| | `set_style_preset_folder` | presetId, folderId? | `()` |
+| | `count_style_presets_per_folder` | -- | `Vec<CountByIdDto>` |
+| prompt_group_folders | `list_prompt_group_folders` | -- | `Vec<PromptGroupFolderDto>` |
+| | `create_prompt_group_folder` | title, parentId? | `PromptGroupFolderDto` |
+| | `rename_prompt_group_folder` | folderId, title | `()` |
+| | `move_prompt_group_folder` | folderId, newParentId? | `()` |
+| | `delete_prompt_group_folder` | folderId | `()` |
+| | `delete_prompt_groups_in_folder` | folderId | `usize` |
+| | `count_prompt_groups_in_folder` | folderId | `i64` |
+| | `set_prompt_group_folder` | groupId, folderId? | `()` |
 
 ---
 
@@ -2030,3 +2070,4 @@ PresetB (enabled): vibe-1 (0.3), vibe-3 (0.6)
 |------|------|
 | 2026-04-07 | 初版作成 |
 | 2026-04-10 | Vibe UX強化に伴うDTO/Repository/Service/Command全面更新、Vibeマージ戦略追加 |
+| 2026-04-16 | PR-D: Asset Folder管理（vibe_folders, style_preset_folders, prompt_group_folders）追加 |
