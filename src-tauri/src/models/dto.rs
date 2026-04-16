@@ -222,6 +222,7 @@ pub struct TagGroupRow {
     pub source: String,
     pub sort_key: i64,
     pub child_count: i64,
+    pub is_favorite: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -243,6 +244,7 @@ pub struct TagGroupDto {
     pub source: String,
     pub sort_key: i64,
     pub child_count: i64,
+    pub is_favorite: bool,
 }
 
 impl From<TagRow> for TagDto {
@@ -253,6 +255,20 @@ impl From<TagRow> for TagDto {
             csv_category: row.csv_category,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TagWithGroupsDto {
+    pub tag: TagDto,
+    pub groups: Vec<TagGroupDto>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CountByIdDto {
+    pub id: i64,
+    pub count: i64,
 }
 
 impl From<TagGroupRow> for TagGroupDto {
@@ -266,6 +282,7 @@ impl From<TagGroupRow> for TagGroupDto {
             source: row.source,
             sort_key: row.sort_key,
             child_count: row.child_count,
+            is_favorite: row.is_favorite,
         }
     }
 }

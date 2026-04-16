@@ -1393,6 +1393,141 @@ pub fn search_system_prompts(
 
 ---
 
+## 4.X Tag Database (PR-A, migrations 013–014)
+
+Danbooru タグ DB 関連の全 Row / DTO / Repository / Service / Command をまとめて定義。
+
+### DTO / Row（`models/dto.rs`）
+
+```rust
+#[derive(Debug, Clone)]
+pub struct TagRow {
+    pub id: i64,
+    pub name: String,
+    pub csv_category: Option<i64>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TagGroupRow {
+    pub id: i64,
+    pub slug: String,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub kind: String,       // "group" | "leaf" | "user"
+    pub source: String,     // "seed" | "user"
+    pub sort_key: i64,
+    pub child_count: i64,
+    pub is_favorite: bool,  // migration 014
+}
+
+#[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
+pub struct TagDto { /* id, name, csvCategory */ }
+
+#[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
+pub struct TagGroupDto { /* …TagGroupRow相当, isFavorite含む */ }
+
+#[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
+pub struct TagWithGroupsDto {
+    pub tag: TagDto,
+    pub groups: Vec<TagGroupDto>,
+}
+
+#[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
+pub struct CountByIdDto { pub id: i64, pub count: i64 }
+```
+
+### Repository（`repositories/tag.rs`）
+
+```rust
+// 検索
+pub fn search(conn, query: &str, group_id: Option<i64>, limit: usize) -> Result<Vec<TagRow>, AppError>;
+pub fn search_like(conn, query: &str, group_id: Option<i64>, limit: usize) -> Result<Vec<TagRow>, AppError>;
+pub fn list_parent_groups(conn, tag_id: i64) -> Result<Vec<TagGroupRow>, AppError>;
+
+// グループ参照
+pub fn list_roots(conn) -> Result<Vec<TagGroupRow>, AppError>;
+pub fn list_children(conn, parent_id: i64) -> Result<Vec<TagGroupRow>, AppError>;
+pub fn find_group(conn, group_id: i64) -> Result<TagGroupRow, AppError>;
+pub fn list_group_tags(conn, group_id: i64, limit: usize) -> Result<Vec<TagRow>, AppError>;
+pub fn list_unclassified_characters(conn, limit: usize) -> Result<Vec<TagRow>, AppError>;
+pub fn list_orphan_tags_by_category(conn, csv_category: i64, letter_bucket: Option<&str>, limit: usize)
+    -> Result<Vec<TagRow>, AppError>;
+
+// お気に入り（migration 014）
+pub fn list_favorite_roots(conn) -> Result<Vec<TagGroupRow>, AppError>;
+pub fn list_favorite_children(conn, parent_id: i64) -> Result<Vec<TagGroupRow>, AppError>;
+pub fn toggle_favorite(conn, group_id: i64) -> Result<bool, AppError>;
+pub fn count_tag_members_per_group(conn) -> Result<Vec<(i64, i64)>, AppError>;
+pub fn count_favorite_descendants_per_group(conn) -> Result<Vec<(i64, i64)>, AppError>;
+
+// ユーザ編集（source='user' のみ変更可）
+pub fn create_user_group(conn, parent_id: Option<i64>, title: &str) -> Result<i64, AppError>;
+pub fn rename_user_group(conn, group_id: i64, title: &str) -> Result<(), AppError>;
+pub fn move_user_group(conn, group_id: i64, new_parent_id: Option<i64>) -> Result<(), AppError>;
+pub fn delete_user_group(conn, group_id: i64) -> Result<(), AppError>;
+pub fn add_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, AppError>;
+pub fn remove_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, AppError>;
+```
+
+FTS5 エスケープ (`to_fts_match`) は repo 層に閉じている。サービス層は raw 文字列を渡すだけ。
+
+### Service（`services/tag.rs`）
+
+```rust
+pub fn search(conn, query: &str, group_id: Option<i64>, limit: usize) -> Result<Vec<TagDto>, AppError>;
+pub fn search_with_groups(conn, query: &str, limit: usize) -> Result<Vec<TagWithGroupsDto>, AppError>;
+pub fn list_roots(conn) -> Result<Vec<TagGroupDto>, AppError>;
+pub fn get_group(conn, group_id: i64) -> Result<TagGroupDto, AppError>;
+pub fn list_children(conn, parent_id: i64) -> Result<Vec<TagGroupDto>, AppError>;
+pub fn list_favorite_roots(conn) -> Result<Vec<TagGroupDto>, AppError>;
+pub fn list_favorite_children(conn, parent_id: i64) -> Result<Vec<TagGroupDto>, AppError>;
+pub fn toggle_favorite(conn, group_id: i64) -> Result<bool, AppError>;
+pub fn list_group_tags(conn, group_id: i64, limit: usize) -> Result<Vec<TagDto>, AppError>;
+pub fn list_unclassified_characters(conn, limit: usize) -> Result<Vec<TagDto>, AppError>;
+pub fn list_orphan_tags_by_category(conn, csv_category: i64, letter_bucket: Option<&str>, limit: usize)
+    -> Result<Vec<TagDto>, AppError>;
+pub fn count_tag_members_per_group(conn) -> Result<Vec<CountByIdDto>, AppError>;
+pub fn count_favorite_descendants_per_group(conn) -> Result<Vec<CountByIdDto>, AppError>;
+pub fn create_user_group(conn, parent_id: Option<i64>, title: &str) -> Result<TagGroupDto, AppError>;
+pub fn rename_user_group(conn, group_id: i64, title: &str) -> Result<(), AppError>;
+pub fn move_user_group(conn, group_id: i64, new_parent_id: Option<i64>) -> Result<(), AppError>;
+pub fn delete_user_group(conn, group_id: i64) -> Result<(), AppError>;
+pub fn add_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, AppError>;
+pub fn remove_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, AppError>;
+```
+
+サービス層のディスパッチ方針: 3 文字未満は `repo::search_like`、3 文字以上は `repo::search`（FTS5 trigram）。
+
+### Command（`commands/tags.rs`）
+
+| Command | 引数 | 戻り値 |
+|---|---|---|
+| `search_tags` | query, groupId?, limit? | `Vec<TagDto>` |
+| `search_tags_with_groups` | query, limit? | `Vec<TagWithGroupsDto>` |
+| `list_tag_group_roots` | — | `Vec<TagGroupDto>` |
+| `get_tag_group` | groupId | `TagGroupDto` |
+| `list_tag_group_children` | parentId | `Vec<TagGroupDto>` |
+| `list_tag_group_tags` | groupId, limit? | `Vec<TagDto>` |
+| `list_unclassified_character_tags` | limit? | `Vec<TagDto>` |
+| `list_orphan_tags_by_category` | csvCategory, letterBucket?, limit? | `Vec<TagDto>` |
+| `create_user_tag_group` | parentId?, title | `TagGroupDto` |
+| `rename_tag_group` | groupId, title | `()` |
+| `delete_tag_group` | groupId | `()` |
+| `move_tag_group` | groupId, newParentId? | `()` |
+| `add_tags_to_group` | groupId, tagIds | `usize` |
+| `remove_tags_from_group` | groupId, tagIds | `usize` |
+| `list_favorite_tag_group_roots` | — | `Vec<TagGroupDto>` |
+| `list_favorite_tag_group_children` | parentId | `Vec<TagGroupDto>` |
+| `toggle_tag_group_favorite` | groupId | `bool`（新しい状態） |
+| `count_tag_members_per_group` | — | `Vec<CountByIdDto>` |
+| `count_favorite_descendants_per_group` | — | `Vec<CountByIdDto>` |
+
+### 起動時シード
+
+`lib.rs` の `setup` 内で `services::tag_seed::seed_if_empty(&mut conn, &resources_dir)` を呼ぶ。`tags` が空のときだけ `tag_groups.json` / `character_groups.json` を読み込んで挿入する。失敗時は startup を bail（半端に seed された状態で起動しない方針）。
+
+---
+
 ## 5. Frontend Types (TypeScript)
 
 ### 5.1 型定義
