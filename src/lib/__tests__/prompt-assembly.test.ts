@@ -3,7 +3,6 @@ import {
   formatTagWithStrength,
   assemblePrompt,
   assembleFullPrompt,
-  assembleNegativeFromGroups,
   rollPromptForGeneration,
 } from "../prompt-assembly";
 import type { SidebarPromptGroup } from "@/stores/sidebar-prompt-store";
@@ -268,53 +267,4 @@ describe("random mode", () => {
   });
 });
 
-describe("assembleNegativeFromGroups", () => {
-  function makeNegTag(tagId: string, tag: string, negativePrompt: string, enabled: boolean) {
-    return { ...makeTag(tagId, tag, enabled), negativePrompt };
-  }
-
-  it("returns empty string for no groups", () => {
-    expect(assembleNegativeFromGroups([])).toBe("");
-  });
-
-  it("collects negativePrompt from enabled tags only", () => {
-    const group = makeGroup({
-      tags: [
-        makeNegTag("1", "a", "bad hands", true),
-        makeNegTag("2", "b", "blurry", false),
-      ],
-    });
-    expect(assembleNegativeFromGroups([group])).toBe("bad hands");
-  });
-
-  it("skips tags with empty negativePrompt", () => {
-    const group = makeGroup({
-      tags: [
-        makeNegTag("1", "a", "", true),
-        makeNegTag("2", "b", "worst quality", true),
-      ],
-    });
-    expect(assembleNegativeFromGroups([group])).toBe("worst quality");
-  });
-
-  it("joins negatives from multiple groups with ', '", () => {
-    const g1 = makeGroup({ groupId: "g1", tags: [makeNegTag("1", "a", "bad hands", true)] });
-    const g2 = makeGroup({ groupId: "g2", tags: [makeNegTag("2", "b", "blurry", true)] });
-    expect(assembleNegativeFromGroups([g1, g2])).toBe("bad hands, blurry");
-  });
-
-  it("in generate mode with randomMode, picks from pool randomly", () => {
-    const group = makeGroup({
-      randomMode: true,
-      randomCount: 1,
-      randomSource: "all",
-      tags: [
-        makeNegTag("1", "a", "bad hands", false),
-        makeNegTag("2", "b", "blurry", false),
-      ],
-    });
-    const result = assembleNegativeFromGroups([group], { mode: "generate", random: seededRandom(1) });
-    expect(["bad hands", "blurry"]).toContain(result);
-  });
-});
 
