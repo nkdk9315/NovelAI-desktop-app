@@ -47,6 +47,14 @@ export {
   listOrphanTagsByCategory, searchTagsWithGroups,
 } from "./ipc-tags";
 
+export {
+  listPromptPresets, getPromptPreset, createPromptPreset,
+  updatePromptPreset, deletePromptPreset,
+  listPresetFolders, createPresetFolder, renamePresetFolder,
+  movePresetFolder, deletePresetFolder, deletePresetsInFolder,
+  countPresetsInFolder, setPresetFolder,
+} from "./ipc-preset";
+
 // ---- Settings ----
 
 export function getSettings(): Promise<Record<string, string>> { return invoke("get_settings"); }

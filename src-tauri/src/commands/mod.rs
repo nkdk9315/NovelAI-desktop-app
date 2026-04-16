@@ -11,3 +11,5 @@ pub mod style_preset_folders;
 pub mod system_group_settings;
 pub mod system_prompts;
 pub mod tags;
+pub mod prompt_presets;
+pub mod preset_folders;

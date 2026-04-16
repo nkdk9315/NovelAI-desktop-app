@@ -164,6 +164,34 @@ export interface CountByIdDto {
   count: number;
 }
 
+// ---- Prompt Presets ----
+
+export interface PromptPresetDto {
+  id: string;
+  name: string;
+  folderId: number | null;
+  slots: PresetCharacterSlotDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PresetCharacterSlotDto {
+  id: string;
+  slotIndex: number;
+  slotLabel: string;
+  genreId: string | null;
+  positivePrompt: string;
+  negativePrompt: string;
+  role: "target" | "source" | "none";
+}
+
+export interface PresetFolderDto {
+  id: number;
+  title: string;
+  parentId: number | null;
+  sortKey: number;
+}
+
 // ---- Requests ----
 
 export interface CreateProjectRequest {
@@ -336,6 +364,27 @@ export interface UpdatePresetThumbnailRequest {
 export interface SystemGroupGenreDefaultDto {
   genreId: string;
   showByDefault: boolean;
+}
+
+export interface PresetSlotInput {
+  slotLabel: string;
+  genreId?: string | null;
+  positivePrompt: string;
+  negativePrompt?: string;
+  role: "target" | "source" | "none";
+}
+
+export interface CreatePromptPresetRequest {
+  name: string;
+  folderId?: number | null;
+  slots: PresetSlotInput[];
+}
+
+export interface UpdatePromptPresetRequest {
+  id: string;
+  name?: string;
+  folderId?: number | null;
+  slots?: PresetSlotInput[];
 }
 
 // ---- Random Preset Settings ----

@@ -642,6 +642,36 @@ pub struct UpdatePresetThumbnailRequest {
     pub thumbnail_path: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetSlotInput {
+    pub slot_label: String,
+    pub genre_id: Option<String>,
+    pub positive_prompt: String,
+    #[serde(default)]
+    pub negative_prompt: Option<String>,
+    pub role: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePromptPresetRequest {
+    pub name: String,
+    #[serde(default)]
+    pub folder_id: Option<i64>,
+    pub slots: Vec<PresetSlotInput>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePromptPresetRequest {
+    pub id: String,
+    pub name: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_double_option_i64")]
+    pub folder_id: Option<Option<i64>>,
+    pub slots: Option<Vec<PresetSlotInput>>,
+}
+
 // ---- Row → DTO 変換 ----
 
 impl From<ProjectRow> for ProjectDto {
@@ -771,6 +801,105 @@ impl StylePresetRow {
             is_favorite: self.is_favorite,
             model: self.model,
             folder_id: self.folder_id,
+        }
+    }
+}
+
+// ---- Prompt presets ----
+
+pub struct PromptPresetRow {
+    pub id: String,
+    pub name: String,
+    pub folder_id: Option<i64>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+pub struct PresetCharacterSlotRow {
+    pub id: String,
+    pub preset_id: String,
+    pub slot_index: i32,
+    pub slot_label: String,
+    pub genre_id: Option<String>,
+    pub positive_prompt: String,
+    pub negative_prompt: String,
+    pub role: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct PresetFolderRow {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PromptPresetDto {
+    pub id: String,
+    pub name: String,
+    pub folder_id: Option<i64>,
+    pub slots: Vec<PresetCharacterSlotDto>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetCharacterSlotDto {
+    pub id: String,
+    pub slot_index: i32,
+    pub slot_label: String,
+    pub genre_id: Option<String>,
+    pub positive_prompt: String,
+    pub negative_prompt: String,
+    pub role: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetFolderDto {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i32,
+}
+
+impl From<PresetFolderRow> for PresetFolderDto {
+    fn from(row: PresetFolderRow) -> Self {
+        Self {
+            id: row.id,
+            title: row.title,
+            parent_id: row.parent_id,
+            sort_key: row.sort_key as i32,
+        }
+    }
+}
+
+impl From<PresetCharacterSlotRow> for PresetCharacterSlotDto {
+    fn from(row: PresetCharacterSlotRow) -> Self {
+        Self {
+            id: row.id,
+            slot_index: row.slot_index,
+            slot_label: row.slot_label,
+            genre_id: row.genre_id,
+            positive_prompt: row.positive_prompt,
+            negative_prompt: row.negative_prompt,
+            role: row.role,
+        }
+    }
+}
+
+impl PromptPresetRow {
+    pub fn into_dto(self, slots: Vec<PresetCharacterSlotDto>) -> PromptPresetDto {
+        PromptPresetDto {
+            id: self.id,
+            name: self.name,
+            folder_id: self.folder_id,
+            slots,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
         }
     }
 }
