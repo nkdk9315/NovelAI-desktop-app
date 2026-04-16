@@ -182,12 +182,22 @@ export default function ActionBar() {
 
   const handleSave = async () => {
     if (!lastResult) return;
-    await saveImage(lastResult.id);
+    try {
+      await saveImage(lastResult.id);
+      toast.success(t("generation.saveSuccess"));
+    } catch {
+      toast.error(t("generation.saveError"));
+    }
   };
 
   const handleSaveAll = async () => {
     if (!projectId) return;
-    await saveAllImages(projectId);
+    try {
+      await saveAllImages(projectId);
+      toast.success(t("generation.saveAllSuccess"));
+    } catch {
+      toast.error(t("generation.saveError"));
+    }
   };
 
   const handleDelete = async () => {

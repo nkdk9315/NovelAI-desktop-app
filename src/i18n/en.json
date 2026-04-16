@@ -68,7 +68,10 @@
     "free": "Free",
     "confirmTitle": "Anlas will be consumed",
     "confirmDescription": "This generation requires {{cost}} Anlas. Proceed?",
-    "confirmGenerate": "Generate"
+    "confirmGenerate": "Generate",
+    "saveSuccess": "Saved",
+    "saveAllSuccess": "All saved",
+    "saveError": "Save failed"
   },
   "prompt": {
     "clearOverride": "Clear override",
@@ -99,7 +102,12 @@
     "title": "History",
     "all": "All",
     "saved": "Saved",
-    "emptyState": "No history"
+    "emptyState": "No history",
+    "selectedCount": "{{count}} selected",
+    "saveSelected": "Save Selected",
+    "clearSelection": "Clear",
+    "saveSelectedSuccess": "Saved {{count}} images",
+    "saveSelectedError": "Save failed"
   },
   "character": {
     "add": "Add Character",
