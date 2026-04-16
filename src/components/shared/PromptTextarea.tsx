@@ -85,7 +85,7 @@ export default function PromptTextarea({
     const start = lastComma + 1;
     const token = before.slice(start).trim();
     return { token, start, end: pos };
-  }, [value]);
+  }, [value, textareaRef]);
 
   const handleChange = (newValue: string) => {
     onChange(newValue);

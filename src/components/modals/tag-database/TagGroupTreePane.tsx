@@ -129,9 +129,11 @@ export default function TagGroupTreePane(props: TagGroupTreePaneProps) {
                     />
                   ) : (
                     <div
+                      role="button" tabIndex={0}
                       className="flex items-center gap-1 px-1 py-1 leading-4 rounded text-xs cursor-pointer hover:bg-accent text-muted-foreground"
                       style={{ paddingLeft: `${row.depth * 10 + 4}px` }}
                       onClick={() => onToggleLetter(row.letterKey)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleLetter(row.letterKey); } }}
                     >
                       {row.isOpen ? <ChevronDown className="h-3 w-3 shrink-0" /> : <ChevronRight className="h-3 w-3 shrink-0" />}
                       <span className="font-semibold">{row.letter}</span>
@@ -165,9 +167,11 @@ function BranchRow({ row, selectedId, selectedByGroup, memberCountById, favCount
   const selCount = selectedByGroup[g.id]?.size ?? 0;
   return (
     <div
+      role="button" tabIndex={0}
       className={`flex items-center gap-1 px-1 py-1 leading-4 rounded text-xs cursor-pointer hover:bg-accent ${selectedId === g.id ? "bg-accent" : ""}`}
       style={{ paddingLeft: `${row.depth * 10 + 4}px` }}
       onClick={() => { if (row.hasChildren) onToggleExpand(g); else onSelect(g); }}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (row.hasChildren) onToggleExpand(g); else onSelect(g); } }}
     >
       <button type="button" className="shrink-0 w-4 h-4 flex items-center justify-center"
         onClick={(e) => { e.stopPropagation(); if (row.hasChildren) onToggleExpand(g); }}>
