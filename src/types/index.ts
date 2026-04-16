@@ -103,6 +103,36 @@ export interface SystemTagDto {
   aliases: string[];
 }
 
+// ---- Tag database (migration 013) ----
+
+export interface TagDto {
+  id: number;
+  name: string;
+  csvCategory: number | null;
+}
+
+export interface TagGroupDto {
+  id: number;
+  slug: string;
+  title: string;
+  parentId: number | null;
+  kind: string;
+  source: string;
+  sortKey: number;
+  childCount: number;
+  isFavorite: boolean;
+}
+
+export interface TagWithGroupsDto {
+  tag: TagDto;
+  groups: TagGroupDto[];
+}
+
+export interface CountByIdDto {
+  id: number;
+  count: number;
+}
+
 // ---- Requests ----
 
 export interface CreateProjectRequest {

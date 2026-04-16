@@ -2,7 +2,8 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   ProjectDto, GenreDto, PromptGroupDto, GeneratedImageDto,
   VibeDto, StylePresetDto, AnlasBalanceDto, CostResultDto,
-  CategoryDto, SystemTagDto, GenerateImageResponse, ProjectVibeDto,
+  CategoryDto, SystemTagDto,
+  GenerateImageResponse, ProjectVibeDto,
   CreateProjectRequest, UpdateProjectRequest, GenerateImageRequest, CostEstimateRequest,
   CreatePromptGroupRequest, UpdatePromptGroupRequest, CreateGenreRequest,
   AddVibeRequest, EncodeVibeRequest, UpdateVibeNameRequest,
@@ -245,3 +246,5 @@ export function searchSystemPrompts(
 export function getRandomArtistTags(count: number): Promise<SystemTagDto[]> {
   return invoke("get_random_artist_tags", { count });
 }
+
+// Tag database IPC functions are in ipc-tags.ts
