@@ -105,6 +105,7 @@ export default function PresetTweakPanel({ presetId, preset, vibes, onPresetsCha
       thumbnailPath: null,
       isFavorite: false,
       model,
+      folderId: null,
     };
     return {
       ...base,

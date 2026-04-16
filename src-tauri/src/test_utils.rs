@@ -12,8 +12,15 @@ const MIGRATION_005: &str = include_str!("../migrations/005_preset_vibe_strength
 const MIGRATION_006: &str = include_str!("../migrations/006_preset_favorite.sql");
 const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
 const MIGRATION_008: &str = include_str!("../migrations/008_project_thumbnail.sql");
+const MIGRATION_009: &str = include_str!("../migrations/009_prompt_group_overhaul.sql");
+const MIGRATION_010: &str = include_str!("../migrations/010_prompt_entry_name.sql");
+const MIGRATION_011: &str = include_str!("../migrations/011_prompt_group_default_strength.sql");
+const MIGRATION_012: &str = include_str!("../migrations/012_add_main_genre.sql");
 const MIGRATION_013: &str = include_str!("../migrations/013_tag_database.sql");
 const MIGRATION_014: &str = include_str!("../migrations/014_tag_group_favorites.sql");
+const MIGRATION_015: &str = include_str!("../migrations/015_system_group_genre_defaults.sql");
+const MIGRATION_016: &str = include_str!("../migrations/016_prompt_group_random_wildcard.sql");
+const MIGRATION_020: &str = include_str!("../migrations/020_prompt_group_default_genres.sql");
 
 pub fn setup_test_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
@@ -30,8 +37,15 @@ pub fn setup_test_db() -> Connection {
     conn.execute_batch(MIGRATION_006).unwrap();
     conn.execute_batch(MIGRATION_007).unwrap();
     conn.execute_batch(MIGRATION_008).unwrap();
+    conn.execute_batch(MIGRATION_009).unwrap();
+    conn.execute_batch(MIGRATION_010).unwrap();
+    conn.execute_batch(MIGRATION_011).unwrap();
+    conn.execute_batch(MIGRATION_012).unwrap();
     conn.execute_batch(MIGRATION_013).unwrap();
     conn.execute_batch(MIGRATION_014).unwrap();
+    conn.execute_batch(MIGRATION_015).unwrap();
+    conn.execute_batch(MIGRATION_016).unwrap();
+    conn.execute_batch(MIGRATION_020).unwrap();
     conn
 }
 
@@ -56,21 +70,31 @@ pub fn create_test_genre(conn: &Connection) -> GenreRow {
         is_system: 0,
         sort_order: 10,
         created_at: "2026-01-01T00:00:00Z".to_string(),
+        icon: "user".to_string(),
+        color: "#888888".to_string(),
     };
     crate::repositories::genre::insert(conn, &row).unwrap();
     row
 }
 
-pub fn create_test_prompt_group(conn: &Connection, genre_id: &str) -> PromptGroupRow {
+pub fn create_test_prompt_group(conn: &Connection) -> PromptGroupRow {
     let row = PromptGroupRow {
         id: uuid::Uuid::new_v4().to_string(),
         name: format!("Test Group {}", &uuid::Uuid::new_v4().to_string()[..8]),
-        genre_id: Some(genre_id.to_string()),
+        genre_id: None,
         is_default_for_genre: 0,
         is_system: 0,
         usage_type: "both".to_string(),
         created_at: "2026-01-01T00:00:00Z".to_string(),
         updated_at: "2026-01-01T00:00:00Z".to_string(),
+        thumbnail_path: None,
+        is_default: 0,
+        category: None,
+        default_strength: 0.0,
+        random_mode: 0,
+        random_count: 1,
+        random_source: "enabled".to_string(),
+        wildcard_token: None,
     };
     crate::repositories::prompt_group::insert(conn, &row).unwrap();
     row

@@ -15,12 +15,11 @@ export default function CostDisplay() {
   const tier = anlas?.tier ?? 0;
 
   const activePresets = sidebarPresets.filter((p) => p.enabled);
-  const presetVibeCount = activePresets.reduce(
-    (sum, p) => sum + p.selectedVibes.filter((v) => v.enabled).length,
-    0,
-  );
-  const independentVibeCount = selectedVibes.filter((v) => v.enabled).length;
-  const totalVibeCount = presetVibeCount + independentVibeCount;
+  const uniqueVibeIds = new Set([
+    ...activePresets.flatMap((p) => p.selectedVibes.filter((v) => v.enabled).map((v) => v.vibeId)),
+    ...selectedVibes.filter((v) => v.enabled).map((v) => v.vibeId),
+  ]);
+  const totalVibeCount = uniqueVibeIds.size;
 
   const cost = useCostEstimate({
     width,

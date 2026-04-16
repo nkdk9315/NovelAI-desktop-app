@@ -39,10 +39,6 @@ pub fn run() {
                 .resource_dir()
                 .expect("Failed to resolve resource dir")
                 .join("resources");
-            // Tag DB is a hard dependency of the prompt group UI; if seeding
-            // fails we bail instead of silently shipping a half-seeded DB that
-            // would look "empty" on every subsequent launch (seed_if_empty
-            // short-circuits once `tags` has any rows).
             match services::tag_seed::seed_if_empty(&mut conn, &resources_dir) {
                 Ok(Some(stats)) => eprintln!(
                     "tag_seed: inserted {} tags, {} groups, {} members",
@@ -85,6 +81,10 @@ pub fn run() {
                 }
             };
 
+            // Seed system prompt groups on first launch
+            services::system_prompt::seed_system_prompt_groups(&conn)
+                .expect("Failed to seed system prompt groups");
+
             let app_state = AppState {
                 db: Mutex::new(conn),
                 api_client: tokio::sync::Mutex::new(api_client_val),
@@ -117,9 +117,13 @@ pub fn run() {
             commands::prompt_groups::get_prompt_group,
             commands::prompt_groups::create_prompt_group,
             commands::prompt_groups::update_prompt_group,
+            commands::prompt_groups::update_prompt_group_thumbnail,
             commands::prompt_groups::delete_prompt_group,
+            commands::prompt_groups::list_prompt_group_default_genres,
+            commands::prompt_groups::set_prompt_group_default_genres,
             commands::genres::list_genres,
             commands::genres::create_genre,
+            commands::genres::update_genre,
             commands::genres::delete_genre,
             commands::vibes::list_vibes,
             commands::vibes::add_vibe,
@@ -145,14 +149,16 @@ pub fn run() {
             commands::system_prompts::get_system_prompt_categories,
             commands::system_prompts::search_system_prompts,
             commands::system_prompts::get_random_artist_tags,
+            commands::system_prompts::list_system_group_tags,
+            commands::system_group_settings::get_system_group_genre_defaults,
+            commands::system_group_settings::set_system_group_genre_defaults,
+            commands::system_group_settings::list_default_system_groups_for_genre,
             commands::tags::search_tags,
             commands::tags::search_tags_with_groups,
             commands::tags::list_tag_group_roots,
-            commands::tags::get_tag_group,
             commands::tags::list_tag_group_children,
             commands::tags::list_tag_group_tags,
             commands::tags::list_unclassified_character_tags,
-            commands::tags::list_orphan_tags_by_category,
             commands::tags::create_user_tag_group,
             commands::tags::rename_tag_group,
             commands::tags::delete_tag_group,
@@ -164,6 +170,8 @@ pub fn run() {
             commands::tags::toggle_tag_group_favorite,
             commands::tags::count_tag_members_per_group,
             commands::tags::count_favorite_descendants_per_group,
+            commands::tags::get_tag_group,
+            commands::tags::list_orphan_tags_by_category,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

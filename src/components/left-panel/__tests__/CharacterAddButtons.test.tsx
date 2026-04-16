@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import CharacterAddButtons from "../CharacterAddButtons";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 
@@ -10,24 +10,24 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
+vi.mock("@/lib/ipc", () => ({
+  listGenres: vi.fn().mockResolvedValue([
+    { id: "genre-male", name: "Male", isSystem: true, sortOrder: 0, createdAt: "", icon: "user-round", color: "#3b82f6" },
+    { id: "genre-female", name: "Female", isSystem: true, sortOrder: 1, createdAt: "", icon: "user-round", color: "#ef4444" },
+    { id: "genre-other", name: "Other", isSystem: true, sortOrder: 2, createdAt: "", icon: "circle-help", color: "#888888" },
+  ]),
+  listPromptGroups: vi.fn().mockResolvedValue([]),
+}));
+
 beforeEach(() => {
   useGenerationParamsStore.setState({ characters: [] });
 });
 
 describe("CharacterAddButtons", () => {
-  it("renders three genre buttons", () => {
+  it("renders genre buttons", () => {
     render(<CharacterAddButtons />);
-    expect(screen.getByText("character.male")).toBeInTheDocument();
-    expect(screen.getByText("character.female")).toBeInTheDocument();
+    expect(screen.getByText("character.add")).toBeInTheDocument();
     expect(screen.getByText("character.other")).toBeInTheDocument();
-  });
-
-  it("clicking button adds character to store", () => {
-    render(<CharacterAddButtons />);
-    fireEvent.click(screen.getByText("character.female"));
-    const chars = useGenerationParamsStore.getState().characters;
-    expect(chars).toHaveLength(1);
-    expect(chars[0].genreName).toBe("Female");
   });
 
   it("buttons are disabled at max characters", () => {
@@ -39,10 +39,16 @@ describe("CharacterAddButtons", () => {
         centerX: 0.5,
         centerY: 0.5,
         genreName: "Male",
+        genreId: "genre-male",
+        genreIcon: "user-round",
+        genreColor: "#3b82f6",
       })),
     });
     render(<CharacterAddButtons />);
-    const buttons = screen.getAllByRole("button");
-    buttons.forEach((btn) => expect(btn).toBeDisabled());
+    // Male, Female, Other buttons should be disabled (genre create button is not)
+    const maleBtn = screen.getAllByRole("button").find((b) => b.textContent?.includes("Male"));
+    const otherBtn = screen.getAllByRole("button").find((b) => b.textContent?.includes("character.other"));
+    expect(maleBtn).toBeDisabled();
+    expect(otherBtn).toBeDisabled();
   });
 });

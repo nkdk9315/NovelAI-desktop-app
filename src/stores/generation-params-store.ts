@@ -12,6 +12,7 @@ import {
   MAX_CHARACTERS,
   MAX_VIBES,
 } from "@/lib/constants";
+import type { NegativePresetId } from "@/lib/constants";
 import type { ArtistTag, RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
 import * as ipc from "@/lib/ipc";
 
@@ -22,6 +23,9 @@ export interface Character {
   centerX: number;
   centerY: number;
   genreName: string;
+  genreId: string;
+  genreIcon: string;
+  genreColor: string;
 }
 
 export interface SelectedVibe {
@@ -41,8 +45,10 @@ export interface SidebarPreset {
 }
 
 interface GenerationParamsData {
-  prompt: string;
   negativePrompt: string;
+  negativePreset: NegativePresetId;
+  showNegativePresetInInput: boolean;
+  qualityTagsEnabled: boolean;
   model: string;
   sampler: string;
   noiseSchedule: string;
@@ -60,7 +66,7 @@ interface GenerationParamsState extends GenerationParamsData {
   selectedVibes: SelectedVibe[];
   sidebarPresets: SidebarPreset[];
   setParam: <K extends keyof GenerationParamsData>(key: K, value: GenerationParamsData[K]) => void;
-  addCharacter: (genreName: string) => void;
+  addCharacter: (genre: { name: string; id: string; icon: string; color: string }) => void;
   removeCharacter: (index: number) => void;
   updateCharacter: (index: number, partial: Partial<Character>) => void;
   clearCharacters: () => void;
@@ -89,8 +95,10 @@ interface GenerationParamsState extends GenerationParamsData {
 }
 
 export const useGenerationParamsStore = create<GenerationParamsState>()((set, get) => ({
-  prompt: "",
   negativePrompt: DEFAULT_NEGATIVE_PROMPT,
+  negativePreset: "none",
+  showNegativePresetInInput: false,
+  qualityTagsEnabled: false,
   model: DEFAULT_MODEL,
   sampler: DEFAULT_SAMPLER,
   noiseSchedule: DEFAULT_NOISE_SCHEDULE,
@@ -105,13 +113,23 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
   selectedVibes: [],
   sidebarPresets: [],
   setParam: (key, value) => set({ [key]: value }),
-  addCharacter: (genreName) =>
+  addCharacter: (genre) =>
     set((state) => {
       if (state.characters.length >= MAX_CHARACTERS) return state;
       return {
         characters: [
           ...state.characters,
-          { id: crypto.randomUUID(), prompt: "", negativePrompt: "", centerX: 0.5, centerY: 0.5, genreName },
+          {
+            id: crypto.randomUUID(),
+            prompt: "",
+            negativePrompt: "",
+            centerX: 0.5,
+            centerY: 0.5,
+            genreName: genre.name,
+            genreId: genre.id,
+            genreIcon: genre.icon,
+            genreColor: genre.color,
+          },
         ],
       };
     }),

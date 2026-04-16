@@ -16,11 +16,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
+import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useHistoryStore } from "@/stores/history-store";
 import { useSettingsStore } from "@/stores/settings-store";
-import { MAX_TOTAL_VIBES } from "@/lib/constants";
+import { MAX_TOTAL_VIBES, NEGATIVE_PRESETS, QUALITY_TAGS } from "@/lib/constants";
 import { calculateCost } from "@/lib/cost";
 import { normalizeStrengths } from "@/lib/normalize-strength";
+import { rollPromptForGeneration, substituteWildcards } from "@/lib/prompt-assembly";
 import type { GenerateImageRequest } from "@/types";
 
 export default function ActionBar() {
@@ -95,7 +97,19 @@ export default function ActionBar() {
           return tag.strength === 0 ? base : `{${tag.strength}::${base}::}`;
         }).join(", ") + ", "
       : "";
-    const fullPrompt = artistPrefix + params.prompt;
+
+    // Assemble main prompt: artist prefix + main target override (or assembled groups)
+    const sidebarState = useSidebarPromptStore.getState();
+    const mainTarget = sidebarState.targets["main"];
+    const assembledMain = mainTarget
+      ? (mainTarget.promptOverride != null
+          ? substituteWildcards(mainTarget.promptOverride, mainTarget.groups)
+          : rollPromptForGeneration("", mainTarget.groups))
+      : "";
+    const qualitySuffix = params.qualityTagsEnabled
+      ? (assembledMain ? `, ${QUALITY_TAGS}` : QUALITY_TAGS)
+      : "";
+    const fullPrompt = artistPrefix + assembledMain + qualitySuffix;
 
     let enabledVibes = allVibes.map((v) => ({
       vibeId: v.vibeId,
@@ -106,18 +120,31 @@ export default function ActionBar() {
       enabledVibes = enabledVibes.map((v, i) => ({ ...v, strength: normalized[i] }));
     }
 
+    const negPresetText = NEGATIVE_PRESETS[params.negativePreset];
+    const combinedNeg = negPresetText
+      ? (params.negativePrompt ? `${negPresetText}, ${params.negativePrompt}` : negPresetText)
+      : params.negativePrompt;
+
     const req: GenerateImageRequest = {
       projectId,
       prompt: fullPrompt,
-      negativePrompt: params.negativePrompt || undefined,
+      negativePrompt: combinedNeg || undefined,
       characters:
         params.characters.length > 0
-          ? params.characters.map((c) => ({
-              prompt: c.prompt,
-              centerX: c.centerX,
-              centerY: c.centerY,
-              negativePrompt: c.negativePrompt,
-            }))
+          ? params.characters.map((c) => {
+              const charTarget = sidebarState.targets[c.id];
+              const charPrompt = charTarget
+                ? (charTarget.promptOverride != null
+                    ? substituteWildcards(charTarget.promptOverride, charTarget.groups)
+                    : rollPromptForGeneration("", charTarget.groups))
+                : c.prompt;
+              return {
+                prompt: charPrompt,
+                centerX: c.centerX,
+                centerY: c.centerY,
+                negativePrompt: c.negativePrompt,
+              };
+            })
           : undefined,
       vibes: enabledVibes.length > 0 ? enabledVibes : undefined,
       width: params.width,
@@ -171,7 +198,7 @@ export default function ActionBar() {
     <div className="flex items-center justify-center gap-2 border-t border-border p-3">
       <Button
         onClick={handleGenerateClick}
-        disabled={isGenerating || !params.prompt.trim()}
+        disabled={isGenerating}
         size="sm"
         variant={buttonVariant}
       >

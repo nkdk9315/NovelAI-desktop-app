@@ -6,5 +6,6 @@ pub mod prompt_group;
 pub mod vibe;
 pub mod project_vibe;
 pub mod style_preset;
+pub mod system_group_settings;
 pub mod tag;
 pub mod tag_favorite;
