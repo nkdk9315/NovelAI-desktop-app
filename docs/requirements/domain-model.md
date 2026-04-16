@@ -138,6 +138,26 @@ Key-Valueストア。
 
 想定キー: `api_key`, `default_model`, `default_width`, `default_height`, `default_steps`, `default_sampler`, `default_noise_schedule`, `default_scale`
 
+### Tag Database（タグデータベース — migration 013–014）
+
+Danbooru タグの階層グループをバンドル済み JSON から seed し、trigram FTS5 インデックス付きで保持する。オートコンプリートと PromptGroup 編集の両方から参照される。
+
+| テーブル | 用途 |
+|---|---|
+| `tags` | タグ本体（`id`, `name`, `csv_category`） |
+| `tags_fts` | `tags.name` の trigram FTS5 シャドウインデックス |
+| `tag_groups` | タグの階層グループ（`slug`, `title`, `parent_id`, `kind`, `source`, `sort_key`, `is_favorite`）。`source = 'seed'` は read-only, `source = 'user'` のみ rename/move/delete 可 |
+| `tag_group_members` | タグ×グループ中間テーブル（`tag_id`, `group_id`, `source`） |
+
+**migration 014** で `tag_groups.is_favorite` を追加。PromptGroupModal は favorited ブランチのみ表示する運用のため、ユーザが毎回全タグ DB を展開せずに済む。
+
+Seed ソース: `src-tauri/resources/tag_groups.json`, `character_groups.json`（両方とも scraper 出力）。起動時 `services::tag_seed::seed_if_empty` が `tags` 空のときだけ走る（失敗時は startup を bail、半端 seed 状態で起動しない）。
+
+検索経路:
+- 3 文字以上: `repositories::tag::search` が `tags_fts MATCH` で trigram 検索
+- 1〜2 文字: `repositories::tag::search_like` が LIKE フォールバック
+- FTS5 エスケープ（クォート・ダブルクォート escape）はリポジトリ層 `to_fts_match` に閉じている
+
 ---
 
 ## 2. エンティティリレーション図
