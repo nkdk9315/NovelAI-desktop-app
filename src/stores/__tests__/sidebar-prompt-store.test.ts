@@ -66,8 +66,8 @@ describe("initTarget / removeTarget", () => {
     expect(target.groups).toHaveLength(1);
     expect(target.groups[0].groupId).toBe("pg-1");
     expect(target.groups[0].tags).toHaveLength(2);
-    expect(target.groups[0].tags[0].strength).toBe(2); // from defaultStrength
-    expect(target.groups[0].tags[0].enabled).toBe(true);
+    expect(target.groups[0].tags[0].strength).toBe(0); // group-level defaultStrength
+    expect(target.groups[0].tags[0].enabled).toBe(false);
   });
 
   it("does not re-initialize existing target", () => {
@@ -115,11 +115,11 @@ describe("tag operations", () => {
   it("toggles tag enabled", () => {
     useSidebarPromptStore.getState().toggleTag("main", "pg-1", "t-1");
     const tag = useSidebarPromptStore.getState().targets["main"].groups[0].tags[0];
-    expect(tag.enabled).toBe(false);
+    expect(tag.enabled).toBe(true);
 
     useSidebarPromptStore.getState().toggleTag("main", "pg-1", "t-1");
     const tag2 = useSidebarPromptStore.getState().targets["main"].groups[0].tags[0];
-    expect(tag2.enabled).toBe(true);
+    expect(tag2.enabled).toBe(false);
   });
 
   it("sets tag strength", () => {
