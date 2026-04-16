@@ -109,7 +109,7 @@ export function SystemTreeView(props: SystemTreeViewProps) {
     if (!existingIds.includes(leaf.id)) {
       const cache = tagDbCache[leaf.id] ?? [];
       const hydrated: PromptGroupDto = { ...leaf, tags: cache.map((td, i) => ({
-        id: `tagdb-tag-${td.id}`, name: td.name, tag: td.name, sortOrder: i, defaultStrength: 0, thumbnailPath: null,
+        id: `tagdb-tag-${td.id}`, name: td.name, tag: td.name, negativePrompt: "", sortOrder: i, defaultStrength: 0, thumbnailPath: null,
       })) };
       onAddGroupToTarget(targetId, hydrated);
       setTimeout(() => onToggleTag(targetId, leaf.id, sidebarTagId), 0);

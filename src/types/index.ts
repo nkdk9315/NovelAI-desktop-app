@@ -51,6 +51,7 @@ export interface PromptGroupTagDto {
   id: string;
   name: string;
   tag: string;
+  negativePrompt: string;
   sortOrder: number;
   defaultStrength: number;
   thumbnailPath: string | null;
@@ -234,6 +235,7 @@ export interface CostEstimateRequest {
 export interface TagInput {
   name?: string;
   tag: string;
+  negativePrompt?: string;
   defaultStrength?: number;
   thumbnailPath?: string;
 }

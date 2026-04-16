@@ -22,7 +22,7 @@ import { useSettingsStore } from "@/stores/settings-store";
 import { MAX_TOTAL_VIBES, NEGATIVE_PRESETS, QUALITY_TAGS } from "@/lib/constants";
 import { calculateCost } from "@/lib/cost";
 import { normalizeStrengths } from "@/lib/normalize-strength";
-import { rollPromptForGeneration, substituteWildcards } from "@/lib/prompt-assembly";
+import { rollPromptForGeneration, substituteWildcards, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 import type { GenerateImageRequest } from "@/types";
 
 export default function ActionBar() {
@@ -120,10 +120,13 @@ export default function ActionBar() {
       enabledVibes = enabledVibes.map((v, i) => ({ ...v, strength: normalized[i] }));
     }
 
+    const mainNegBase = mainTarget != null
+      ? (mainTarget.negativeOverride ?? assembleNegativeFromGroups(mainTarget.groups, { mode: "generate" }))
+      : "";
     const negPresetText = NEGATIVE_PRESETS[params.negativePreset];
     const combinedNeg = negPresetText
-      ? (params.negativePrompt ? `${negPresetText}, ${params.negativePrompt}` : negPresetText)
-      : params.negativePrompt;
+      ? (mainNegBase ? `${negPresetText}, ${mainNegBase}` : negPresetText)
+      : mainNegBase;
 
     const req: GenerateImageRequest = {
       projectId,
@@ -138,11 +141,14 @@ export default function ActionBar() {
                     ? substituteWildcards(charTarget.promptOverride, charTarget.groups)
                     : rollPromptForGeneration("", charTarget.groups))
                 : c.prompt;
+              const charNeg = charTarget
+                ? (charTarget.negativeOverride ?? assembleNegativeFromGroups(charTarget.groups, { mode: "generate" }))
+                : c.negativePrompt;
               return {
                 prompt: charPrompt,
                 centerX: c.centerX,
                 centerY: c.centerY,
-                negativePrompt: c.negativePrompt,
+                negativePrompt: charNeg,
               };
             })
           : undefined,

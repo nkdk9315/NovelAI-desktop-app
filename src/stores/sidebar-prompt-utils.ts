@@ -6,6 +6,7 @@ export interface SidebarPromptTag {
   tagId: string;
   name: string;
   tag: string;
+  negativePrompt: string;
   enabled: boolean;
   strength: number;
   defaultStrength: number;
@@ -31,6 +32,7 @@ export interface TargetPromptState {
   groups: SidebarPromptGroup[];
   freeText: string;
   promptOverride: string | null;
+  negativeOverride: string | null;
 }
 
 // ---- Pure helpers ----
@@ -45,6 +47,7 @@ export function groupDtoToSidebar(dto: PromptGroupDto): SidebarPromptGroup {
       tagId: t.id,
       name: t.name || t.tag,
       tag: t.tag,
+      negativePrompt: t.negativePrompt,
       enabled: false,
       strength: dto.defaultStrength,
       defaultStrength: dto.defaultStrength,
@@ -97,9 +100,14 @@ export function migrateTargets(
         randomCount: g.randomCount ?? 1,
         randomSource: g.randomSource ?? "enabled",
         wildcardToken: g.wildcardToken ?? null,
+        tags: (g.tags ?? []).map((tag) => ({
+          ...tag,
+          negativePrompt: tag.negativePrompt ?? "",
+        })),
       })),
       freeText: t.freeText ?? "",
       promptOverride: t.promptOverride ?? null,
+      negativeOverride: t.negativeOverride ?? null,
     };
   }
   return migrated;

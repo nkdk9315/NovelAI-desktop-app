@@ -36,6 +36,8 @@ interface SidebarPromptActions {
   setFreeText: (targetId: string, text: string) => void;
   setPromptOverride: (targetId: string, text: string) => void;
   clearPromptOverride: (targetId: string) => void;
+  setNegativeOverride: (targetId: string, text: string) => void;
+  clearNegativeOverride: (targetId: string) => void;
   saveSidebarPromptState: (projectId: string) => void;
   loadSidebarPromptState: (projectId: string) => Promise<void>;
 }
@@ -47,7 +49,7 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
     set((state) => {
       if (state.targets[targetId]) return state;
       const groups = defaultGroups ? defaultGroups.map(groupDtoToSidebar) : [];
-      return { targets: { ...state.targets, [targetId]: { groups, freeText: "", promptOverride: null } } };
+      return { targets: { ...state.targets, [targetId]: { groups, freeText: "", promptOverride: null, negativeOverride: null } } };
     }),
 
   removeTarget: (targetId) =>
@@ -174,7 +176,7 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
           if (group.tags.some((t) => t.tag === tag.name)) return group;
           const newTag: SidebarPromptTag = {
             tagId: `sys-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            name: tag.name, tag: tag.name, enabled: true,
+            name: tag.name, tag: tag.name, negativePrompt: "", enabled: true,
             strength: group.defaultStrength, defaultStrength: group.defaultStrength, thumbnailPath: null,
           };
           return { ...group, tags: [...group.tags, newTag] };
@@ -197,6 +199,12 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
 
   clearPromptOverride: (targetId) =>
     set((state) => updateTarget(state, targetId, (target) => ({ ...target, promptOverride: null }))),
+
+  setNegativeOverride: (targetId, text) =>
+    set((state) => updateTarget(state, targetId, (target) => ({ ...target, negativeOverride: text }))),
+
+  clearNegativeOverride: (targetId) =>
+    set((state) => updateTarget(state, targetId, (target) => ({ ...target, negativeOverride: null }))),
 
   saveSidebarPromptState: (projectId) => {
     const { targets } = useSidebarPromptStore.getState();

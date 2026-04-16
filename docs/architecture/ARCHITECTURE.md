@@ -336,14 +336,15 @@ erDiagram
 ### プロンプト組み立てフロー
 
 ```
-メインプロンプト入力
-  + プロンプトグループ選択 → タグ結合
+メインプロンプト入力 (freeText)
+  + プロンプトグループ選択 → assembleFullPrompt() → タグ結合
   = base_caption
+  ネガティブ: negativeOverride ?? assembleNegativeFromGroups(groups)
 
 キャラクター × N
   各キャラクター:
     プロンプト入力 + グループタグ結合 = char_caption
-    ネガティブ入力 = char_negative
+    ネガティブ: negativeOverride ?? assembleNegativeFromGroups(groups)
     center_x, center_y = 位置座標
 
 アーティストタグ（StylePresetから）→ base_captionに追記
@@ -358,6 +359,10 @@ v4_prompt: {
 }
 ```
 
+**ネガティブプロンプト優先順位**:
+1. `negativeOverride` が非 `null` → その値をそのまま使用（手動入力 or 旧データ移行値）
+2. `negativeOverride === null` → `assembleNegativeFromGroups(groups)` の結果を使用（タグの `negativePrompt` フィールドを収集）
+
 ---
 
 ## 8. 変更履歴
@@ -365,3 +370,4 @@ v4_prompt: {
 | 日付 | 内容 |
 |------|------|
 | 2026-04-07 | 初版作成 |
+| 2026-04-16 | PR-E: ネガティブプロンプト組み立てフロー更新 (negativeOverride + assembleNegativeFromGroups) |

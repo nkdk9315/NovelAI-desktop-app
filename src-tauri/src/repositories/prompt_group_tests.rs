@@ -65,6 +65,7 @@ fn test_delete() {
         uuid::Uuid::new_v4().to_string(),
         "".to_string(),
         "tag1".to_string(),
+        "".to_string(),
         0,
         0,
         None,
@@ -83,8 +84,8 @@ fn test_replace_tags() {
     let pg = create_test_prompt_group(&conn);
 
     let tags1 = vec![
-        (uuid::Uuid::new_v4().to_string(), "Entry A".to_string(), "tag_a".to_string(), 0, 3, None),
-        (uuid::Uuid::new_v4().to_string(), "Entry B".to_string(), "tag_b".to_string(), 1, -2, Some("/tmp/thumb.png".to_string())),
+        (uuid::Uuid::new_v4().to_string(), "Entry A".to_string(), "tag_a".to_string(), "".to_string(), 0, 3, None),
+        (uuid::Uuid::new_v4().to_string(), "Entry B".to_string(), "tag_b".to_string(), "".to_string(), 1, -2, Some("/tmp/thumb.png".to_string())),
     ];
     replace_tags(&conn, &pg.id, &tags1).unwrap();
     let found = find_tags_by_group(&conn, &pg.id).unwrap();
@@ -94,7 +95,7 @@ fn test_replace_tags() {
     assert_eq!(found[1].thumbnail_path.as_deref(), Some("/tmp/thumb.png"));
 
     let tags2 = vec![
-        (uuid::Uuid::new_v4().to_string(), "Entry X".to_string(), "tag_x".to_string(), 0, 0, None),
+        (uuid::Uuid::new_v4().to_string(), "Entry X".to_string(), "tag_x".to_string(), "".to_string(), 0, 0, None),
     ];
     replace_tags(&conn, &pg.id, &tags2).unwrap();
     let found = find_tags_by_group(&conn, &pg.id).unwrap();

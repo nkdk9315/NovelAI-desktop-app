@@ -25,6 +25,7 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [modalName, setModalName] = useState("");
   const [modalContent, setModalContent] = useState("");
+  const [modalNegative, setModalNegative] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const addBtnRef = useRef<HTMLButtonElement>(null);
@@ -37,6 +38,7 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
     setEditingIndex(null);
     setModalName("");
     setModalContent("");
+    setModalNegative("");
     nameEnterCountRef.current = 0;
     setShowModal(true);
   };
@@ -45,6 +47,7 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
     setEditingIndex(index);
     setModalName(tags[index].name ?? "");
     setModalContent(tags[index].tag);
+    setModalNegative(tags[index].negativePrompt ?? "");
     nameEnterCountRef.current = 0;
     setShowModal(true);
   };
@@ -53,10 +56,12 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
     if (!canSave) return;
     if (editingIndex !== null) {
       onTagsChange(tags.map((t, i) =>
-        i === editingIndex ? { ...t, name: modalName.trim(), tag: modalContent.trim() } : t,
+        i === editingIndex
+          ? { ...t, name: modalName.trim(), tag: modalContent.trim(), negativePrompt: modalNegative.trim() }
+          : t,
       ));
     } else {
-      onTagsChange([...tags, { name: modalName.trim(), tag: modalContent.trim() }]);
+      onTagsChange([...tags, { name: modalName.trim(), tag: modalContent.trim(), negativePrompt: modalNegative.trim() }]);
     }
     shouldFocusAddBtnRef.current = true;
     setShowModal(false);
@@ -64,9 +69,10 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
 
   const handleSaveAndAddAnother = () => {
     if (!canSave) return;
-    onTagsChange([...tags, { name: modalName.trim(), tag: modalContent.trim() }]);
+    onTagsChange([...tags, { name: modalName.trim(), tag: modalContent.trim(), negativePrompt: modalNegative.trim() }]);
     setModalName("");
     setModalContent("");
+    setModalNegative("");
     setEditingIndex(null);
     setTimeout(() => nameInputRef.current?.focus(), 0);
   };
@@ -181,6 +187,12 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
               textareaRef={contentRef}
               placeholder={t("promptGroup.entryContent")}
               rows={4}
+            />
+            <PromptTextarea
+              value={modalNegative}
+              onChange={setModalNegative}
+              placeholder={t("promptGroup.entryNegative")}
+              rows={3}
             />
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowModal(false)}>

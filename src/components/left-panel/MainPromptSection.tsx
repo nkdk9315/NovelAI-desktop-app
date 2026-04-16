@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, Eye, EyeOff, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, EyeOff, RotateCcw, Sparkles } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import PromptTextarea from "@/components/shared/PromptTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CharacterPromptGroups from "./CharacterPromptGroups";
 import PromptGroupModal from "@/components/modals/PromptGroupModal";
-import { assembleFullPrompt } from "@/lib/prompt-assembly";
+import { assembleFullPrompt, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 import { NEGATIVE_PRESETS, type NegativePresetId } from "@/lib/constants";
 import * as ipc from "@/lib/ipc";
 
@@ -23,6 +23,13 @@ export default function MainPromptSection() {
   const characters = useGenerationParamsStore((s) => s.characters);
   const targets = useSidebarPromptStore((s) => s.targets);
   const initTarget = useSidebarPromptStore((s) => s.initTarget);
+  const setNegativeOverride = useSidebarPromptStore((s) => s.setNegativeOverride);
+  const clearNegativeOverride = useSidebarPromptStore((s) => s.clearNegativeOverride);
+
+  const mainTarget = targets[MAIN_TARGET_ID];
+  const mainGroups = mainTarget?.groups ?? [];
+  const negativeOverride = mainTarget?.negativeOverride ?? null;
+  const assembledNegative = useMemo(() => assembleNegativeFromGroups(mainGroups), [mainGroups]);
   const [showNegative, setShowNegative] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
@@ -44,6 +51,16 @@ export default function MainPromptSection() {
     })();
     return () => { cancelled = true; };
   }, [initTarget]);
+
+  // Migrate legacy negativePrompt from generation-params-store → negativeOverride (once)
+  const mainTargetReady = mainTarget != null;
+  useEffect(() => {
+    if (mainTarget && negativeOverride === null && negativePrompt) {
+      setNegativeOverride(MAIN_TARGET_ID, negativePrompt);
+      setParam("negativePrompt", "");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainTargetReady]);
 
   const lineFor = (targetId: string): string => {
     const target = targets[targetId];
@@ -148,35 +165,49 @@ export default function MainPromptSection() {
       </div>
 
       {showNegative && (() => {
+        const baseValue = negativeOverride ?? assembledNegative;
+        const isDirty = negativeOverride !== null;
         const presetText = NEGATIVE_PRESETS[negativePreset];
         const showMerged = showNegativePresetInInput && presetText.length > 0;
         const prefix = presetText ? `${presetText}, ` : "";
         const displayValue = showMerged
-          ? (negativePrompt ? prefix + negativePrompt : presetText)
-          : negativePrompt;
+          ? (baseValue ? prefix + baseValue : presetText)
+          : baseValue;
         const handleChange = (newValue: string) => {
           if (showMerged) {
             if (newValue.startsWith(prefix)) {
-              setParam("negativePrompt", newValue.slice(prefix.length));
+              setNegativeOverride(MAIN_TARGET_ID, newValue.slice(prefix.length));
               return;
             }
             if (newValue === presetText) {
-              setParam("negativePrompt", "");
+              setNegativeOverride(MAIN_TARGET_ID, "");
               return;
             }
             setParam("negativePreset", "none");
-            setParam("negativePrompt", newValue);
+            setNegativeOverride(MAIN_TARGET_ID, newValue);
             return;
           }
-          setParam("negativePrompt", newValue);
+          setNegativeOverride(MAIN_TARGET_ID, newValue);
         };
         return (
-          <PromptTextarea
-            value={displayValue}
-            onChange={handleChange}
-            placeholder={t("generation.negativePrompt")}
-            rows={3}
-          />
+          <div className="relative">
+            <PromptTextarea
+              value={displayValue}
+              onChange={handleChange}
+              placeholder={t("generation.negativePrompt")}
+              rows={3}
+            />
+            {isDirty && (
+              <button
+                type="button"
+                title={t("prompt.clearOverride")}
+                onClick={() => clearNegativeOverride(MAIN_TARGET_ID)}
+                className="absolute top-1 right-1 rounded p-0.5 text-primary hover:bg-accent"
+              >
+                <RotateCcw className="h-3 w-3" />
+              </button>
+            )}
+          </div>
         );
       })()}
 

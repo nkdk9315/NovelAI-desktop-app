@@ -53,6 +53,7 @@ function makeTag(
     tagId,
     name: tag,
     tag,
+    negativePrompt: "",
     enabled,
     strength,
     defaultStrength: strength,
@@ -76,8 +77,8 @@ describe("assemblePrompt", () => {
   it("joins enabled tags with comma", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
-        { tagId: "2", name: "Blush", tag: "blush", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "2", name: "Blush", tag: "blush", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assemblePrompt([group])).toBe("smile, blush");
@@ -86,9 +87,9 @@ describe("assemblePrompt", () => {
   it("skips disabled tags", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
-        { tagId: "2", name: "Blush", tag: "blush", enabled: false, strength: 0, defaultStrength: 0, thumbnailPath: null },
-        { tagId: "3", name: "Wink", tag: "wink", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "2", name: "Blush", tag: "blush", negativePrompt: "", enabled: false, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "3", name: "Wink", tag: "wink", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assemblePrompt([group])).toBe("smile, wink");
@@ -97,8 +98,8 @@ describe("assemblePrompt", () => {
   it("applies strength formatting", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 3, defaultStrength: 3, thumbnailPath: null },
-        { tagId: "2", name: "Blush", tag: "blush", enabled: true, strength: -1, defaultStrength: -1, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 3, defaultStrength: 3, thumbnailPath: null },
+        { tagId: "2", name: "Blush", tag: "blush", negativePrompt: "", enabled: true, strength: -1, defaultStrength: -1, thumbnailPath: null },
       ],
     });
     expect(assemblePrompt([group])).toBe("3::smile::, -1::blush::");
@@ -108,13 +109,13 @@ describe("assemblePrompt", () => {
     const g1 = makeGroup({
       groupId: "g1",
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     const g2 = makeGroup({
       groupId: "g2",
       tags: [
-        { tagId: "2", name: "Long Hair", tag: "long_hair", enabled: true, strength: 2, defaultStrength: 2, thumbnailPath: null },
+        { tagId: "2", name: "Long Hair", tag: "long_hair", negativePrompt: "", enabled: true, strength: 2, defaultStrength: 2, thumbnailPath: null },
       ],
     });
     expect(assemblePrompt([g1, g2])).toBe("smile, 2::long_hair::");
@@ -129,7 +130,7 @@ describe("assembleFullPrompt", () => {
   it("returns only group tags when free text is empty", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assembleFullPrompt("", [group])).toBe("smile");
@@ -138,7 +139,7 @@ describe("assembleFullPrompt", () => {
   it("combines free text and group tags", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assembleFullPrompt("1girl", [group])).toBe("1girl, smile");
@@ -152,7 +153,7 @@ describe("assembleFullPrompt", () => {
   it("trims free text", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assembleFullPrompt("  1girl  ", [group])).toBe("1girl, smile");
@@ -265,4 +266,5 @@ describe("random mode", () => {
     ).toBe("1girl, standing");
   });
 });
+
 

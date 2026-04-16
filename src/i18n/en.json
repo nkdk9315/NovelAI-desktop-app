@@ -290,6 +290,7 @@
     "prompts": "Prompt Entries",
     "entryName": "Entry name (display label)",
     "entryContent": "Prompt content (tags, text...)",
+    "entryNegative": "Negative prompt (optional)",
     "addPromptEntry": "Add Prompt Entry",
     "defaultStrength": "Default Strength",
     "saveAndAddAnother": "Save & Add Another",

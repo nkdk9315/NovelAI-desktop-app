@@ -23,9 +23,9 @@ fn test_create_with_tags() {
             folder_id: None,
             default_genre_ids: vec![],
             tags: vec![
-                TagInput { name: None, tag: "tag1".to_string(), default_strength: None, thumbnail_path: None },
-                TagInput { name: None, tag: "tag2".to_string(), default_strength: Some(3), thumbnail_path: None },
-                TagInput { name: None, tag: "tag3".to_string(), default_strength: Some(-2), thumbnail_path: Some("/tmp/t.png".to_string()) },
+                TagInput { name: None, tag: "tag1".to_string(), negative_prompt: None, default_strength: None, thumbnail_path: None },
+                TagInput { name: None, tag: "tag2".to_string(), negative_prompt: None, default_strength: Some(3), thumbnail_path: None },
+                TagInput { name: None, tag: "tag3".to_string(), negative_prompt: None, default_strength: Some(-2), thumbnail_path: Some("/tmp/t.png".to_string()) },
             ],
             default_strength: None,
         },

@@ -153,36 +153,37 @@ pub fn find_tags_by_group(
     prompt_group_id: &str,
 ) -> Result<Vec<PromptGroupTagRow>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, tag, sort_order, default_strength, thumbnail_path FROM prompt_group_tags WHERE prompt_group_id = ?1 ORDER BY sort_order ASC",
+        "SELECT id, name, tag, negative_prompt, sort_order, default_strength, thumbnail_path FROM prompt_group_tags WHERE prompt_group_id = ?1 ORDER BY sort_order ASC",
     )?;
     let rows = stmt.query_map([prompt_group_id], |row| {
         Ok(PromptGroupTagRow {
             id: row.get(0)?,
             name: row.get(1)?,
             tag: row.get(2)?,
-            sort_order: row.get(3)?,
-            default_strength: row.get(4)?,
-            thumbnail_path: row.get(5)?,
+            negative_prompt: row.get(3)?,
+            sort_order: row.get(4)?,
+            default_strength: row.get(5)?,
+            thumbnail_path: row.get(6)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
-/// Tag tuple: (id, name, tag, sort_order, default_strength, thumbnail_path)
+/// Tag tuple: (id, name, tag, negative_prompt, sort_order, default_strength, thumbnail_path)
 #[allow(clippy::type_complexity)]
 pub fn replace_tags(
     conn: &Connection,
     prompt_group_id: &str,
-    tags: &[(String, String, String, i32, i32, Option<String>)],
+    tags: &[(String, String, String, String, i32, i32, Option<String>)],
 ) -> Result<(), AppError> {
     conn.execute(
         "DELETE FROM prompt_group_tags WHERE prompt_group_id = ?1",
         [prompt_group_id],
     )?;
-    for (id, name, tag, sort_order, default_strength, thumbnail_path) in tags {
+    for (id, name, tag, negative_prompt, sort_order, default_strength, thumbnail_path) in tags {
         conn.execute(
-            "INSERT INTO prompt_group_tags (id, prompt_group_id, name, tag, sort_order, default_strength, thumbnail_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            rusqlite::params![id, prompt_group_id, name, tag, sort_order, default_strength, thumbnail_path],
+            "INSERT INTO prompt_group_tags (id, prompt_group_id, name, tag, negative_prompt, sort_order, default_strength, thumbnail_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            rusqlite::params![id, prompt_group_id, name, tag, negative_prompt, sort_order, default_strength, thumbnail_path],
         )?;
     }
     Ok(())
