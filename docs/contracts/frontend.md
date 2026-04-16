@@ -515,6 +515,46 @@ export function toastError(message: string): void
 
 ---
 
+## 6.4 useSidebarArtistTagsStore (`src/stores/sidebar-artist-tags-store.ts`)
+
+プロジェクト別に永続化されるサイドバー直接入力アーティストタグを管理するストア。
+
+| 状態 / アクション | 型 | 説明 |
+|---|---|---|
+| `sidebarArtistTags` | `ArtistTag[]` | 直接入力したアーティストタグ一覧 |
+| `addSidebarArtistTag(name)` | `void` | タグを追加（重複は無視） |
+| `removeSidebarArtistTag(name)` | `void` | タグを削除 |
+| `updateSidebarArtistTagStrength(name, strength)` | `void` | 強度を更新 |
+| `saveSidebarArtistTags(projectId)` | `void` | settings に保存（fire-and-forget） |
+| `loadSidebarArtistTags(projectId)` | `Promise<void>` | settings から復元 |
+
+---
+
+## 6.5 useArtistTagInput (`src/hooks/use-artist-tag-input.ts`)
+
+アーティストタグ入力のオートコンプリートロジックを共有するカスタムフック。
+`SidebarArtistTagInput` と `PresetTweakPanel` で使用。
+
+```typescript
+function useArtistTagInput(onAdd: (name: string) => void): {
+  tagInput: string;
+  showSuggestions: boolean;
+  highlightIndex: number;
+  suggestionRefs: React.MutableRefObject<(HTMLButtonElement | null)[]>;
+  filteredSuggestions: AutocompleteResult[];
+  handleInputChange: (value: string) => void;
+  handleAdd: (name: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onBlur: () => void;
+}
+```
+
+- `onAdd`: タグ確定時に呼ばれるコールバック（重複チェック等のビジネスロジックは呼び出し元で実装）
+- `handleAdd` はタグ確定・入力クリア・サジェスト非表示を一括処理
+- キーボード操作: ArrowDown/Up・Tab（フォーカス移動）・Enter（確定）・Escape（閉じる）
+
+---
+
 ## Tag DB — コンポーネント構成 (`src/components/modals/tag-database/`)
 
 | ファイル | 役割 |
@@ -523,6 +563,14 @@ export function toastError(message: string): void
 | `TagGroupTreePane.tsx` | 左ペイン。お気に入りツリー / 全グループツリーの展開・お気に入りトグル |
 | `TagContentPane.tsx` | 右ペイン。選択グループのタグ一覧。`@tanstack/react-virtual` でリスト仮想化 |
 | `tag-db-utils.ts` | ツリー展開・カウントマップ構築等のユーティリティ |
+
+## サイドバー — アーティストタグ関連コンポーネント
+
+| ファイル | 役割 |
+|---|---|
+| `left-panel/SidebarArtistTagInput.tsx` | 直接アーティストタグ入力UI。オートコンプリート + チップ表示。`useArtistTagInput` を使用 |
+| `left-panel/PresetTweakPanel.tsx` | プリセット個別調整パネル。アーティストタグ・Vibe 編集。`useArtistTagInput` を使用 |
+| `left-panel/ArtistStyleSection.tsx` | スタイルセクション全体。`useSidebarArtistTagsStore` + `useGenerationParamsStore` を併用 |
 
 ## Tag DB — オートコンプリート経路 (`src/hooks/use-autocomplete.ts`)
 

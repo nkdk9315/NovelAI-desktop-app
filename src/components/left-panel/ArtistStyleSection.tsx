@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
+import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import { useProjectStore } from "@/stores/project-store";
 import type { AssetFolderDto, RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
 import { DEFAULT_RANDOM_PRESET_SETTINGS } from "@/lib/constants";
@@ -30,12 +31,12 @@ export default function ArtistStyleSection() {
   const addRandomPreset = useGenerationParamsStore((s) => s.addRandomPreset);
   const rerollRandomPreset = useGenerationParamsStore((s) => s.rerollRandomPreset);
   const updateRandomPresetSettings = useGenerationParamsStore((s) => s.updateRandomPresetSettings);
-  const sidebarArtistTags = useGenerationParamsStore((s) => s.sidebarArtistTags);
-  const addSidebarArtistTag = useGenerationParamsStore((s) => s.addSidebarArtistTag);
-  const removeSidebarArtistTag = useGenerationParamsStore((s) => s.removeSidebarArtistTag);
-  const updateSidebarArtistTagStrength = useGenerationParamsStore((s) => s.updateSidebarArtistTagStrength);
-  const saveSidebarArtistTags = useGenerationParamsStore((s) => s.saveSidebarArtistTags);
-  const loadSidebarArtistTags = useGenerationParamsStore((s) => s.loadSidebarArtistTags);
+  const sidebarArtistTags = useSidebarArtistTagsStore((s) => s.sidebarArtistTags);
+  const addSidebarArtistTag = useSidebarArtistTagsStore((s) => s.addSidebarArtistTag);
+  const removeSidebarArtistTag = useSidebarArtistTagsStore((s) => s.removeSidebarArtistTag);
+  const updateSidebarArtistTagStrength = useSidebarArtistTagsStore((s) => s.updateSidebarArtistTagStrength);
+  const saveSidebarArtistTags = useSidebarArtistTagsStore((s) => s.saveSidebarArtistTags);
+  const loadSidebarArtistTags = useSidebarArtistTagsStore((s) => s.loadSidebarArtistTags);
 
   const [presets, setPresets] = useState<StylePresetDto[]>([]);
   const [vibes, setVibes] = useState<VibeDto[]>([]);

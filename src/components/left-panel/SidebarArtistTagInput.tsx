@@ -1,4 +1,3 @@
-import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, X } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -7,7 +6,7 @@ import {
   ContextMenuContent,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { useAutocomplete } from "@/hooks/use-autocomplete";
+import { useArtistTagInput } from "@/hooks/use-artist-tag-input";
 import type { ArtistTag } from "@/types";
 
 interface Props {
@@ -19,28 +18,8 @@ interface Props {
 
 export default function SidebarArtistTagInput({ artistTags, onAdd, onRemove, onStrengthChange }: Props) {
   const { t } = useTranslation();
-  const [tagInput, setTagInput] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(-1);
-  const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const { results: suggestions, search } = useAutocomplete(300, 1);
-  const filteredSuggestions = suggestions.filter((s) => s.csvCategory === 1).slice(0, 8);
-
-  const handleInputChange = (value: string) => {
-    setTagInput(value);
-    search(value);
-    setShowSuggestions(value.trim().length > 0);
-    setHighlightIndex(-1);
-  };
-
-  const handleAdd = (name: string) => {
-    const trimmed = name.trim();
-    if (trimmed) onAdd(trimmed);
-    setTagInput("");
-    search("");
-    setShowSuggestions(false);
-    setHighlightIndex(-1);
-  };
+  const { tagInput, showSuggestions, highlightIndex, suggestionRefs,
+          filteredSuggestions, handleInputChange, handleAdd, onKeyDown, onBlur } = useArtistTagInput(onAdd);
 
   return (
     <div className="space-y-1">
@@ -51,34 +30,8 @@ export default function SidebarArtistTagInput({ artistTags, onAdd, onRemove, onS
           <input
             value={tagInput}
             onChange={(e) => handleInputChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey && showSuggestions && filteredSuggestions.length > 0)) {
-                e.preventDefault();
-                setHighlightIndex((prev) => {
-                  const next = prev < filteredSuggestions.length - 1 ? prev + 1 : 0;
-                  suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
-                  return next;
-                });
-              } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey && showSuggestions && filteredSuggestions.length > 0)) {
-                e.preventDefault();
-                setHighlightIndex((prev) => {
-                  const next = prev > 0 ? prev - 1 : filteredSuggestions.length - 1;
-                  suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
-                  return next;
-                });
-              } else if (e.key === "Enter") {
-                e.preventDefault();
-                if (highlightIndex >= 0 && highlightIndex < filteredSuggestions.length) {
-                  handleAdd(filteredSuggestions[highlightIndex].name);
-                } else {
-                  handleAdd(tagInput);
-                }
-              } else if (e.key === "Escape") {
-                setShowSuggestions(false);
-                setHighlightIndex(-1);
-              }
-            }}
-            onBlur={() => setTimeout(() => { setShowSuggestions(false); setHighlightIndex(-1); }, 150)}
+            onKeyDown={onKeyDown}
+            onBlur={onBlur}
             placeholder={t("style.directTagPlaceholder")}
             className="h-6 w-full rounded-md border border-border bg-muted/40 pl-6 pr-2 text-[10px] outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-background"
             autoCorrect="off"

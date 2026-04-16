@@ -66,3 +66,18 @@ PresetB (enabled): vibe-1 (0.3), vibe-3 (0.6)
 ```
 
 コスト計算（`vibeCount`）もマージ後のユニーク数を使用。
+
+## 7.6 アーティストタグのマージ順序（sidebarArtistTags → プリセット）
+
+`ActionBar.tsx` の生成リクエスト組み立て時、`allArtistTags` を以下の順で結合する:
+
+```
+allArtistTags = [...sidebarArtistTags, ...activePresets.flatMap(p => p.artistTags)]
+```
+
+**優先順位**:
+1. **`sidebarArtistTags`（直接入力、先頭）** — `useSidebarArtistTagsStore` が管理。プロジェクト別に永続化。
+2. **有効プリセットのアーティストタグ** — `sidebarPresets` 配列順に追記。
+
+重複除去は行わない（同名タグが複数エントリあっても API 側で許容）。
+コスト計算（`artistTagCount`）は `allArtistTags.length` をそのまま使用。

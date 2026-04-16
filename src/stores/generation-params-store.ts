@@ -89,16 +89,9 @@ interface GenerationParamsState extends GenerationParamsData {
   rerollRandomPreset: (presetId: string, newData: Pick<SidebarPreset, "artistTags" | "selectedVibes">) => void;
   updateRandomPresetSettings: (presetId: string, settings: RandomPresetSettings) => void;
   replaceWithSavedPreset: (randomPresetId: string, savedPreset: StylePresetDto, vibes: VibeDto[]) => void;
-  // Direct sidebar artist tags (independent of presets)
-  sidebarArtistTags: ArtistTag[];
-  addSidebarArtistTag: (name: string) => void;
-  removeSidebarArtistTag: (name: string) => void;
-  updateSidebarArtistTagStrength: (name: string, strength: number) => void;
   // Persistence helpers
   saveSidebarPresets: (projectId: string) => void;
   loadSidebarPresets: (projectId: string) => Promise<void>;
-  saveSidebarArtistTags: (projectId: string) => void;
-  loadSidebarArtistTags: (projectId: string) => Promise<void>;
 }
 
 export const useGenerationParamsStore = create<GenerationParamsState>()((set, get) => ({
@@ -119,7 +112,6 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
   characters: [],
   selectedVibes: [],
   sidebarPresets: [],
-  sidebarArtistTags: [],
   setParam: (key, value) => set({ [key]: value }),
   addCharacter: (genre) =>
     set((state) => {
@@ -280,24 +272,6 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
       }),
     })),
 
-  addSidebarArtistTag: (name) =>
-    set((state) => {
-      if (state.sidebarArtistTags.some((t) => t.name === name)) return state;
-      return { sidebarArtistTags: [...state.sidebarArtistTags, { name, strength: 1.0 }] };
-    }),
-
-  removeSidebarArtistTag: (name) =>
-    set((state) => ({
-      sidebarArtistTags: state.sidebarArtistTags.filter((t) => t.name !== name),
-    })),
-
-  updateSidebarArtistTagStrength: (name, strength) =>
-    set((state) => ({
-      sidebarArtistTags: state.sidebarArtistTags.map((t) =>
-        t.name === name ? { ...t, strength } : t,
-      ),
-    })),
-
   saveSidebarPresets: (projectId) => {
     const { sidebarPresets } = get();
     const persistable = sidebarPresets.filter((p) => !p.isRandom);
@@ -319,23 +293,4 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
     }
   },
 
-  saveSidebarArtistTags: (projectId) => {
-    const { sidebarArtistTags } = get();
-    ipc.setSetting(`sidebar_artist_tags_${projectId}`, JSON.stringify(sidebarArtistTags)).catch(() => {});
-  },
-
-  loadSidebarArtistTags: async (projectId) => {
-    try {
-      const settings = await ipc.getSettings();
-      const raw = settings[`sidebar_artist_tags_${projectId}`];
-      if (raw) {
-        const tags: ArtistTag[] = JSON.parse(raw);
-        set({ sidebarArtistTags: tags });
-      } else {
-        set({ sidebarArtistTags: [] });
-      }
-    } catch {
-      set({ sidebarArtistTags: [] });
-    }
-  },
 }));
