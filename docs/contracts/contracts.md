@@ -1526,6 +1526,40 @@ pub fn remove_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, App
 
 `lib.rs` の `setup` 内で `services::tag_seed::seed_if_empty(&mut conn, &resources_dir)` を呼ぶ。`tags` が空のときだけ `tag_groups.json` / `character_groups.json` を読み込んで挿入する。失敗時は startup を bail（半端に seed された状態で起動しない方針）。
 
+### Frontend (PR-B)
+
+#### IPC ラッパー（`src/lib/ipc-tags.ts`）
+
+PR-A で追加された基本 CRUD に加え、PR-B で以下を追加:
+
+| 関数 | 引数 | 戻り値 | 説明 |
+|---|---|---|---|
+| `listFavoriteTagGroupRoots` | — | `TagGroupDto[]` | お気に入りルートグループ一覧 |
+| `listFavoriteTagGroupChildren` | `parentId` | `TagGroupDto[]` | お気に入り子グループ一覧 |
+| `toggleTagGroupFavorite` | `groupId` | `boolean` | お気に入りトグル（新状態を返す） |
+| `countTagMembersPerGroup` | — | `CountByIdDto[]` | グループ別メンバータグ数 |
+| `countFavoriteDescendantsPerGroup` | — | `CountByIdDto[]` | グループ別お気に入り子孫数 |
+| `getTagGroup` | `groupId` | `TagGroupDto` | 単一グループ取得 |
+| `listOrphanTagsByCategory` | `csvCategory`, `letterBucket?`, `limit?` | `TagDto[]` | カテゴリ別孤立タグ一覧 |
+| `searchTagsWithGroups` | `query`, `limit?` | `TagWithGroupsDto[]` | グローバル検索（所属グループ付き） |
+
+#### コンポーネント構成
+
+`src/components/modals/tag-database/` を4ファイルに分割:
+
+| ファイル | 役割 |
+|---|---|
+| `TagDatabaseModal.tsx` | モーダルシェル。検索バー + 2ペインレイアウト管理 |
+| `TagGroupTreePane.tsx` | 左ペイン。お気に入りツリー / 全グループツリーの展開・お気に入りトグル |
+| `TagContentPane.tsx` | 右ペイン。選択グループのタグ一覧。`@tanstack/react-virtual` でリスト仮想化 |
+| `tag-db-utils.ts` | ツリー展開・カウントマップ構築等のユーティリティ |
+
+#### オートコンプリート経路変更（`src/hooks/use-autocomplete.ts`）
+
+- `category` 未指定時: `ipc-tags.searchTags` → Tag DB FTS5 trigram 検索（全カテゴリ横断）
+- `category` 指定時: 従来の `ipc.searchSystemPrompts` にフォールバック（csv_category フィルタ対応）
+- 結果は統一的に `TagDto[]` 形状で返す
+
 ---
 
 ## 5. Frontend Types (TypeScript)
