@@ -31,7 +31,7 @@ const mockGroup: PromptGroupDto = {
   defaultGenreIds: ["genre-1"],
   isSystem: false,
   usageType: "both",
-  tags: [{ id: "t-1", name: "", tag: "tag1", sortOrder: 0, defaultStrength: 0, thumbnailPath: null }],
+  tags: [{ id: "t-1", name: "", tag: "tag1", negativePrompt: "", sortOrder: 0, defaultStrength: 0, thumbnailPath: null }],
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
   thumbnailPath: null,

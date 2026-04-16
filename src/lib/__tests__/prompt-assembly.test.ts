@@ -3,6 +3,7 @@ import {
   formatTagWithStrength,
   assemblePrompt,
   assembleFullPrompt,
+  assembleNegativeFromGroups,
   rollPromptForGeneration,
 } from "../prompt-assembly";
 import type { SidebarPromptGroup } from "@/stores/sidebar-prompt-store";
@@ -53,6 +54,7 @@ function makeTag(
     tagId,
     name: tag,
     tag,
+    negativePrompt: "",
     enabled,
     strength,
     defaultStrength: strength,
@@ -76,8 +78,8 @@ describe("assemblePrompt", () => {
   it("joins enabled tags with comma", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
-        { tagId: "2", name: "Blush", tag: "blush", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "2", name: "Blush", tag: "blush", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assemblePrompt([group])).toBe("smile, blush");
@@ -86,9 +88,9 @@ describe("assemblePrompt", () => {
   it("skips disabled tags", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
-        { tagId: "2", name: "Blush", tag: "blush", enabled: false, strength: 0, defaultStrength: 0, thumbnailPath: null },
-        { tagId: "3", name: "Wink", tag: "wink", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "2", name: "Blush", tag: "blush", negativePrompt: "", enabled: false, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "3", name: "Wink", tag: "wink", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assemblePrompt([group])).toBe("smile, wink");
@@ -97,8 +99,8 @@ describe("assemblePrompt", () => {
   it("applies strength formatting", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 3, defaultStrength: 3, thumbnailPath: null },
-        { tagId: "2", name: "Blush", tag: "blush", enabled: true, strength: -1, defaultStrength: -1, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 3, defaultStrength: 3, thumbnailPath: null },
+        { tagId: "2", name: "Blush", tag: "blush", negativePrompt: "", enabled: true, strength: -1, defaultStrength: -1, thumbnailPath: null },
       ],
     });
     expect(assemblePrompt([group])).toBe("3::smile::, -1::blush::");
@@ -108,13 +110,13 @@ describe("assemblePrompt", () => {
     const g1 = makeGroup({
       groupId: "g1",
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     const g2 = makeGroup({
       groupId: "g2",
       tags: [
-        { tagId: "2", name: "Long Hair", tag: "long_hair", enabled: true, strength: 2, defaultStrength: 2, thumbnailPath: null },
+        { tagId: "2", name: "Long Hair", tag: "long_hair", negativePrompt: "", enabled: true, strength: 2, defaultStrength: 2, thumbnailPath: null },
       ],
     });
     expect(assemblePrompt([g1, g2])).toBe("smile, 2::long_hair::");
@@ -129,7 +131,7 @@ describe("assembleFullPrompt", () => {
   it("returns only group tags when free text is empty", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assembleFullPrompt("", [group])).toBe("smile");
@@ -138,7 +140,7 @@ describe("assembleFullPrompt", () => {
   it("combines free text and group tags", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assembleFullPrompt("1girl", [group])).toBe("1girl, smile");
@@ -152,7 +154,7 @@ describe("assembleFullPrompt", () => {
   it("trims free text", () => {
     const group = makeGroup({
       tags: [
-        { tagId: "1", name: "Smile", tag: "smile", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
+        { tagId: "1", name: "Smile", tag: "smile", negativePrompt: "", enabled: true, strength: 0, defaultStrength: 0, thumbnailPath: null },
       ],
     });
     expect(assembleFullPrompt("  1girl  ", [group])).toBe("1girl, smile");
@@ -263,6 +265,56 @@ describe("random mode", () => {
     expect(
       rollPromptForGeneration("1girl, __pose__", [group], seededRandom(3)),
     ).toBe("1girl, standing");
+  });
+});
+
+describe("assembleNegativeFromGroups", () => {
+  function makeNegTag(tagId: string, tag: string, negativePrompt: string, enabled: boolean) {
+    return { ...makeTag(tagId, tag, enabled), negativePrompt };
+  }
+
+  it("returns empty string for no groups", () => {
+    expect(assembleNegativeFromGroups([])).toBe("");
+  });
+
+  it("collects negativePrompt from enabled tags only", () => {
+    const group = makeGroup({
+      tags: [
+        makeNegTag("1", "a", "bad hands", true),
+        makeNegTag("2", "b", "blurry", false),
+      ],
+    });
+    expect(assembleNegativeFromGroups([group])).toBe("bad hands");
+  });
+
+  it("skips tags with empty negativePrompt", () => {
+    const group = makeGroup({
+      tags: [
+        makeNegTag("1", "a", "", true),
+        makeNegTag("2", "b", "worst quality", true),
+      ],
+    });
+    expect(assembleNegativeFromGroups([group])).toBe("worst quality");
+  });
+
+  it("joins negatives from multiple groups with ', '", () => {
+    const g1 = makeGroup({ groupId: "g1", tags: [makeNegTag("1", "a", "bad hands", true)] });
+    const g2 = makeGroup({ groupId: "g2", tags: [makeNegTag("2", "b", "blurry", true)] });
+    expect(assembleNegativeFromGroups([g1, g2])).toBe("bad hands, blurry");
+  });
+
+  it("in generate mode with randomMode, picks from pool randomly", () => {
+    const group = makeGroup({
+      randomMode: true,
+      randomCount: 1,
+      randomSource: "all",
+      tags: [
+        makeNegTag("1", "a", "bad hands", false),
+        makeNegTag("2", "b", "blurry", false),
+      ],
+    });
+    const result = assembleNegativeFromGroups([group], { mode: "generate", random: seededRandom(1) });
+    expect(["bad hands", "blurry"]).toContain(result);
   });
 });
 

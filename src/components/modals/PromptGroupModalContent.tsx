@@ -62,7 +62,7 @@ export default function PromptGroupModalContent(props: Props) {
   const [tagDbClearTick, setTagDbClearTick] = useState(0);
   const [editingGroup, setEditingGroup] = useState<PromptGroupDto | null>(null);
   const [editingSystemGroup, setEditingSystemGroup] = useState<PromptGroupDto | null>(null);
-  const [editingEntry, setEditingEntry] = useState<{ groupId: string; tagId: string; name: string; tag: string } | null>(null);
+  const [editingEntry, setEditingEntry] = useState<{ groupId: string; tagId: string; name: string; tag: string; negativePrompt: string } | null>(null);
   const [showTagDb, setShowTagDb] = useState(false);
   const [folderConfirm, setFolderConfirm] = useState<{ folderId: number; count: number } | null>(null);
 
@@ -77,7 +77,7 @@ export default function PromptGroupModalContent(props: Props) {
       const realId = Number(group.id.slice("tagdb-".length));
       try {
         const tags = await ipc.listTagGroupTags(realId, 1000);
-        addGroupToTarget(targetId, { ...group, tags: tags.map((td, i) => ({ id: `tagdb-tag-${td.id}`, name: td.name, tag: td.name, sortOrder: i, defaultStrength: 0, thumbnailPath: null })) });
+        addGroupToTarget(targetId, { ...group, tags: tags.map((td, i) => ({ id: `tagdb-tag-${td.id}`, name: td.name, tag: td.name, negativePrompt: "", sortOrder: i, defaultStrength: 0, thumbnailPath: null })) });
       } catch (e) { toastError(`${t("tagDb.loadFailed")}: ${String(e)}`); }
       return;
     }
@@ -103,14 +103,14 @@ export default function PromptGroupModalContent(props: Props) {
   };
 
   const handleEditEntry = async (groupId: string, tagId: string) => {
-    try { const dto = await ipc.getPromptGroup(groupId); const tag = dto.tags.find((x) => x.id === tagId); if (!tag) return; setEditingEntry({ groupId, tagId, name: tag.name || "", tag: tag.tag }); } catch (e) { toastError(String(e)); }
+    try { const dto = await ipc.getPromptGroup(groupId); const tag = dto.tags.find((x) => x.id === tagId); if (!tag) return; setEditingEntry({ groupId, tagId, name: tag.name || "", tag: tag.tag, negativePrompt: tag.negativePrompt || "" }); } catch (e) { toastError(String(e)); }
   };
 
-  const handleSaveEntry = async (name: string, tag: string) => {
+  const handleSaveEntry = async (name: string, tag: string, negativePrompt: string) => {
     if (!editingEntry) return;
     try {
       const dto = await ipc.getPromptGroup(editingEntry.groupId);
-      const tags: TagInput[] = dto.tags.map((tg) => tg.id === editingEntry.tagId ? { name, tag, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined } : { name: tg.name || undefined, tag: tg.tag, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined });
+      const tags: TagInput[] = dto.tags.map((tg) => tg.id === editingEntry.tagId ? { name, tag, negativePrompt, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined } : { name: tg.name || undefined, tag: tg.tag, negativePrompt: tg.negativePrompt || undefined, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined });
       await updatePromptGroup({ id: editingEntry.groupId, tags }); loadPromptGroups(searchQuery || undefined);
     } catch (e) { toastError(String(e)); }
   };
@@ -118,7 +118,7 @@ export default function PromptGroupModalContent(props: Props) {
   const handleDeleteEntry = async (groupId: string, tagId: string) => {
     try {
       const dto = await ipc.getPromptGroup(groupId);
-      const tags: TagInput[] = dto.tags.filter((tg) => tg.id !== tagId).map((tg) => ({ name: tg.name || undefined, tag: tg.tag, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined }));
+      const tags: TagInput[] = dto.tags.filter((tg) => tg.id !== tagId).map((tg) => ({ name: tg.name || undefined, tag: tg.tag, negativePrompt: tg.negativePrompt || undefined, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined }));
       await updatePromptGroup({ id: groupId, tags }); loadPromptGroups(searchQuery || undefined);
     } catch (e) { toastError(String(e)); }
   };
@@ -176,7 +176,7 @@ export default function PromptGroupModalContent(props: Props) {
           <AlertDialogFooter><AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={async () => { if (!folderConfirm) return; try { await deletePromptGroupFolderAction(folderConfirm.folderId); } catch (e) { toastError(String(e)); } finally { setFolderConfirm(null); } }}>{t("common.delete")}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
-      <SidebarEntryEditModal open={editingEntry !== null} onOpenChange={(o) => { if (!o) setEditingEntry(null); }} initialName={editingEntry?.name ?? ""} initialTag={editingEntry?.tag ?? ""} onSave={handleSaveEntry} />
+      <SidebarEntryEditModal open={editingEntry !== null} onOpenChange={(o) => { if (!o) setEditingEntry(null); }} initialName={editingEntry?.name ?? ""} initialTag={editingEntry?.tag ?? ""} initialNegative={editingEntry?.negativePrompt ?? ""} onSave={handleSaveEntry} />
       <SystemGroupSettingsModal open={editingSystemGroup !== null} onOpenChange={(o) => { if (!o) setEditingSystemGroup(null); }}
         systemGroupId={editingSystemGroup?.id ?? null} systemGroupName={editingSystemGroup?.name ?? ""} genres={genres} contentClassName="max-w-md left-[8.5rem]! translate-x-0!" />
       <TagDatabaseModal open={showTagDb} onOpenChange={setShowTagDb}

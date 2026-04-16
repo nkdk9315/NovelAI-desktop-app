@@ -54,7 +54,7 @@ export default function CharacterPromptGroups({
 
   const [editingGroup, setEditingGroup] = useState<PromptGroupDto | null>(null);
   const [editingSystemGroup, setEditingSystemGroup] = useState<{ id: string; name: string } | null>(null);
-  const [editingEntry, setEditingEntry] = useState<{ groupId: string; tagId: string; name: string; tag: string } | null>(null);
+  const [editingEntry, setEditingEntry] = useState<{ groupId: string; tagId: string; name: string; tag: string; negativePrompt: string } | null>(null);
 
   useEffect(() => { if (genres.length === 0) loadGenres(); }, [genres.length, loadGenres]);
   useEffect(() => { loadPromptGroupFolders().catch(() => {}); }, [loadPromptGroupFolders]);
@@ -71,11 +71,11 @@ export default function CharacterPromptGroups({
     try { await deletePromptGroup(id); removeGroupFromTarget(targetId, id); await loadPromptGroups(); } catch (e) { toastError(String(e)); }
   };
 
-  const handleSaveEntry = async (name: string, tag: string) => {
+  const handleSaveEntry = async (name: string, tag: string, negativePrompt: string) => {
     if (!editingEntry) return;
     try {
       const dto = await ipc.getPromptGroup(editingEntry.groupId);
-      const tags: TagInput[] = dto.tags.map((tg) => tg.id === editingEntry.tagId ? { name, tag, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined } : { name: tg.name || undefined, tag: tg.tag, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined });
+      const tags: TagInput[] = dto.tags.map((tg) => tg.id === editingEntry.tagId ? { name, tag, negativePrompt, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined } : { name: tg.name || undefined, tag: tg.tag, negativePrompt: tg.negativePrompt || undefined, defaultStrength: tg.defaultStrength, thumbnailPath: tg.thumbnailPath ?? undefined });
       await updatePromptGroup({ id: editingEntry.groupId, tags }); await loadPromptGroups();
     } catch (e) { toastError(String(e)); }
   };
@@ -117,7 +117,7 @@ export default function CharacterPromptGroups({
           onInsertWildcard={insertWildcardToken}
           onEditGroup={() => openEditGroup(group.groupId)}
           onOpenSystemSettings={() => setEditingSystemGroup({ id: group.groupId, name: group.groupName })}
-          onEditEntry={(tag) => setEditingEntry({ groupId: group.groupId, tagId: tag.tagId, name: tag.name, tag: tag.tag })} />
+          onEditEntry={(tag) => setEditingEntry({ groupId: group.groupId, tagId: tag.tagId, name: tag.name, tag: tag.tag, negativePrompt: tag.negativePrompt || "" })} />
       ))}
 
       <Button variant="outline" size="sm" className="w-full gap-1 text-xs" onClick={onOpenGroupBrowser}><Plus className="h-3 w-3" />{t("promptGroup.selectGroup")}</Button>
@@ -126,7 +126,7 @@ export default function CharacterPromptGroups({
         folders={promptGroupFolders} createFolder={createPromptGroupFolder} onSave={handleSaveGroup} onDelete={handleDeleteGroup} contentClassName="max-w-md left-[8.5rem]! translate-x-0!" />
       <SystemGroupSettingsModal open={editingSystemGroup !== null} onOpenChange={(o) => { if (!o) setEditingSystemGroup(null); }}
         systemGroupId={editingSystemGroup?.id ?? null} systemGroupName={editingSystemGroup?.name ?? ""} genres={genres} contentClassName="max-w-md left-[8.5rem]! translate-x-0!" />
-      <SidebarEntryEditModal open={editingEntry !== null} onOpenChange={(o) => { if (!o) setEditingEntry(null); }} initialName={editingEntry?.name ?? ""} initialTag={editingEntry?.tag ?? ""} onSave={handleSaveEntry} />
+      <SidebarEntryEditModal open={editingEntry !== null} onOpenChange={(o) => { if (!o) setEditingEntry(null); }} initialName={editingEntry?.name ?? ""} initialTag={editingEntry?.tag ?? ""} initialNegative={editingEntry?.negativePrompt ?? ""} onSave={handleSaveEntry} />
     </div>
   );
 }

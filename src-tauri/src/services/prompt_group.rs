@@ -61,7 +61,7 @@ pub fn create_prompt_group(
 
     pg_repo::set_default_genres(conn, &id, &req.default_genre_ids)?;
 
-    let tag_tuples: Vec<(String, String, String, i32, i32, Option<String>)> = req
+    let tag_tuples: Vec<(String, String, String, String, i32, i32, Option<String>)> = req
         .tags
         .iter()
         .enumerate()
@@ -70,6 +70,7 @@ pub fn create_prompt_group(
                 uuid::Uuid::new_v4().to_string(),
                 t.name.clone().unwrap_or_default(),
                 t.tag.clone(),
+                t.negative_prompt.clone().unwrap_or_default(),
                 i as i32,
                 t.default_strength.unwrap_or(0),
                 t.thumbnail_path.clone(),
@@ -140,7 +141,7 @@ pub fn update_prompt_group(
     }
 
     if let Some(tags) = req.tags {
-        let tag_tuples: Vec<(String, String, String, i32, i32, Option<String>)> = tags
+        let tag_tuples: Vec<(String, String, String, String, i32, i32, Option<String>)> = tags
             .iter()
             .enumerate()
             .map(|(i, t)| {
@@ -148,6 +149,7 @@ pub fn update_prompt_group(
                     uuid::Uuid::new_v4().to_string(),
                     t.name.clone().unwrap_or_default(),
                     t.tag.clone(),
+                    t.negative_prompt.clone().unwrap_or_default(),
                     i as i32,
                     t.default_strength.unwrap_or(0),
                     t.thumbnail_path.clone(),

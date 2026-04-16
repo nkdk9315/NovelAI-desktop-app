@@ -59,6 +59,7 @@ export default function PromptGroupEditModal({
       setTags(group.tags.map((t) => ({
         name: t.name || undefined,
         tag: t.tag,
+        negativePrompt: t.negativePrompt || undefined,
         defaultStrength: t.defaultStrength,
         thumbnailPath: t.thumbnailPath ?? undefined,
       })));

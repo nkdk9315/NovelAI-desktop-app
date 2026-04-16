@@ -97,7 +97,7 @@ export async function hydratePromptGroupById(id: string): Promise<PromptGroupDto
     const [meta, tags] = await Promise.all([getTagGroup(realId), listTagGroupTags(realId, 20000)]);
     return {
       id, name: meta.title, folderId: null, defaultGenreIds: [], isSystem: true, usageType: "both",
-      tags: tags.map((td, i) => ({ id: `tagdb-tag-${td.id}`, name: td.name, tag: td.name, sortOrder: i, defaultStrength: 0, thumbnailPath: null })),
+      tags: tags.map((td, i) => ({ id: `tagdb-tag-${td.id}`, name: td.name, tag: td.name, negativePrompt: "", sortOrder: i, defaultStrength: 0, thumbnailPath: null })),
       createdAt: "", updatedAt: "", thumbnailPath: null, isDefault: false, category: null,
       defaultStrength: 0, randomMode: false, randomCount: 1, randomSource: "enabled", wildcardToken: null,
     };

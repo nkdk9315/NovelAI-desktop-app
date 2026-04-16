@@ -143,6 +143,34 @@ export function substituteWildcards(
 }
 
 /**
+ * Assemble negative prompts from enabled tags in all groups.
+ * Uses the same tag-selection logic as assembleGroupTags (including random mode).
+ */
+export function assembleNegativeFromGroups(
+  groups: SidebarPromptGroup[],
+  opts: AssembleOptions = {},
+): string {
+  const mode = opts.mode ?? "preview";
+  const rng = opts.random ?? Math.random;
+
+  const parts: string[] = [];
+  for (const group of groups) {
+    let selected: SidebarPromptTag[];
+    if (mode === "generate" && group.randomMode) {
+      const pool = group.randomSource === "all" ? group.tags : group.tags.filter((t) => t.enabled);
+      selected = pickRandomTags(pool, group.randomCount, rng);
+    } else {
+      selected = group.tags.filter((t) => t.enabled);
+    }
+    for (const t of selected) {
+      const neg = t.negativePrompt.trim();
+      if (neg) parts.push(neg);
+    }
+  }
+  return parts.join(", ");
+}
+
+/**
  * Convenience for generation-time prompt assembly (random roll + wildcard substitution).
  */
 export function rollPromptForGeneration(

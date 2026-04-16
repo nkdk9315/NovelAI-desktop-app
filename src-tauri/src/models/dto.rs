@@ -48,6 +48,7 @@ pub struct PromptGroupTagRow {
     pub id: String,
     pub name: String,
     pub tag: String,
+    pub negative_prompt: String,
     pub sort_order: i32,
     pub default_strength: i32,
     pub thumbnail_path: Option<String>,
@@ -167,6 +168,7 @@ pub struct PromptGroupTagDto {
     pub id: String,
     pub name: String,
     pub tag: String,
+    pub negative_prompt: String,
     pub sort_order: i32,
     pub default_strength: i32,
     pub thumbnail_path: Option<String>,
@@ -460,6 +462,7 @@ pub struct CostEstimateRequest {
 pub struct TagInput {
     pub name: Option<String>,
     pub tag: String,
+    pub negative_prompt: Option<String>,
     pub default_strength: Option<i32>,
     pub thumbnail_path: Option<String>,
 }
@@ -703,6 +706,7 @@ impl From<PromptGroupTagRow> for PromptGroupTagDto {
             id: row.id,
             name: row.name,
             tag: row.tag,
+            negative_prompt: row.negative_prompt,
             sort_order: row.sort_order,
             default_strength: row.default_strength,
             thumbnail_path: row.thumbnail_path,

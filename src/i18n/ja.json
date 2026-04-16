@@ -290,6 +290,7 @@
     "prompts": "プロンプトエントリ",
     "entryName": "エントリ名（表示用ラベル）",
     "entryContent": "プロンプト内容（タグ、文章...）",
+    "entryNegative": "ネガティブプロンプト（オプション）",
     "addPromptEntry": "プロンプトエントリを追加",
     "defaultStrength": "デフォルト強度",
     "saveAndAddAnother": "保存して続けて追加",

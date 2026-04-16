@@ -22,6 +22,7 @@ const MIGRATION_017: &str = include_str!("../migrations/017_vibe_folders.sql");
 const MIGRATION_018: &str = include_str!("../migrations/018_style_preset_folders.sql");
 const MIGRATION_019: &str = include_str!("../migrations/019_prompt_group_folders.sql");
 const MIGRATION_020: &str = include_str!("../migrations/020_prompt_group_default_genres.sql");
+const MIGRATION_021: &str = include_str!("../migrations/021_prompt_entry_negative_prompt.sql");
 
 pub fn init_db(path: &str) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;
@@ -205,6 +206,14 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
             rusqlite::params!["schema_version", "20"],
+        )?;
+    }
+
+    if version < 21 {
+        conn.execute_batch(MIGRATION_021)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "21"],
         )?;
     }
 

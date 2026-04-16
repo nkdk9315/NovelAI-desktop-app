@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import PromptTextarea from "@/components/shared/PromptTextarea";
@@ -8,6 +8,7 @@ import PositionEditor from "./PositionEditor";
 import CharacterHeader from "./CharacterHeader";
 import CharacterPromptGroups from "./CharacterPromptGroups";
 import PromptGroupModal from "@/components/modals/PromptGroupModal";
+import { assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 
 interface CharacterSectionProps {
   index: number;
@@ -19,9 +20,27 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
   const updateCharacter = useGenerationParamsStore((s) => s.updateCharacter);
   const removeCharacter = useGenerationParamsStore((s) => s.removeCharacter);
   const removeTarget = useSidebarPromptStore((s) => s.removeTarget);
+  const targets = useSidebarPromptStore((s) => s.targets);
+  const setNegativeOverride = useSidebarPromptStore((s) => s.setNegativeOverride);
+  const clearNegativeOverride = useSidebarPromptStore((s) => s.clearNegativeOverride);
   const [collapsed, setCollapsed] = useState(false);
   const [showNegative, setShowNegative] = useState(false);
   const [showGroupBrowser, setShowGroupBrowser] = useState(false);
+
+  const charTarget = character ? targets[character.id] : undefined;
+  const charGroups = charTarget?.groups ?? [];
+  const negativeOverride = charTarget?.negativeOverride ?? null;
+  const assembledNegative = useMemo(() => assembleNegativeFromGroups(charGroups), [charGroups]);
+
+  // Migrate legacy character.negativePrompt → negativeOverride (once, when target becomes available)
+  const charTargetReady = charTarget != null;
+  useEffect(() => {
+    if (charTarget && negativeOverride === null && character?.negativePrompt) {
+      setNegativeOverride(character.id, character.negativePrompt);
+      updateCharacter(index, { negativePrompt: "" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [charTargetReady]);
 
   if (!character) return null;
 
@@ -63,12 +82,24 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
           </button>
 
           {showNegative && (
-            <PromptTextarea
-              value={character.negativePrompt}
-              onChange={(v) => updateCharacter(index, { negativePrompt: v })}
-              placeholder={t("generation.negativePrompt")}
-              rows={2}
-            />
+            <div className="relative">
+              <PromptTextarea
+                value={negativeOverride ?? assembledNegative}
+                onChange={(v) => setNegativeOverride(character.id, v)}
+                placeholder={t("generation.negativePrompt")}
+                rows={2}
+              />
+              {negativeOverride !== null && (
+                <button
+                  type="button"
+                  title={t("prompt.clearOverride")}
+                  onClick={() => clearNegativeOverride(character.id)}
+                  className="absolute top-1 right-1 rounded p-0.5 text-primary hover:bg-accent"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </button>
+              )}
+            </div>
           )}
 
           {/* Position */}
