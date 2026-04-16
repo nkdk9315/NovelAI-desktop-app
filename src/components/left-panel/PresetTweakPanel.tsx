@@ -34,16 +34,19 @@ export default function PresetTweakPanel({ presetId, preset, vibes, onPresetsCha
   const [vibePickerOpen, setVibePickerOpen] = useState(false);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
 
+  // Hook must be called before any early return (Rules of Hooks).
+  // sidebarPreset is always non-null when onAdd fires (component only renders when preset exists).
+  const { tagInput, showSuggestions, highlightIndex, suggestionRefs, filteredSuggestions,
+          handleInputChange, handleAdd, onKeyDown, onBlur } = useArtistTagInput((name) => {
+    const tags = sidebarPreset?.artistTags ?? [];
+    if (!tags.some((t) => t.name === name)) {
+      updatePresetArtistTags(presetId, [...tags, { name, strength: 0 }]);
+    }
+  });
+
   if (!sidebarPreset) return null;
 
   const { artistTags, selectedVibes } = sidebarPreset;
-
-  const { tagInput, showSuggestions, highlightIndex, suggestionRefs, filteredSuggestions,
-          handleInputChange, handleAdd, onKeyDown, onBlur } = useArtistTagInput((name) => {
-    if (!artistTags.some((t) => t.name === name)) {
-      updatePresetArtistTags(presetId, [...artistTags, { name, strength: 0 }]);
-    }
-  });
 
   const handleRemoveTag = (index: number) => {
     updatePresetArtistTags(presetId, artistTags.filter((_, i) => i !== index));

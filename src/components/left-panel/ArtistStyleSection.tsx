@@ -8,9 +8,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import { useProjectStore } from "@/stores/project-store";
-import type { AssetFolderDto, RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
+import type { RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
 import { DEFAULT_RANDOM_PRESET_SETTINGS } from "@/lib/constants";
 import { generateRandomPreset } from "@/lib/random-preset";
+import { loadAllVibeFolders } from "@/lib/vibe-utils";
 import * as ipc from "@/lib/ipc";
 import StylePresetModal from "@/components/modals/StylePresetModal";
 import RandomPresetSettingsDialog from "@/components/modals/RandomPresetSettingsDialog";
@@ -59,30 +60,6 @@ export default function ArtistStyleSection() {
     ipc.setSetting(GLOBAL_SETTINGS_KEY, JSON.stringify(s)).catch(() => {});
   };
 
-  // Walks the full vibe-folder tree. Used to resolve descendant folders when
-  // the user scopes random generation to parent folders.
-  const loadAllFolders = async (): Promise<AssetFolderDto[]> => {
-    try {
-      const roots = await ipc.listVibeFolderRoots();
-      const collected: AssetFolderDto[] = [...roots];
-      let queue = roots.filter((f) => f.childCount > 0);
-      while (queue.length > 0) {
-        const results = await Promise.all(queue.map((f) => ipc.listVibeFolderChildren(f.id)));
-        const nextQueue: AssetFolderDto[] = [];
-        for (const children of results) {
-          collected.push(...children);
-          for (const c of children) {
-            if (c.childCount > 0) nextQueue.push(c);
-          }
-        }
-        queue = nextQueue;
-      }
-      return collected;
-    } catch {
-      return [];
-    }
-  };
-
   useEffect(() => {
     loadData();
     loadGlobalSettings();
@@ -118,7 +95,7 @@ export default function ArtistStyleSection() {
     try {
       const allVibes = vibes.length > 0 ? vibes : await ipc.listVibes();
       const settings = settingsOverride ?? globalSettings;
-      const folders = await loadAllFolders();
+      const folders = await loadAllVibeFolders();
       const preset = await generateRandomPreset(settings, allVibes, model, folders);
       addRandomPreset(preset);
     } catch (e) {
@@ -134,7 +111,7 @@ export default function ArtistStyleSection() {
     try {
       const allVibes = vibes.length > 0 ? vibes : await ipc.listVibes();
       const settings = sidebar.randomSettings ?? globalSettings;
-      const folders = await loadAllFolders();
+      const folders = await loadAllVibeFolders();
       const newPreset = await generateRandomPreset(settings, allVibes, model, folders);
       rerollRandomPreset(presetId, {
         artistTags: newPreset.artistTags,
