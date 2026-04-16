@@ -7,3 +7,4 @@ pub mod vibe;
 pub mod project_vibe;
 pub mod style_preset;
 pub mod tag;
+pub mod tag_favorite;

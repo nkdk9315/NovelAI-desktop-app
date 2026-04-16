@@ -18,6 +18,10 @@ use serde::Deserialize;
 
 use crate::error::AppError;
 
+#[path = "tag_seed_csv.rs"]
+mod csv_helpers;
+use csv_helpers::{parse_csv_row, prettify_work_title};
+
 #[derive(Debug, Default)]
 pub struct SeedStats {
     pub tags: usize,
@@ -269,126 +273,7 @@ fn insert_group(
     Ok(tx.last_insert_rowid())
 }
 
-fn prettify_work_title(slug: &str) -> String {
-    if slug == "unknown_work" {
-        return "Unknown / Original".to_string();
-    }
-    slug.split('_')
-        .map(|w| {
-            let mut c = w.chars();
-            match c.next() {
-                Some(first) => first.to_uppercase().chain(c).collect::<String>(),
-                None => String::new(),
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-struct CsvRow<'a> {
-    name: &'a str,
-    category: u8,
-    aliases: Vec<String>,
-}
-
-/// Minimal CSV parser for `danbooru_tags.csv`.
-///
-/// Row format: `name,category,post_count,"alias1,alias2"` (post_count ignored).
-/// Quoted field handling is identical to the original SystemPromptDB parser.
-fn parse_csv_row(line: &str) -> Option<CsvRow<'_>> {
-    let mut fields: Vec<String> = Vec::new();
-    let mut current = String::new();
-    let mut in_quotes = false;
-    for ch in line.chars() {
-        if ch == '"' {
-            in_quotes = !in_quotes;
-        } else if ch == ',' && !in_quotes {
-            fields.push(std::mem::take(&mut current));
-        } else {
-            current.push(ch);
-        }
-    }
-    fields.push(current);
-
-    if fields.len() < 3 {
-        return None;
-    }
-    let category: u8 = fields[1].parse().ok()?;
-    // We must borrow the name from `line`, but we already pushed it into `fields[0]`.
-    // The caller only uses `name` as `&str`, so keep it from the owned string by
-    // returning a ref into `line` via a rescan.
-    let first_comma = line.find(',')?;
-    let name = &line[..first_comma];
-
-    let aliases = if fields.len() > 3 && !fields[3].is_empty() {
-        fields[3]
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect()
-    } else {
-        Vec::new()
-    };
-
-    Some(CsvRow {
-        name,
-        category,
-        aliases,
-    })
-}
-
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::test_utils::setup_test_db;
-    use std::path::PathBuf;
-
-    fn resources_dir() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources")
-    }
-
-    /// End-to-end smoke: seed the real JSON + CSV resource files into an
-    /// in-memory DB and verify invariants. Ignored by default because it
-    /// inserts ~170k rows (~3-5s on a warm build).
-    #[test]
-    #[ignore]
-    fn seeds_real_resources() {
-        let mut conn = setup_test_db();
-        let stats = seed_if_empty(&mut conn, &resources_dir())
-            .unwrap()
-            .expect("first seed should run");
-
-        assert!(stats.tags > 100_000, "expected 100k+ tags, got {}", stats.tags);
-        assert!(stats.groups > 200, "expected 200+ groups, got {}", stats.groups);
-        assert!(stats.members > 10_000, "expected 10k+ members, got {}", stats.members);
-
-        // Second call should be a no-op
-        let second = seed_if_empty(&mut conn, &resources_dir()).unwrap();
-        assert!(second.is_none());
-
-        // black_hair should be findable via FTS and reachable under a hair-color group
-        let hit: String = conn
-            .query_row(
-                "SELECT t.name FROM tags_fts f JOIN tags t ON t.id = f.rowid
-                 WHERE tags_fts MATCH '\"black_hair\"' LIMIT 1",
-                [],
-                |r| r.get(0),
-            )
-            .unwrap();
-        assert_eq!(hit, "black_hair");
-
-        // cynthia_(pokemon) should be under the pokemon work.
-        let pokemon_title: String = conn
-            .query_row(
-                "SELECT g.title FROM tag_groups g
-                 JOIN tag_group_members m ON m.group_id = g.id
-                 JOIN tags t ON t.id = m.tag_id
-                 WHERE t.name = 'cynthia_(pokemon)' AND g.slug = 'work:pokemon'",
-                [],
-                |r| r.get(0),
-            )
-            .unwrap();
-        assert_eq!(pokemon_title, "Pokemon");
-    }
-}
+#[path = "tag_seed_tests.rs"]
+mod tests;
 

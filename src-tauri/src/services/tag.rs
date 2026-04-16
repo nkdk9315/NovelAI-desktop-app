@@ -7,6 +7,7 @@ use rusqlite::Connection;
 use crate::error::AppError;
 use crate::models::dto::{CountByIdDto, TagDto, TagGroupDto, TagWithGroupsDto};
 use crate::repositories::tag as repo;
+use crate::repositories::tag_favorite as fav_repo;
 
 pub fn search(
     conn: &Connection,
@@ -62,7 +63,7 @@ pub fn list_children(conn: &Connection, parent_id: i64) -> Result<Vec<TagGroupDt
 }
 
 pub fn list_favorite_roots(conn: &Connection) -> Result<Vec<TagGroupDto>, AppError> {
-    Ok(repo::list_favorite_roots(conn)?
+    Ok(fav_repo::list_favorite_roots(conn)?
         .into_iter()
         .map(Into::into)
         .collect())
@@ -72,14 +73,14 @@ pub fn list_favorite_children(
     conn: &Connection,
     parent_id: i64,
 ) -> Result<Vec<TagGroupDto>, AppError> {
-    Ok(repo::list_favorite_children(conn, parent_id)?
+    Ok(fav_repo::list_favorite_children(conn, parent_id)?
         .into_iter()
         .map(Into::into)
         .collect())
 }
 
 pub fn toggle_favorite(conn: &Connection, group_id: i64) -> Result<bool, AppError> {
-    repo::toggle_favorite(conn, group_id)
+    fav_repo::toggle_favorite(conn, group_id)
 }
 
 pub fn list_group_tags(
@@ -97,14 +98,14 @@ pub fn list_unclassified_characters(
     conn: &Connection,
     limit: usize,
 ) -> Result<Vec<TagDto>, AppError> {
-    Ok(repo::list_unclassified_characters(conn, limit)?
+    Ok(fav_repo::list_unclassified_characters(conn, limit)?
         .into_iter()
         .map(Into::into)
         .collect())
 }
 
 pub fn count_tag_members_per_group(conn: &Connection) -> Result<Vec<CountByIdDto>, AppError> {
-    Ok(repo::count_tag_members_per_group(conn)?
+    Ok(fav_repo::count_tag_members_per_group(conn)?
         .into_iter()
         .map(|(id, count)| CountByIdDto { id, count })
         .collect())
@@ -113,7 +114,7 @@ pub fn count_tag_members_per_group(conn: &Connection) -> Result<Vec<CountByIdDto
 pub fn count_favorite_descendants_per_group(
     conn: &Connection,
 ) -> Result<Vec<CountByIdDto>, AppError> {
-    Ok(repo::count_favorite_descendants_per_group(conn)?
+    Ok(fav_repo::count_favorite_descendants_per_group(conn)?
         .into_iter()
         .map(|(id, count)| CountByIdDto { id, count })
         .collect())
@@ -126,7 +127,7 @@ pub fn list_orphan_tags_by_category(
     limit: usize,
 ) -> Result<Vec<TagDto>, AppError> {
     Ok(
-        repo::list_orphan_tags_by_category(conn, csv_category, letter_bucket, limit)?
+        fav_repo::list_orphan_tags_by_category(conn, csv_category, letter_bucket, limit)?
             .into_iter()
             .map(Into::into)
             .collect(),
