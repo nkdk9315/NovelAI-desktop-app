@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
+import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useHistoryStore } from "@/stores/history-store";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -39,6 +40,7 @@ export default function ActionBar() {
   const anlas = useSettingsStore((s) => s.anlas);
   const settings = useSettingsStore((s) => s.settings);
   const params = useGenerationParamsStore();
+  const sidebarArtistTags = useSidebarArtistTagsStore((s) => s.sidebarArtistTags);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -67,7 +69,10 @@ export default function ActionBar() {
 
     // Collect artist tags and vibes from enabled presets + independent vibes
     // Merge by vibeId: presets first-wins, then independent vibes fill remaining
-    const allArtistTags = activePresets.flatMap((p) => p.artistTags);
+    const allArtistTags = [
+      ...sidebarArtistTags,
+      ...activePresets.flatMap((p) => p.artistTags),
+    ];
     const presetVibes = activePresets.flatMap((p) => p.selectedVibes.filter((v) => v.enabled));
     const independentVibes = params.selectedVibes.filter((v) => v.enabled);
     const seen = new Set<string>();

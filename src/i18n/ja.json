@@ -216,7 +216,9 @@
     "randomOptionFixed": "固定",
     "noVibesAvailable": "互換性のあるVibeがありません",
     "randomMin": "最小",
-    "randomMax": "最大"
+    "randomMax": "最大",
+    "directTagPlaceholder": "アーティスト名で検索...",
+    "directTagStrength": "強度"
   },
   "tagDb": {
     "title": "タグデータベース",

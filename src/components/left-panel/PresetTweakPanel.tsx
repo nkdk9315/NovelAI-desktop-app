@@ -1,14 +1,13 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ImageIcon, Plus, Save, SaveAll, X } from "lucide-react";
+import { ImageIcon, Plus, Save, SaveAll, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
-import { useAutocomplete } from "@/hooks/use-autocomplete";
+import { useArtistTagInput } from "@/hooks/use-artist-tag-input";
 import type { PresetVibeRef, StylePresetDto, VibeDto } from "@/types";
 import * as ipc from "@/lib/ipc";
 import VibePickerModal from "@/components/modals/VibePickerModal";
@@ -32,35 +31,22 @@ export default function PresetTweakPanel({ presetId, preset, vibes, onPresetsCha
   const replaceWithSavedPreset = useGenerationParamsStore((s) => s.replaceWithSavedPreset);
   const model = useGenerationParamsStore((s) => s.model);
 
-  const [tagInput, setTagInput] = useState("");
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [highlightIndex, setHighlightIndex] = useState(-1);
-  const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const { results: suggestions, search } = useAutocomplete(300, 1);
-  const filteredSuggestions = suggestions.filter((s) => s.csvCategory === 1).slice(0, 8);
-
   const [vibePickerOpen, setVibePickerOpen] = useState(false);
   const [saveAsOpen, setSaveAsOpen] = useState(false);
+
+  // Hook must be called before any early return (Rules of Hooks).
+  // sidebarPreset is always non-null when onAdd fires (component only renders when preset exists).
+  const { tagInput, showSuggestions, highlightIndex, suggestionRefs, filteredSuggestions,
+          handleInputChange, handleAdd, onKeyDown, onBlur } = useArtistTagInput((name) => {
+    const tags = sidebarPreset?.artistTags ?? [];
+    if (!tags.some((t) => t.name === name)) {
+      updatePresetArtistTags(presetId, [...tags, { name, strength: 0 }]);
+    }
+  });
 
   if (!sidebarPreset) return null;
 
   const { artistTags, selectedVibes } = sidebarPreset;
-
-  const handleTagInputChange = (value: string) => {
-    setTagInput(value);
-    search(value);
-    setShowSuggestions(value.trim().length > 0);
-    setHighlightIndex(-1);
-  };
-
-  const handleAddTag = (name: string) => {
-    const trimmed = name.trim();
-    if (trimmed && !artistTags.some((t) => t.name === trimmed)) {
-      updatePresetArtistTags(presetId, [...artistTags, { name: trimmed, strength: 0 }]);
-    }
-    setTagInput("");
-    setShowSuggestions(false);
-  };
 
   const handleRemoveTag = (index: number) => {
     updatePresetArtistTags(presetId, artistTags.filter((_, i) => i !== index));
@@ -120,42 +106,20 @@ export default function PresetTweakPanel({ presetId, preset, vibes, onPresetsCha
     <div className="space-y-2 pt-1 border-t border-border mt-1">
       {/* Artist tags */}
       <div className="relative">
-        <Input
-          value={tagInput}
-          onChange={(e) => handleTagInputChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              setHighlightIndex((prev) => {
-                const next = Math.min(prev + 1, filteredSuggestions.length - 1);
-                suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
-                return next;
-              });
-            } else if (e.key === "ArrowUp") {
-              e.preventDefault();
-              setHighlightIndex((prev) => {
-                const next = Math.max(prev - 1, -1);
-                if (next >= 0) suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
-                return next;
-              });
-            } else if (e.key === "Enter") {
-              e.preventDefault();
-              if (highlightIndex >= 0 && highlightIndex < filteredSuggestions.length) {
-                handleAddTag(filteredSuggestions[highlightIndex].name);
-              } else {
-                handleAddTag(tagInput);
-              }
-            } else if (e.key === "Escape") {
-              setShowSuggestions(false);
-            }
-          }}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-          placeholder={t("style.artistPlaceholder")}
-          className="h-6 text-[10px]"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-        />
+        <div className="relative flex items-center">
+          <Search className="pointer-events-none absolute left-2 h-3 w-3 text-muted-foreground/60" />
+          <input
+            value={tagInput}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onKeyDown={onKeyDown}
+            onBlur={onBlur}
+            placeholder={t("style.artistPlaceholder")}
+            className="h-6 w-full rounded-md border border-border bg-muted/40 pl-6 pr-2 text-[10px] outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-background"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+          />
+        </div>
         {showSuggestions && filteredSuggestions.length > 0 && (
           <div className="absolute z-50 mt-1 max-h-36 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md">
             {filteredSuggestions.map((tag, i) => (
@@ -163,9 +127,9 @@ export default function PresetTweakPanel({ presetId, preset, vibes, onPresetsCha
                 key={tag.name}
                 ref={(el) => { suggestionRefs.current[i] = el; }}
                 type="button"
-                className={`w-full px-2 py-0.5 text-left text-[10px] ${i === highlightIndex ? "bg-accent" : "hover:bg-accent"}`}
+                className={`w-full px-2 py-0.5 text-left text-[10px] ${i === highlightIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent hover:text-accent-foreground"}`}
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleAddTag(tag.name)}
+                onClick={() => handleAdd(tag.name)}
               >
                 {tag.name}
               </button>

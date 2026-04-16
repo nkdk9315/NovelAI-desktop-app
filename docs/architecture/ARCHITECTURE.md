@@ -347,7 +347,7 @@ erDiagram
     ネガティブ: negativeOverride ?? assembleNegativeFromGroups(groups)
     center_x, center_y = 位置座標
 
-アーティストタグ（StylePresetから）→ base_captionに追記
+アーティストタグ（sidebarArtistTags + 有効プリセット、この順で結合）→ base_captionに追記
 
   ↓ v4_prompt JSON構造に変換
 
@@ -371,3 +371,4 @@ v4_prompt: {
 |------|------|
 | 2026-04-07 | 初版作成 |
 | 2026-04-16 | PR-E: ネガティブプロンプト組み立てフロー更新 (negativeOverride + assembleNegativeFromGroups) |
+| 2026-04-16 | feat/sidebar-direct-artist-tags: サイドバー直接アーティストタグ入力を追加 (useSidebarArtistTagsStore, useArtistTagInput hook) |

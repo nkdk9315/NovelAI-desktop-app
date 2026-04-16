@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
+import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import { useProjectStore } from "@/stores/project-store";
-import type { AssetFolderDto, RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
+import type { RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
 import { DEFAULT_RANDOM_PRESET_SETTINGS } from "@/lib/constants";
 import { generateRandomPreset } from "@/lib/random-preset";
+import { loadAllVibeFolders } from "@/lib/vibe-utils";
 import * as ipc from "@/lib/ipc";
 import StylePresetModal from "@/components/modals/StylePresetModal";
 import RandomPresetSettingsDialog from "@/components/modals/RandomPresetSettingsDialog";
 import PresetTweakPanel from "./PresetTweakPanel";
+import SidebarArtistTagInput from "./SidebarArtistTagInput";
 
 const GLOBAL_SETTINGS_KEY = "random_preset_settings";
 
@@ -29,6 +32,12 @@ export default function ArtistStyleSection() {
   const addRandomPreset = useGenerationParamsStore((s) => s.addRandomPreset);
   const rerollRandomPreset = useGenerationParamsStore((s) => s.rerollRandomPreset);
   const updateRandomPresetSettings = useGenerationParamsStore((s) => s.updateRandomPresetSettings);
+  const sidebarArtistTags = useSidebarArtistTagsStore((s) => s.sidebarArtistTags);
+  const addSidebarArtistTag = useSidebarArtistTagsStore((s) => s.addSidebarArtistTag);
+  const removeSidebarArtistTag = useSidebarArtistTagsStore((s) => s.removeSidebarArtistTag);
+  const updateSidebarArtistTagStrength = useSidebarArtistTagsStore((s) => s.updateSidebarArtistTagStrength);
+  const saveSidebarArtistTags = useSidebarArtistTagsStore((s) => s.saveSidebarArtistTags);
+  const loadSidebarArtistTags = useSidebarArtistTagsStore((s) => s.loadSidebarArtistTags);
 
   const [presets, setPresets] = useState<StylePresetDto[]>([]);
   const [vibes, setVibes] = useState<VibeDto[]>([]);
@@ -51,30 +60,6 @@ export default function ArtistStyleSection() {
     ipc.setSetting(GLOBAL_SETTINGS_KEY, JSON.stringify(s)).catch(() => {});
   };
 
-  // Walks the full vibe-folder tree. Used to resolve descendant folders when
-  // the user scopes random generation to parent folders.
-  const loadAllFolders = async (): Promise<AssetFolderDto[]> => {
-    try {
-      const roots = await ipc.listVibeFolderRoots();
-      const collected: AssetFolderDto[] = [...roots];
-      let queue = roots.filter((f) => f.childCount > 0);
-      while (queue.length > 0) {
-        const results = await Promise.all(queue.map((f) => ipc.listVibeFolderChildren(f.id)));
-        const nextQueue: AssetFolderDto[] = [];
-        for (const children of results) {
-          collected.push(...children);
-          for (const c of children) {
-            if (c.childCount > 0) nextQueue.push(c);
-          }
-        }
-        queue = nextQueue;
-      }
-      return collected;
-    } catch {
-      return [];
-    }
-  };
-
   useEffect(() => {
     loadData();
     loadGlobalSettings();
@@ -84,8 +69,9 @@ export default function ArtistStyleSection() {
   useEffect(() => {
     if (currentProject) {
       loadSidebarPresets(currentProject.id);
+      loadSidebarArtistTags(currentProject.id);
     }
-  }, [currentProject, loadSidebarPresets]);
+  }, [currentProject, loadSidebarPresets, loadSidebarArtistTags]);
 
   // Auto-save when sidebarPresets change
   useEffect(() => {
@@ -93,6 +79,13 @@ export default function ArtistStyleSection() {
       saveSidebarPresets(currentProject.id);
     }
   }, [sidebarPresets, currentProject, saveSidebarPresets]);
+
+  // Auto-save when sidebarArtistTags change
+  useEffect(() => {
+    if (currentProject) {
+      saveSidebarArtistTags(currentProject.id);
+    }
+  }, [sidebarArtistTags, currentProject, saveSidebarArtistTags]);
 
   const handleRemovePreset = (presetId: string) => {
     removeSidebarPreset(presetId);
@@ -102,7 +95,7 @@ export default function ArtistStyleSection() {
     try {
       const allVibes = vibes.length > 0 ? vibes : await ipc.listVibes();
       const settings = settingsOverride ?? globalSettings;
-      const folders = await loadAllFolders();
+      const folders = await loadAllVibeFolders();
       const preset = await generateRandomPreset(settings, allVibes, model, folders);
       addRandomPreset(preset);
     } catch (e) {
@@ -118,7 +111,7 @@ export default function ArtistStyleSection() {
     try {
       const allVibes = vibes.length > 0 ? vibes : await ipc.listVibes();
       const settings = sidebar.randomSettings ?? globalSettings;
-      const folders = await loadAllFolders();
+      const folders = await loadAllVibeFolders();
       const newPreset = await generateRandomPreset(settings, allVibes, model, folders);
       rerollRandomPreset(presetId, {
         artistTags: newPreset.artistTags,
@@ -166,6 +159,14 @@ export default function ArtistStyleSection() {
           </Button>
         </div>
       </div>
+
+      {/* Direct artist tags */}
+      <SidebarArtistTagInput
+        artistTags={sidebarArtistTags}
+        onAdd={addSidebarArtistTag}
+        onRemove={removeSidebarArtistTag}
+        onStrengthChange={updateSidebarArtistTagStrength}
+      />
 
       {/* Sidebar presets with inline tweak panels */}
       {resolvedPresets.length > 0 && (

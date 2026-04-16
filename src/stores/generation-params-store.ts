@@ -292,4 +292,5 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
       set({ sidebarPresets: [] });
     }
   },
+
 }));
