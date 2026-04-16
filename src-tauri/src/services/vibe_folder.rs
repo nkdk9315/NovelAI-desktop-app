@@ -77,6 +77,27 @@ pub fn delete(conn: &Connection, id: i64) -> Result<(), AppError> {
     repo::delete(conn, id)
 }
 
+pub fn set_vibe_folder(
+    conn: &Connection,
+    vibe_id: &str,
+    folder_id: Option<i64>,
+) -> Result<(), AppError> {
+    if let Some(fid) = folder_id {
+        repo::find(conn, fid)?;
+    }
+    vibe_repo::set_folder(conn, vibe_id, folder_id)
+}
+
+pub fn count_vibes_per_folder(conn: &Connection) -> Result<Vec<CountByIdDto>, AppError> {
+    Ok(vibe_repo::count_by_folder(conn)?
+        .into_iter()
+        .map(|(folder_id, count)| CountByIdDto {
+            id: folder_id.unwrap_or(-1),
+            count,
+        })
+        .collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,28 +122,4 @@ mod tests {
         assert!(vibe_repo::find_by_id(&conn, &v2.id).is_err());
         assert!(vibe_repo::find_by_id(&conn, &v3.id).is_ok());
     }
-}
-
-pub fn set_vibe_folder(
-    conn: &Connection,
-    vibe_id: &str,
-    folder_id: Option<i64>,
-) -> Result<(), AppError> {
-    if let Some(fid) = folder_id {
-        // Ensure folder exists so the UI gets a clean error.
-        repo::find(conn, fid)?;
-    }
-    vibe_repo::set_folder(conn, vibe_id, folder_id)
-}
-
-/// Aggregates every `folder_id` (including NULL) into a single IPC payload.
-/// `id = -1` is used as the sentinel for unclassified (NULL folder_id).
-pub fn count_vibes_per_folder(conn: &Connection) -> Result<Vec<CountByIdDto>, AppError> {
-    Ok(vibe_repo::count_by_folder(conn)?
-        .into_iter()
-        .map(|(folder_id, count)| CountByIdDto {
-            id: folder_id.unwrap_or(-1),
-            count,
-        })
-        .collect())
 }

@@ -73,6 +73,27 @@ pub fn delete(conn: &Connection, id: i64) -> Result<(), AppError> {
     repo::delete(conn, id)
 }
 
+pub fn set_preset_folder(
+    conn: &Connection,
+    preset_id: &str,
+    folder_id: Option<i64>,
+) -> Result<(), AppError> {
+    if let Some(fid) = folder_id {
+        repo::find(conn, fid)?;
+    }
+    preset_repo::set_folder(conn, preset_id, folder_id)
+}
+
+pub fn count_presets_per_folder(conn: &Connection) -> Result<Vec<CountByIdDto>, AppError> {
+    Ok(preset_repo::count_by_folder(conn)?
+        .into_iter()
+        .map(|(folder_id, count)| CountByIdDto {
+            id: folder_id.unwrap_or(-1),
+            count,
+        })
+        .collect())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,25 +118,4 @@ mod tests {
         assert!(preset_repo::find_by_id(&conn, &p2.id).is_err());
         assert!(preset_repo::find_by_id(&conn, &p3.id).is_ok());
     }
-}
-
-pub fn set_preset_folder(
-    conn: &Connection,
-    preset_id: &str,
-    folder_id: Option<i64>,
-) -> Result<(), AppError> {
-    if let Some(fid) = folder_id {
-        repo::find(conn, fid)?;
-    }
-    preset_repo::set_folder(conn, preset_id, folder_id)
-}
-
-pub fn count_presets_per_folder(conn: &Connection) -> Result<Vec<CountByIdDto>, AppError> {
-    Ok(preset_repo::count_by_folder(conn)?
-        .into_iter()
-        .map(|(folder_id, count)| CountByIdDto {
-            id: folder_id.unwrap_or(-1),
-            count,
-        })
-        .collect())
 }
