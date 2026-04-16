@@ -50,6 +50,7 @@ pub struct PromptGroupTagRow {
     pub id: String,
     pub name: String,                    // 010
     pub tag: String,
+    pub negative_prompt: String,         // 021
     pub sort_order: i32,
     pub default_strength: i32,           // 009
     pub thumbnail_path: Option<String>,  // 009
@@ -150,6 +151,7 @@ pub struct PromptGroupTagDto {
     pub id: String,
     pub name: String,
     pub tag: String,
+    pub negative_prompt: String,
     pub sort_order: i32,
     pub default_strength: i32,
     pub thumbnail_path: Option<String>,
@@ -358,7 +360,7 @@ pub struct CostEstimateRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TagInput { pub name: Option<String>, pub tag: String, pub default_strength: Option<i32>, pub thumbnail_path: Option<String> }
+pub struct TagInput { pub name: Option<String>, pub tag: String, pub negative_prompt: Option<String>, pub default_strength: Option<i32>, pub thumbnail_path: Option<String> }
 
 pub struct CreatePromptGroupRequest {
     pub name: String,
@@ -1686,7 +1688,7 @@ export interface CostEstimateRequest {
   tier: number;
 }
 
-export interface TagInput { name?: string; tag: string; defaultStrength?: number; thumbnailPath?: string; }
+export interface TagInput { name?: string; tag: string; negativePrompt?: string; defaultStrength?: number; thumbnailPath?: string; }
 
 export interface CreatePromptGroupRequest {
   name: string;

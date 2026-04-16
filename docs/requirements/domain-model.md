@@ -331,6 +331,7 @@ CREATE TABLE IF NOT EXISTS prompt_group_tags (
     prompt_group_id TEXT NOT NULL REFERENCES prompt_groups(id) ON DELETE CASCADE,
     name            TEXT NOT NULL DEFAULT '',
     tag             TEXT NOT NULL,
+    negative_prompt TEXT NOT NULL DEFAULT '',  -- 021
     sort_order      INTEGER NOT NULL DEFAULT 0,
     default_strength INTEGER NOT NULL DEFAULT 0,
     thumbnail_path  TEXT
