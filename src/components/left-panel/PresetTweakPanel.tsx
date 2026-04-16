@@ -152,6 +152,9 @@ export default function PresetTweakPanel({ presetId, preset, vibes, onPresetsCha
           onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
           placeholder={t("style.artistPlaceholder")}
           className="h-6 text-[10px]"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
         />
         {showSuggestions && filteredSuggestions.length > 0 && (
           <div className="absolute z-50 mt-1 max-h-36 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md">

@@ -187,6 +187,9 @@ export default function PromptTextarea({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         rows={rows}
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
       />
       {showDropdown && results.length > 0 && (
         <div className="absolute z-50 max-h-48 w-full overflow-y-auto rounded-md border bg-popover shadow-md">

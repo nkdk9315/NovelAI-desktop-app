@@ -84,6 +84,9 @@ export default function ArtistTagInput({ artistTags, onArtistTagsChange }: Props
           onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
           placeholder={t("style.artistPlaceholder")}
           className="h-8 text-xs"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
         />
         {showSuggestions && filteredSuggestions.length > 0 && (
           <div className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md">
