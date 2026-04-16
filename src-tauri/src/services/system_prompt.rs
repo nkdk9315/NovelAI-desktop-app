@@ -1,4 +1,8 @@
-use crate::models::dto::{CategoryDto, SystemTagDto};
+use rusqlite::Connection;
+
+use crate::error::AppError;
+use crate::models::dto::{CategoryDto, PromptGroupRow, SystemTagDto};
+use crate::repositories::prompt_group as pg_repo;
 use crate::state::{SystemPromptDB, SystemTag};
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
@@ -137,6 +141,97 @@ pub fn search_system_prompts(
     results
 }
 
+/// System prompt group categories to seed
+const SYSTEM_CATEGORIES: &[(u8, &str)] = &[
+    (0, "General Tags"),
+    (1, "Artist Tags"),
+    (3, "Works Tags"),
+    (4, "Character Tags"),
+    (5, "Meta Tags"),
+];
+
+/// Seeds system prompt groups into DB on first launch.
+/// Each group represents one CSV category; tags are served from in-memory SystemPromptDB.
+pub fn seed_system_prompt_groups(conn: &Connection) -> Result<(), AppError> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM prompt_groups WHERE is_system = 1",
+        [],
+        |row| row.get(0),
+    )?;
+    if count > 0 {
+        return Ok(());
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    for &(cat_id, name) in SYSTEM_CATEGORIES {
+        let row = PromptGroupRow {
+            id: format!("system-group-cat-{cat_id}"),
+            name: name.to_string(),
+            genre_id: None,
+            is_default_for_genre: 0,
+            is_system: 1,
+            usage_type: "both".to_string(),
+            created_at: now.clone(),
+            updated_at: now.clone(),
+            thumbnail_path: None,
+            is_default: 0,
+            category: Some(cat_id as i32),
+            default_strength: 0.0,
+            random_mode: 0,
+            random_count: 1,
+            random_source: "enabled".to_string(),
+            wildcard_token: None,
+        };
+        pg_repo::insert(conn, &row)?;
+    }
+    Ok(())
+}
+
+/// List tags for a system prompt group by category, with optional search and pagination.
+pub fn list_system_group_tags(
+    db: &SystemPromptDB,
+    category: u8,
+    query: Option<&str>,
+    offset: usize,
+    limit: usize,
+) -> (Vec<SystemTagDto>, usize) {
+    let indices = match db.by_category.get(&category) {
+        Some(indices) => indices,
+        None => return (Vec::new(), 0),
+    };
+
+    let query_lower = query.map(|q| q.to_lowercase());
+
+    let filtered: Vec<&SystemTag> = indices
+        .iter()
+        .map(|&idx| &db.tags[idx])
+        .filter(|tag| {
+            if let Some(ref q) = query_lower {
+                let name_lower = tag.name.to_lowercase();
+                name_lower.contains(q)
+                    || tag.aliases.iter().any(|a| a.to_lowercase().contains(q))
+            } else {
+                true
+            }
+        })
+        .collect();
+
+    let total_count = filtered.len();
+    let results: Vec<SystemTagDto> = filtered
+        .into_iter()
+        .skip(offset)
+        .take(limit)
+        .map(|tag| SystemTagDto {
+            name: tag.name.clone(),
+            category: tag.category,
+            post_count: tag.post_count,
+            aliases: tag.aliases.clone(),
+        })
+        .collect();
+
+    (results, total_count)
+}
+
 pub fn get_random_tags(db: &SystemPromptDB, category: u8, count: usize) -> Vec<SystemTagDto> {
     let indices = match db.by_category.get(&category) {
         Some(indices) => indices,
@@ -159,86 +254,5 @@ pub fn get_random_tags(db: &SystemPromptDB, category: u8, count: usize) -> Vec<S
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn test_db() -> SystemPromptDB {
-        let csv = "\
-1girl,0,7553466,\"sole_female,1girls\"
-highres,5,7126634,\"high_resolution,high_res,hires\"
-solo,0,9129586,
-hatsune_miku,4,200000,miku
-touhou,3,500000,
-miyuki_(artist),1,10000,
-long_hair,0,5915693,
-";
-        load_system_prompt_db(csv.as_bytes())
-    }
-
-    #[test]
-    fn test_get_categories() {
-        let db = test_db();
-        let cats = get_categories(&db);
-        assert!(!cats.is_empty());
-
-        // Check category 0 (一般タグ) has 3 tags: 1girl, solo, long_hair
-        let general = cats.iter().find(|c| c.id == 0).unwrap();
-        assert_eq!(general.name, "一般タグ");
-        assert_eq!(general.count, 3);
-
-        // Category 4 (キャラクター) has 1
-        let char_cat = cats.iter().find(|c| c.id == 4).unwrap();
-        assert_eq!(char_cat.name, "キャラクター");
-        assert_eq!(char_cat.count, 1);
-    }
-
-    #[test]
-    fn test_search_partial_match() {
-        let db = test_db();
-
-        // Partial match on tag name
-        let results = search_system_prompts(&db, "girl", None, 50);
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0].name, "1girl");
-
-        // Partial match on alias
-        let results = search_system_prompts(&db, "sole_female", None, 50);
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0].name, "1girl");
-
-        // Case-insensitive
-        let results = search_system_prompts(&db, "MIKU", None, 50);
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0].name, "hatsune_miku");
-    }
-
-    #[test]
-    fn test_search_category_filter() {
-        let db = test_db();
-
-        // Filter by category 0 (General)
-        let results = search_system_prompts(&db, "girl", Some(0), 50);
-        assert_eq!(results.len(), 1);
-
-        // Filter by category 4 (Character) - no "girl" match
-        let results = search_system_prompts(&db, "girl", Some(4), 50);
-        assert!(results.is_empty());
-
-        // Filter by non-existent category
-        let results = search_system_prompts(&db, "girl", Some(99), 50);
-        assert!(results.is_empty());
-    }
-
-    #[test]
-    fn test_search_limit() {
-        let db = test_db();
-
-        // Search with limit 1 — should only return 1 result
-        let results = search_system_prompts(&db, "r", None, 1);
-        assert_eq!(results.len(), 1);
-
-        // Search broader to get multiple
-        let all = search_system_prompts(&db, "r", None, 50);
-        assert!(all.len() > 1);
-    }
-}
+#[path = "system_prompt_tests.rs"]
+mod tests;

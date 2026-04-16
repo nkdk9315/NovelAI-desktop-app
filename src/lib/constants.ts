@@ -51,7 +51,23 @@ export const DEFAULT_RANDOM_PRESET_SETTINGS = {
   vibeStrengthMin: 0.3,
   vibeStrengthMax: 0.9,
   favoritesOnly: false,
+  folderIds: [] as number[],
 };
 
-export const DEFAULT_NEGATIVE_PROMPT =
-  "nsfw, lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone";
+export const DEFAULT_NEGATIVE_PROMPT = "";
+
+export const QUALITY_TAGS = "masterpiece, very aesthetic, no text";
+
+export const NEGATIVE_PRESETS = {
+  none: "",
+  "human-main":
+    "lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page, @_@, mismatched pupils, glowing eyes, bad anatomy",
+  light:
+    "lowres, artistic error, scan artifacts, worst quality, bad quality, jpeg artifacts, multiple views, very displeasing, too many watermarks, negative space, blank page",
+  heavy:
+    "lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page",
+  furry:
+    "{worst quality}, distracting watermark, unfinished, bad quality, {widescreen}, upscale, {sequence}, {{grandfathered content}}, blurred foreground, chromatic aberration, sketch, everyone, [sketch background], simple, [flat colors], ych (character), outline, multiple scenes, [[horror (theme)]], comic",
+} as const;
+
+export type NegativePresetId = keyof typeof NEGATIVE_PRESETS;

@@ -19,6 +19,7 @@ export default function VibeSection() {
   const currentModel = useGenerationParamsStore((s) => s.model);
   const selectedVibes = useGenerationParamsStore((s) => s.selectedVibes);
   const addVibe = useGenerationParamsStore((s) => s.addVibe);
+  const removeVibeFromSelection = useGenerationParamsStore((s) => s.removeVibe);
   const toggleVibe = useGenerationParamsStore((s) => s.toggleVibe);
   const updateVibeStrength = useGenerationParamsStore((s) => s.updateVibeStrength);
   const sidebarPresets = useGenerationParamsStore((s) => s.sidebarPresets);
@@ -40,11 +41,18 @@ export default function VibeSection() {
   const loadVibes = useCallback(async () => {
     if (!currentProject) return;
     try {
-      setProjectVibes(await ipc.listProjectVibesAll(currentProject.id));
+      const vibes = await ipc.listProjectVibesAll(currentProject.id);
+      setProjectVibes(vibes);
+      const existingIds = new Set(
+        useGenerationParamsStore.getState().selectedVibes.map((v) => v.vibeId),
+      );
+      for (const pv of vibes) {
+        if (!existingIds.has(pv.vibeId)) addVibe(pv.vibeId);
+      }
     } catch {
       // silently fail
     }
-  }, [currentProject]);
+  }, [currentProject, addVibe]);
 
   useEffect(() => {
     loadVibes();
@@ -61,6 +69,7 @@ export default function VibeSection() {
     if (!currentProject) return;
     try {
       await ipc.removeVibeFromProject(currentProject.id, vibeId);
+      removeVibeFromSelection(vibeId);
       await loadVibes();
     } catch {
       // silently fail

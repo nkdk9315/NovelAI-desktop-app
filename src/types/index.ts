@@ -16,24 +16,44 @@ export interface GenreDto {
   isSystem: boolean;
   sortOrder: number;
   createdAt: string;
+  icon: string;
+  color: string;
 }
 
 export interface PromptGroupDto {
   id: string;
   name: string;
-  genreId: string | null;
-  isDefaultForGenre: boolean;
+  folderId: number | null;
+  defaultGenreIds: string[];
   isSystem: boolean;
-  usageType: "main" | "character" | "both";
+  usageType: string;
   tags: PromptGroupTagDto[];
   createdAt: string;
   updatedAt: string;
+  thumbnailPath: string | null;
+  isDefault: boolean;
+  category: number | null;
+  defaultStrength: number;
+  randomMode: boolean;
+  randomCount: number;
+  randomSource: "all" | "enabled";
+  wildcardToken: string | null;
+}
+
+export interface PromptGroupFolderDto {
+  id: number;
+  title: string;
+  parentId: number | null;
+  sortKey: number;
 }
 
 export interface PromptGroupTagDto {
   id: string;
+  name: string;
   tag: string;
   sortOrder: number;
+  defaultStrength: number;
+  thumbnailPath: string | null;
 }
 
 export interface GeneratedImageDto {
@@ -57,6 +77,15 @@ export interface VibeDto {
   createdAt: string;
   thumbnailPath: string | null;
   isFavorite: boolean;
+  folderId: number | null;
+}
+
+export interface AssetFolderDto {
+  id: number;
+  title: string;
+  parentId: number | null;
+  sortKey: number;
+  childCount: number;
 }
 
 export interface ArtistTag {
@@ -78,6 +107,7 @@ export interface StylePresetDto {
   thumbnailPath: string | null;
   isFavorite: boolean;
   model: string;
+  folderId: number | null;
 }
 
 export interface AnlasBalanceDto {
@@ -201,23 +231,52 @@ export interface CostEstimateRequest {
   tier: number;
 }
 
+export interface TagInput {
+  name?: string;
+  tag: string;
+  defaultStrength?: number;
+  thumbnailPath?: string;
+}
+
 export interface CreatePromptGroupRequest {
   name: string;
-  genreId?: string;
-  usageType: string;
-  tags: string[];
+  folderId?: number | null;
+  defaultGenreIds?: string[];
+  tags: TagInput[];
+  defaultStrength?: number;
 }
 
 export interface UpdatePromptGroupRequest {
   id: string;
   name?: string;
-  genreId?: string | null;
-  tags?: string[];
-  isDefaultForGenre?: boolean;
+  folderId?: number | null;
+  defaultGenreIds?: string[];
+  tags?: TagInput[];
+  isDefault?: boolean;
+  thumbnailPath?: string | null;
+  defaultStrength?: number;
+  randomMode?: boolean;
+  randomCount?: number;
+  randomSource?: "all" | "enabled";
+  wildcardToken?: string | null;
 }
 
 export interface CreateGenreRequest {
   name: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface UpdateGenreRequest {
+  id: string;
+  name?: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface ListSystemGroupTagsResponse {
+  tags: SystemTagDto[];
+  totalCount: number;
 }
 
 export interface AddVibeRequest {
@@ -272,6 +331,11 @@ export interface UpdatePresetThumbnailRequest {
   thumbnailPath: string;
 }
 
+export interface SystemGroupGenreDefaultDto {
+  genreId: string;
+  showByDefault: boolean;
+}
+
 // ---- Random Preset Settings ----
 
 export interface RandomPresetSettings {
@@ -285,6 +349,7 @@ export interface RandomPresetSettings {
   vibeStrengthMin: number;
   vibeStrengthMax: number;
   favoritesOnly: boolean;
+  folderIds: number[];
 }
 
 // ---- Error ----

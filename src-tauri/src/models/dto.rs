@@ -18,23 +18,38 @@ pub struct GenreRow {
     pub is_system: i32,
     pub sort_order: i32,
     pub created_at: String,
+    pub icon: String,
+    pub color: String,
 }
 
 pub struct PromptGroupRow {
     pub id: String,
     pub name: String,
+    /// Legacy column — always `None` post-migration-020. Kept on the struct so
+    /// the physical column keeps round-tripping until a later cleanup drops it.
     pub genre_id: Option<String>,
     pub is_default_for_genre: i32,
     pub is_system: i32,
     pub usage_type: String,
     pub created_at: String,
     pub updated_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_default: i32,
+    pub category: Option<i32>,
+    pub default_strength: f64,
+    pub random_mode: i32,
+    pub random_count: i32,
+    pub random_source: String,
+    pub wildcard_token: Option<String>,
 }
 
 pub struct PromptGroupTagRow {
     pub id: String,
+    pub name: String,
     pub tag: String,
     pub sort_order: i32,
+    pub default_strength: i32,
+    pub thumbnail_path: Option<String>,
 }
 
 pub struct GeneratedImageRow {
@@ -108,6 +123,8 @@ pub struct GenreDto {
     pub is_system: bool,
     pub sort_order: i32,
     pub created_at: String,
+    pub icon: String,
+    pub color: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -115,21 +132,31 @@ pub struct GenreDto {
 pub struct PromptGroupDto {
     pub id: String,
     pub name: String,
-    pub genre_id: Option<String>,
-    pub is_default_for_genre: bool,
+    pub default_genre_ids: Vec<String>,
     pub is_system: bool,
     pub usage_type: String,
     pub tags: Vec<PromptGroupTagDto>,
     pub created_at: String,
     pub updated_at: String,
+    pub thumbnail_path: Option<String>,
+    pub is_default: bool,
+    pub category: Option<i32>,
+    pub default_strength: f64,
+    pub random_mode: bool,
+    pub random_count: i32,
+    pub random_source: String,
+    pub wildcard_token: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PromptGroupTagDto {
     pub id: String,
+    pub name: String,
     pub tag: String,
     pub sort_order: i32,
+    pub default_strength: i32,
+    pub thumbnail_path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -203,7 +230,14 @@ pub struct SystemTagDto {
     pub aliases: Vec<String>,
 }
 
-// ---- Tag database (migration 009) ----
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListSystemGroupTagsResponse {
+    pub tags: Vec<SystemTagDto>,
+    pub total_count: usize,
+}
+
+// ---- Tag database (migration 013) ----
 
 #[derive(Debug, Clone)]
 pub struct TagRow {
@@ -386,11 +420,21 @@ pub struct CostEstimateRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TagInput {
+    pub name: Option<String>,
+    pub tag: String,
+    pub default_strength: Option<i32>,
+    pub thumbnail_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreatePromptGroupRequest {
     pub name: String,
-    pub genre_id: Option<String>,
-    pub usage_type: String,
-    pub tags: Vec<String>,
+    #[serde(default)]
+    pub default_genre_ids: Vec<String>,
+    pub tags: Vec<TagInput>,
+    pub default_strength: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -398,16 +442,34 @@ pub struct CreatePromptGroupRequest {
 pub struct UpdatePromptGroupRequest {
     pub id: String,
     pub name: Option<String>,
+    pub default_genre_ids: Option<Vec<String>>,
+    pub tags: Option<Vec<TagInput>>,
+    pub is_default: Option<bool>,
     #[serde(default, deserialize_with = "deserialize_double_option")]
-    pub genre_id: Option<Option<String>>,
-    pub tags: Option<Vec<String>>,
-    pub is_default_for_genre: Option<bool>,
+    pub thumbnail_path: Option<Option<String>>,
+    pub default_strength: Option<f64>,
+    pub random_mode: Option<bool>,
+    pub random_count: Option<i32>,
+    pub random_source: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_double_option")]
+    pub wildcard_token: Option<Option<String>>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGenreRequest {
     pub name: String,
+    pub icon: Option<String>,
+    pub color: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateGenreRequest {
+    pub id: String,
+    pub name: Option<String>,
+    pub icon: Option<String>,
+    pub color: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -502,22 +564,35 @@ impl From<GenreRow> for GenreDto {
             is_system: row.is_system != 0,
             sort_order: row.sort_order,
             created_at: row.created_at,
+            icon: row.icon,
+            color: row.color,
         }
     }
 }
 
 impl PromptGroupRow {
-    pub fn into_dto(self, tags: Vec<PromptGroupTagDto>) -> PromptGroupDto {
+    pub fn into_dto(
+        self,
+        tags: Vec<PromptGroupTagDto>,
+        default_genre_ids: Vec<String>,
+    ) -> PromptGroupDto {
         PromptGroupDto {
             id: self.id,
             name: self.name,
-            genre_id: self.genre_id,
-            is_default_for_genre: self.is_default_for_genre != 0,
+            default_genre_ids,
             is_system: self.is_system != 0,
             usage_type: self.usage_type,
             tags,
             created_at: self.created_at,
             updated_at: self.updated_at,
+            thumbnail_path: self.thumbnail_path,
+            is_default: self.is_default != 0,
+            category: self.category,
+            default_strength: self.default_strength,
+            random_mode: self.random_mode != 0,
+            random_count: self.random_count,
+            random_source: self.random_source,
+            wildcard_token: self.wildcard_token,
         }
     }
 }
@@ -526,8 +601,11 @@ impl From<PromptGroupTagRow> for PromptGroupTagDto {
     fn from(row: PromptGroupTagRow) -> Self {
         Self {
             id: row.id,
+            name: row.name,
             tag: row.tag,
             sort_order: row.sort_order,
+            default_strength: row.default_strength,
+            thumbnail_path: row.thumbnail_path,
         }
     }
 }
@@ -591,6 +669,22 @@ impl StylePresetRow {
     }
 }
 
+// ---- System group genre defaults ----
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemGroupGenreDefaultDto {
+    pub genre_id: String,
+    pub show_by_default: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetSystemGroupGenreDefaultsRequest {
+    pub system_group_id: String,
+    pub entries: Vec<SystemGroupGenreDefaultDto>,
+}
+
 // ---- Helper ----
 
 fn deserialize_double_option<'de, D>(deserializer: D) -> Result<Option<Option<String>>, D::Error>
@@ -599,3 +693,4 @@ where
 {
     Ok(Some(Option::deserialize(deserializer)?))
 }
+

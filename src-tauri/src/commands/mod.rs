@@ -5,5 +5,6 @@ pub mod prompt_groups;
 pub mod genres;
 pub mod vibes;
 pub mod style_presets;
+pub mod system_group_settings;
 pub mod system_prompts;
 pub mod tags;

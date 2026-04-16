@@ -10,7 +10,7 @@ beforeEach(() => {
 
 describe("characters CRUD", () => {
   it("addCharacter adds with defaults and genreName", () => {
-    useGenerationParamsStore.getState().addCharacter("Female");
+    useGenerationParamsStore.getState().addCharacter({ name: "Female", id: "genre-female", icon: "user-round", color: "#ef4444" });
     const chars = useGenerationParamsStore.getState().characters;
     expect(chars).toHaveLength(1);
     expect(chars[0]).toMatchObject({
@@ -26,15 +26,15 @@ describe("characters CRUD", () => {
   it("addCharacter respects MAX_CHARACTERS limit", () => {
     const { addCharacter } = useGenerationParamsStore.getState();
     for (let i = 0; i < 7; i++) {
-      addCharacter("Male");
+      addCharacter({ name: "Male", id: "genre-male", icon: "user-round", color: "#3b82f6" });
     }
     expect(useGenerationParamsStore.getState().characters).toHaveLength(6);
   });
 
   it("removeCharacter removes by index", () => {
     const { addCharacter } = useGenerationParamsStore.getState();
-    addCharacter("Male");
-    addCharacter("Female");
+    addCharacter({ name: "Male", id: "genre-male", icon: "user-round", color: "#3b82f6" });
+    addCharacter({ name: "Female", id: "genre-female", icon: "user-round", color: "#ef4444" });
     useGenerationParamsStore.getState().removeCharacter(0);
     const chars = useGenerationParamsStore.getState().characters;
     expect(chars).toHaveLength(1);
@@ -42,7 +42,7 @@ describe("characters CRUD", () => {
   });
 
   it("updateCharacter applies partial update", () => {
-    useGenerationParamsStore.getState().addCharacter("Other");
+    useGenerationParamsStore.getState().addCharacter({ name: "Other", id: "genre-other", icon: "circle-help", color: "#888888" });
     useGenerationParamsStore
       .getState()
       .updateCharacter(0, { prompt: "hello", centerX: 0.3 });
@@ -55,8 +55,8 @@ describe("characters CRUD", () => {
 
   it("clearCharacters removes all", () => {
     const { addCharacter } = useGenerationParamsStore.getState();
-    addCharacter("Male");
-    addCharacter("Female");
+    addCharacter({ name: "Male", id: "genre-male", icon: "user-round", color: "#3b82f6" });
+    addCharacter({ name: "Female", id: "genre-female", icon: "user-round", color: "#ef4444" });
     useGenerationParamsStore.getState().clearCharacters();
     expect(useGenerationParamsStore.getState().characters).toHaveLength(0);
   });
@@ -72,10 +72,11 @@ describe("sidebar presets", () => {
     thumbnailPath: null,
     isFavorite: false,
     model: "nai-diffusion-4-5-full",
+    folderId: null,
   };
   const mockVibes = [
-    { id: "vibe-1", name: "V1", filePath: "/a", model: "m", createdAt: "2026-01-01", thumbnailPath: null, isFavorite: false },
-    { id: "vibe-2", name: "V2", filePath: "/b", model: "m", createdAt: "2026-01-01", thumbnailPath: null, isFavorite: false },
+    { id: "vibe-1", name: "V1", filePath: "/a", model: "m", createdAt: "2026-01-01", thumbnailPath: null, isFavorite: false, folderId: null },
+    { id: "vibe-2", name: "V2", filePath: "/b", model: "m", createdAt: "2026-01-01", thumbnailPath: null, isFavorite: false, folderId: null },
   ];
 
   it("addSidebarPreset adds preset with artist tags and vibes", () => {

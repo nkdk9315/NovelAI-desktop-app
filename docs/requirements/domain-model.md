@@ -35,29 +35,60 @@
 
 ### PromptGroup（プロンプトグループ）
 
-再利用可能なプロンプトタグの集合。
+再利用可能なプロンプトタグの集合。PR-C で大幅改修（migrations 009-012, 016, 020）。
 
 | フィールド | 型 | 説明 |
 |------------|-----|------|
-| id | TEXT (UUID) | PK |
+| id | TEXT (UUID) | PK。システムグループは `system-group-cat-{n}` 固定ID |
 | name | TEXT | グループ名 |
-| genre_id | TEXT | FK → Genre.id（NULL許容） |
-| is_default_for_genre | INTEGER | このジャンルのデフォルトか |
-| is_system | INTEGER | 1=システム（編集/削除不可） |
+| genre_id | TEXT | **Legacy** — migration 020 で NULL 化。列は残存 |
+| is_default_for_genre | INTEGER | Legacy。`prompt_group_default_genres` に移行 |
+| is_system | INTEGER | 1=システム（削除不可） |
 | usage_type | TEXT | `main` / `character` / `both` |
-| created_at | TEXT (ISO 8601) | 作成日時 |
-| updated_at | TEXT (ISO 8601) | 更新日時 |
+| created_at / updated_at | TEXT (ISO 8601) | 日時 |
+| thumbnail_path | TEXT | サムネイル (009) |
+| is_default | INTEGER | サイドバー初期表示 (009) |
+| category | INTEGER | CSV カテゴリ ID（システムグループのみ） (009) |
+| default_strength | REAL | グループ単位デフォルト強度 (011) |
+| random_mode | INTEGER | ランダム選択モード (016) |
+| random_count | INTEGER | ランダム選択数 (016) |
+| random_source | TEXT | `'all'` / `'enabled'` (016) |
+| wildcard_token | TEXT | ワイルドカード置換トークン (016) |
 
 ### PromptGroupTag（プロンプトグループタグ）
 
-プロンプトグループに所属する個別タグ。
+名前付きエントリに拡張（migration 010）。
 
 | フィールド | 型 | 説明 |
 |------------|-----|------|
 | id | TEXT (UUID) | PK |
-| prompt_group_id | TEXT | FK → PromptGroup.id（CASCADE DELETE） |
+| prompt_group_id | TEXT | FK → PromptGroup.id（CASCADE） |
+| name | TEXT | 表示名（空文字可）(010) |
 | tag | TEXT | タグ文字列 |
-| sort_order | INTEGER | 表示・連結順 |
+| sort_order | INTEGER | 表示順 |
+| default_strength | INTEGER | 強度 (009) |
+| thumbnail_path | TEXT | サムネイル (009) |
+
+### PromptGroupDefaultGenres（migration 020）
+
+多対多ジャンル関連。旧 `genre_id` + `system_group_genre_defaults` を置換。
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| prompt_group_id | TEXT | PK (1) |
+| genre_id | TEXT | PK (2)。FK → Genre.id（CASCADE） |
+
+### System Prompt Groups（PR-C）
+
+起動時 `seed_system_prompt_groups()` が CSV カテゴリ毎に `prompt_groups` へ挿入（`is_system=1`）。タグは `SystemPromptDB`（in-memory）から `list_system_group_tags` で提供。
+
+| ID | category | name |
+|---|---|---|
+| `system-group-cat-0` | 0 | General Tags |
+| `system-group-cat-1` | 1 | Artist Tags |
+| `system-group-cat-3` | 3 | Works Tags |
+| `system-group-cat-4` | 4 | Character Tags |
+| `system-group-cat-5` | 5 | Meta Tags |
 
 ### GeneratedImage（生成画像）
 
@@ -248,24 +279,40 @@ INSERT OR IGNORE INTO genres (id, name, is_system, sort_order) VALUES
 CREATE TABLE IF NOT EXISTS prompt_groups (
     id                    TEXT PRIMARY KEY,
     name                  TEXT NOT NULL,
-    genre_id              TEXT REFERENCES genres(id) ON DELETE SET NULL,
-    is_default_for_genre  INTEGER NOT NULL DEFAULT 0,
+    genre_id              TEXT,              -- legacy, NULL post-020
+    is_default_for_genre  INTEGER NOT NULL DEFAULT 0, -- legacy
     is_system             INTEGER NOT NULL DEFAULT 0,
     usage_type            TEXT NOT NULL DEFAULT 'both',
     created_at            TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at            TEXT NOT NULL DEFAULT (datetime('now'))
+    updated_at            TEXT NOT NULL DEFAULT (datetime('now')),
+    thumbnail_path        TEXT,
+    is_default            INTEGER NOT NULL DEFAULT 0,
+    category              INTEGER,
+    default_strength      REAL NOT NULL DEFAULT 0,
+    random_mode           INTEGER NOT NULL DEFAULT 0,
+    random_count          INTEGER NOT NULL DEFAULT 1,
+    random_source         TEXT NOT NULL DEFAULT 'enabled',
+    wildcard_token        TEXT
 );
 
--- プロンプトグループタグ
 CREATE TABLE IF NOT EXISTS prompt_group_tags (
     id              TEXT PRIMARY KEY,
     prompt_group_id TEXT NOT NULL REFERENCES prompt_groups(id) ON DELETE CASCADE,
+    name            TEXT NOT NULL DEFAULT '',
     tag             TEXT NOT NULL,
-    sort_order      INTEGER NOT NULL DEFAULT 0
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    default_strength INTEGER NOT NULL DEFAULT 0,
+    thumbnail_path  TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_prompt_group_tags_group
     ON prompt_group_tags(prompt_group_id);
+
+CREATE TABLE IF NOT EXISTS prompt_group_default_genres (
+    prompt_group_id TEXT NOT NULL,
+    genre_id        TEXT NOT NULL REFERENCES genres(id) ON DELETE CASCADE,
+    PRIMARY KEY (prompt_group_id, genre_id)
+);
 
 -- プロジェクト
 CREATE TABLE IF NOT EXISTS projects (
@@ -560,11 +607,14 @@ pub struct SystemPromptDB {
 
 | コマンド | 引数 | 戻り値 | 説明 |
 |----------|------|--------|------|
-| `list_prompt_groups` | genre_id?, usage_type?, search? | `Vec<PromptGroupDto>` | 一覧（フィルタ/検索） |
+| `list_prompt_groups` | search? | `Vec<PromptGroupDto>` | 一覧 |
 | `get_prompt_group` | id | `PromptGroupDto` | 取得 |
-| `create_prompt_group` | name, genre_id?, usage_type, tags | `PromptGroupDto` | 作成 |
-| `update_prompt_group` | id, name?, genre_id?, tags?, is_default? | - | 更新 |
+| `create_prompt_group` | CreatePromptGroupRequest | `PromptGroupDto` | 作成 |
+| `update_prompt_group` | UpdatePromptGroupRequest | - | 更新 |
+| `update_prompt_group_thumbnail` | id, thumbnail_path? | - | サムネイル更新 |
 | `delete_prompt_group` | id | - | 削除（非システムのみ） |
+| `list_prompt_group_default_genres` | group_id | `Vec<String>` | デフォルトジャンルID一覧 |
+| `set_prompt_group_default_genres` | group_id, genre_ids | - | デフォルトジャンル設定 |
 
 ### ジャンル
 
@@ -611,3 +661,13 @@ pub struct SystemPromptDB {
 |----------|------|--------|------|
 | `get_system_prompt_categories` | - | `Vec<CategoryDto>` | カテゴリ一覧 |
 | `search_system_prompts` | query, category?, limit | `Vec<SystemTagDto>` | 検索（部分一致） |
+| `list_system_group_tags` | category, query?, offset?, limit? | `ListSystemGroupTagsResponse` | カテゴリ別タグ一覧 |
+| `get_random_artist_tags` | count | `Vec<SystemTagDto>` | ランダムアーティストタグ |
+
+### システムグループ設定
+
+| コマンド | 引数 | 戻り値 | 説明 |
+|----------|------|--------|------|
+| `get_system_group_genre_defaults` | system_group_id | `Vec<SystemGroupGenreDefaultDto>` | デフォルトジャンル設定取得 |
+| `set_system_group_genre_defaults` | SetSystemGroupGenreDefaultsRequest | - | デフォルトジャンル設定 |
+| `list_default_system_groups_for_genre` | genre_id | `Vec<String>` | ジャンル→デフォルトシステムグループ逆引き |

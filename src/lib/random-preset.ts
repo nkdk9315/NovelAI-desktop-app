@@ -1,7 +1,71 @@
-import type { ArtistTag, RandomPresetSettings, VibeDto } from "@/types";
+import type { ArtistTag, AssetFolderDto, RandomPresetSettings, VibeDto } from "@/types";
 import type { SidebarPreset, SelectedVibe } from "@/stores/generation-params-store";
 import { MODEL_TO_VIBE_KEY } from "@/lib/constants";
 import * as ipc from "@/lib/ipc";
+
+/**
+ * Expand a set of selected folder ids to include every descendant folder id
+ * (any folder whose ancestor chain passes through a selected id).
+ */
+export function expandFolderDescendants(
+  selected: number[],
+  allFolders: AssetFolderDto[],
+): Set<number> {
+  const childrenByParent = new Map<number, number[]>();
+  for (const f of allFolders) {
+    if (f.parentId != null) {
+      const arr = childrenByParent.get(f.parentId) ?? [];
+      arr.push(f.id);
+      childrenByParent.set(f.parentId, arr);
+    }
+  }
+  const result = new Set<number>();
+  const stack = [...selected];
+  while (stack.length > 0) {
+    const id = stack.pop()!;
+    if (result.has(id)) continue;
+    result.add(id);
+    const children = childrenByParent.get(id);
+    if (children) stack.push(...children);
+  }
+  return result;
+}
+
+/**
+ * Apply the random-preset vibe filters (model compatibility, folder scope,
+ * favorites) and return the pool from which a random preset should sample.
+ */
+export function filterVibePool(
+  allVibes: VibeDto[],
+  settings: RandomPresetSettings,
+  currentModel: string,
+  allFolders: AssetFolderDto[],
+): VibeDto[] {
+  const vibeKey = MODEL_TO_VIBE_KEY[currentModel];
+  let pool = vibeKey ? allVibes.filter((v) => v.model === vibeKey) : allVibes;
+
+  if (settings.folderIds.length > 0) {
+    // `-1` is the sentinel for "unclassified" (vibes with folder_id = NULL),
+    // matching the convention used by `count_vibes_per_folder` on the backend.
+    const realIds = settings.folderIds.filter((id) => id >= 0);
+    const includeUnclassified = settings.folderIds.includes(-1);
+    const allowed = expandFolderDescendants(realIds, allFolders);
+    pool = pool.filter((v) => {
+      if (v.folderId == null) return includeUnclassified;
+      return allowed.has(v.folderId);
+    });
+  }
+
+  if (settings.favoritesOnly) {
+    const favorites = pool.filter((v) => v.isFavorite);
+    if (favorites.length > 0) {
+      pool = favorites;
+    }
+    // If no favorites, fall back to the pre-favorites pool (caller may warn).
+  }
+
+  return pool;
+}
 
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -24,19 +88,9 @@ export async function generateRandomPreset(
   settings: RandomPresetSettings,
   allVibes: VibeDto[],
   currentModel: string,
+  allFolders: AssetFolderDto[] = [],
 ): Promise<SidebarPreset> {
-  const vibeKey = MODEL_TO_VIBE_KEY[currentModel];
-  let compatibleVibes = vibeKey
-    ? allVibes.filter((v) => v.model === vibeKey)
-    : allVibes;
-
-  if (settings.favoritesOnly) {
-    const favorites = compatibleVibes.filter((v) => v.isFavorite);
-    if (favorites.length > 0) {
-      compatibleVibes = favorites;
-    }
-    // If no favorites, fall back to all compatible vibes (caller shows warning)
-  }
+  const compatibleVibes = filterVibePool(allVibes, settings, currentModel, allFolders);
 
   if (compatibleVibes.length === 0) {
     throw new Error("no_compatible_vibes");

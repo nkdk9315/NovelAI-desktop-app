@@ -4,7 +4,7 @@ use crate::error::AppError;
 use crate::models::dto::GenreRow;
 
 pub fn list_all(conn: &Connection) -> Result<Vec<GenreRow>, AppError> {
-    let mut stmt = conn.prepare("SELECT id, name, is_system, sort_order, created_at FROM genres ORDER BY sort_order ASC")?;
+    let mut stmt = conn.prepare("SELECT id, name, is_system, sort_order, created_at, icon, color FROM genres ORDER BY sort_order ASC")?;
     let rows = stmt.query_map([], |row| {
         Ok(GenreRow {
             id: row.get(0)?,
@@ -12,6 +12,8 @@ pub fn list_all(conn: &Connection) -> Result<Vec<GenreRow>, AppError> {
             is_system: row.get(2)?,
             sort_order: row.get(3)?,
             created_at: row.get(4)?,
+            icon: row.get(5)?,
+            color: row.get(6)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
@@ -19,7 +21,7 @@ pub fn list_all(conn: &Connection) -> Result<Vec<GenreRow>, AppError> {
 
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<GenreRow, AppError> {
     conn.query_row(
-        "SELECT id, name, is_system, sort_order, created_at FROM genres WHERE id = ?1",
+        "SELECT id, name, is_system, sort_order, created_at, icon, color FROM genres WHERE id = ?1",
         [id],
         |row| {
             Ok(GenreRow {
@@ -28,6 +30,8 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<GenreRow, AppError> {
                 is_system: row.get(2)?,
                 sort_order: row.get(3)?,
                 created_at: row.get(4)?,
+                icon: row.get(5)?,
+                color: row.get(6)?,
             })
         },
     )
@@ -39,8 +43,16 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<GenreRow, AppError> {
 
 pub fn insert(conn: &Connection, row: &GenreRow) -> Result<(), AppError> {
     conn.execute(
-        "INSERT INTO genres (id, name, is_system, sort_order, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
-        rusqlite::params![row.id, row.name, row.is_system, row.sort_order, row.created_at],
+        "INSERT INTO genres (id, name, is_system, sort_order, created_at, icon, color) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        rusqlite::params![row.id, row.name, row.is_system, row.sort_order, row.created_at, row.icon, row.color],
+    )?;
+    Ok(())
+}
+
+pub fn update(conn: &Connection, row: &GenreRow) -> Result<(), AppError> {
+    conn.execute(
+        "UPDATE genres SET name = ?2, icon = ?3, color = ?4 WHERE id = ?1",
+        rusqlite::params![row.id, row.name, row.icon, row.color],
     )?;
     Ok(())
 }
@@ -69,14 +81,16 @@ mod tests {
     fn test_list_all_sorted() {
         let conn = setup_test_db();
         let genres = list_all(&conn).unwrap();
-        // Migration seeds 3 system genres with sort_order 0, 1, 2
-        assert_eq!(genres.len(), 3);
-        assert_eq!(genres[0].name, "男");
-        assert_eq!(genres[1].name, "女");
-        assert_eq!(genres[2].name, "その他");
+        // Migration seeds 4 system genres: メイン(-1), 男(0), 女(1), その他(2)
+        assert_eq!(genres.len(), 4);
+        assert_eq!(genres[0].name, "メイン");
+        assert_eq!(genres[1].name, "男");
+        assert_eq!(genres[2].name, "女");
+        assert_eq!(genres[3].name, "その他");
         // Verify sort_order is ascending
         assert!(genres[0].sort_order <= genres[1].sort_order);
         assert!(genres[1].sort_order <= genres[2].sort_order);
+        assert!(genres[2].sort_order <= genres[3].sort_order);
     }
 
     #[test]
@@ -89,7 +103,7 @@ mod tests {
         assert_eq!(found.is_system, 0);
 
         let all = list_all(&conn).unwrap();
-        assert_eq!(all.len(), 4); // 3 system + 1 user
+        assert_eq!(all.len(), 5); // 4 system + 1 user
     }
 
     #[test]

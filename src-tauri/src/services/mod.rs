@@ -8,6 +8,7 @@ pub mod vibe;
 pub mod vibe_encode;
 pub mod project_vibe;
 pub mod style_preset;
+pub mod system_group_settings;
 pub mod system_prompt;
 pub mod tag;
 pub mod tag_seed;

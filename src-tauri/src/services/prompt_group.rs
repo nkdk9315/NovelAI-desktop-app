@@ -7,27 +7,28 @@ use crate::models::dto::{
 };
 use crate::repositories::prompt_group as pg_repo;
 
+fn row_into_dto(conn: &Connection, row: PromptGroupRow) -> Result<PromptGroupDto, AppError> {
+    let tag_rows = pg_repo::find_tags_by_group(conn, &row.id)?;
+    let tag_dtos: Vec<PromptGroupTagDto> = tag_rows.into_iter().map(Into::into).collect();
+    let default_genre_ids = pg_repo::list_default_genres(conn, &row.id)?;
+    Ok(row.into_dto(tag_dtos, default_genre_ids))
+}
+
 pub fn list_prompt_groups(
     conn: &Connection,
-    genre_id: Option<&str>,
-    usage_type: Option<&str>,
     search: Option<&str>,
 ) -> Result<Vec<PromptGroupDto>, AppError> {
-    let rows = pg_repo::list(conn, genre_id, usage_type, search)?;
+    let rows = pg_repo::list(conn, search)?;
     let mut result = Vec::with_capacity(rows.len());
     for row in rows {
-        let tags = pg_repo::find_tags_by_group(conn, &row.id)?;
-        let tag_dtos: Vec<PromptGroupTagDto> = tags.into_iter().map(|t| t.into()).collect();
-        result.push(row.into_dto(tag_dtos));
+        result.push(row_into_dto(conn, row)?);
     }
     Ok(result)
 }
 
 pub fn get_prompt_group(conn: &Connection, id: &str) -> Result<PromptGroupDto, AppError> {
     let row = pg_repo::find_by_id(conn, id)?;
-    let tags = pg_repo::find_tags_by_group(conn, &row.id)?;
-    let tag_dtos: Vec<PromptGroupTagDto> = tags.into_iter().map(|t| t.into()).collect();
-    Ok(row.into_dto(tag_dtos))
+    row_into_dto(conn, row)
 }
 
 pub fn create_prompt_group(
@@ -40,21 +41,39 @@ pub fn create_prompt_group(
     let row = PromptGroupRow {
         id: id.clone(),
         name: req.name,
-        genre_id: req.genre_id,
+        genre_id: None,
         is_default_for_genre: 0,
         is_system: 0,
-        usage_type: req.usage_type,
+        usage_type: "both".to_string(),
         created_at: now.clone(),
         updated_at: now,
+        thumbnail_path: None,
+        is_default: 0,
+        category: None,
+        default_strength: req.default_strength.unwrap_or(0.0),
+        random_mode: 0,
+        random_count: 1,
+        random_source: "enabled".to_string(),
+        wildcard_token: None,
     };
     pg_repo::insert(conn, &row)?;
 
-    // Insert tags
-    let tag_tuples: Vec<(String, String, i32)> = req
+    pg_repo::set_default_genres(conn, &id, &req.default_genre_ids)?;
+
+    let tag_tuples: Vec<(String, String, String, i32, i32, Option<String>)> = req
         .tags
         .iter()
         .enumerate()
-        .map(|(i, tag)| (uuid::Uuid::new_v4().to_string(), tag.clone(), i as i32))
+        .map(|(i, t)| {
+            (
+                uuid::Uuid::new_v4().to_string(),
+                t.name.clone().unwrap_or_default(),
+                t.tag.clone(),
+                i as i32,
+                t.default_strength.unwrap_or(0),
+                t.thumbnail_path.clone(),
+            )
+        })
         .collect();
     pg_repo::replace_tags(conn, &id, &tag_tuples)?;
 
@@ -70,32 +89,82 @@ pub fn update_prompt_group(
     if let Some(name) = req.name {
         existing.name = name;
     }
-    if let Some(genre_id) = req.genre_id {
-        existing.genre_id = genre_id;
+    if let Some(is_default) = req.is_default {
+        existing.is_default = i32::from(is_default);
     }
-    if let Some(is_default) = req.is_default_for_genre {
-        existing.is_default_for_genre = i32::from(is_default);
+    if let Some(thumbnail_path) = req.thumbnail_path {
+        existing.thumbnail_path = thumbnail_path;
+    }
+    if let Some(default_strength) = req.default_strength {
+        existing.default_strength = default_strength;
+    }
+    if let Some(random_mode) = req.random_mode {
+        existing.random_mode = i32::from(random_mode);
+    }
+    if let Some(random_count) = req.random_count {
+        if random_count < 1 {
+            return Err(AppError::Validation(
+                "random_count must be >= 1".to_string(),
+            ));
+        }
+        existing.random_count = random_count;
+    }
+    if let Some(random_source) = req.random_source {
+        if random_source != "all" && random_source != "enabled" {
+            return Err(AppError::Validation(
+                "random_source must be 'all' or 'enabled'".to_string(),
+            ));
+        }
+        existing.random_source = random_source;
+    }
+    if let Some(wildcard_token) = req.wildcard_token {
+        existing.wildcard_token = wildcard_token.and_then(|s| {
+            let trimmed = s.trim().to_string();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
+        });
     }
 
     existing.updated_at = chrono::Utc::now().to_rfc3339();
     pg_repo::update(conn, &existing)?;
 
-    // Enforce default exclusivity
-    if existing.is_default_for_genre != 0 {
-        if let Some(ref genre_id) = existing.genre_id {
-            pg_repo::clear_default_for_genre(conn, genre_id, &existing.id)?;
-        }
+    if let Some(default_genre_ids) = req.default_genre_ids {
+        pg_repo::set_default_genres(conn, &req.id, &default_genre_ids)?;
     }
 
     if let Some(tags) = req.tags {
-        let tag_tuples: Vec<(String, String, i32)> = tags
+        let tag_tuples: Vec<(String, String, String, i32, i32, Option<String>)> = tags
             .iter()
             .enumerate()
-            .map(|(i, tag)| (uuid::Uuid::new_v4().to_string(), tag.clone(), i as i32))
+            .map(|(i, t)| {
+                (
+                    uuid::Uuid::new_v4().to_string(),
+                    t.name.clone().unwrap_or_default(),
+                    t.tag.clone(),
+                    i as i32,
+                    t.default_strength.unwrap_or(0),
+                    t.thumbnail_path.clone(),
+                )
+            })
             .collect();
         pg_repo::replace_tags(conn, &req.id, &tag_tuples)?;
     }
 
+    Ok(())
+}
+
+pub fn update_prompt_group_thumbnail(
+    conn: &Connection,
+    id: &str,
+    thumbnail_path: Option<&str>,
+) -> Result<(), AppError> {
+    let mut existing = pg_repo::find_by_id(conn, id)?;
+    existing.thumbnail_path = thumbnail_path.map(|s| s.to_string());
+    existing.updated_at = chrono::Utc::now().to_rfc3339();
+    pg_repo::update(conn, &existing)?;
     Ok(())
 }
 
@@ -110,173 +179,23 @@ pub fn delete_prompt_group(conn: &Connection, id: &str) -> Result<(), AppError> 
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::test_utils::{create_test_genre, setup_test_db};
-
-    #[test]
-    fn test_create_with_tags() {
-        let conn = setup_test_db();
-        let genre = create_test_genre(&conn);
-
-        let pg = create_prompt_group(
-            &conn,
-            CreatePromptGroupRequest {
-                name: "Test Group".to_string(),
-                genre_id: Some(genre.id.clone()),
-                usage_type: "both".to_string(),
-                tags: vec!["tag1".to_string(), "tag2".to_string(), "tag3".to_string()],
-            },
-        )
-        .unwrap();
-
-        assert_eq!(pg.name, "Test Group");
-        assert_eq!(pg.genre_id, Some(genre.id));
-        assert_eq!(pg.tags.len(), 3);
-        assert_eq!(pg.tags[0].tag, "tag1");
-        assert_eq!(pg.tags[1].tag, "tag2");
-        assert_eq!(pg.tags[2].tag, "tag3");
-        assert!(!pg.is_system);
-    }
-
-    #[test]
-    fn test_update_default_exclusivity() {
-        let conn = setup_test_db();
-        let genre = create_test_genre(&conn);
-
-        let pg1 = create_prompt_group(
-            &conn,
-            CreatePromptGroupRequest {
-                name: "Group A".to_string(),
-                genre_id: Some(genre.id.clone()),
-                usage_type: "both".to_string(),
-                tags: vec![],
-            },
-        )
-        .unwrap();
-
-        let pg2 = create_prompt_group(
-            &conn,
-            CreatePromptGroupRequest {
-                name: "Group B".to_string(),
-                genre_id: Some(genre.id.clone()),
-                usage_type: "both".to_string(),
-                tags: vec![],
-            },
-        )
-        .unwrap();
-
-        // Set pg1 as default
-        update_prompt_group(
-            &conn,
-            UpdatePromptGroupRequest {
-                id: pg1.id.clone(),
-                name: None,
-                genre_id: None,
-                tags: None,
-                is_default_for_genre: Some(true),
-            },
-        )
-        .unwrap();
-
-        // Set pg2 as default — pg1 should lose default
-        update_prompt_group(
-            &conn,
-            UpdatePromptGroupRequest {
-                id: pg2.id.clone(),
-                name: None,
-                genre_id: None,
-                tags: None,
-                is_default_for_genre: Some(true),
-            },
-        )
-        .unwrap();
-
-        let found1 = get_prompt_group(&conn, &pg1.id).unwrap();
-        let found2 = get_prompt_group(&conn, &pg2.id).unwrap();
-        assert!(!found1.is_default_for_genre);
-        assert!(found2.is_default_for_genre);
-    }
-
-    #[test]
-    fn test_delete_system_group_rejected() {
-        let conn = setup_test_db();
-        // Insert a system prompt group
-        let id = uuid::Uuid::new_v4().to_string();
-        pg_repo::insert(
-            &conn,
-            &PromptGroupRow {
-                id: id.clone(),
-                name: "System Group".to_string(),
-                genre_id: Some("genre-male".to_string()),
-                is_default_for_genre: 0,
-                is_system: 1,
-                usage_type: "both".to_string(),
-                created_at: "2026-01-01T00:00:00Z".to_string(),
-                updated_at: "2026-01-01T00:00:00Z".to_string(),
-            },
-        )
-        .unwrap();
-
-        let result = delete_prompt_group(&conn, &id);
-        assert!(result.is_err());
-        match result.unwrap_err() {
-            AppError::Validation(msg) => assert!(msg.contains("system")),
-            other => panic!("expected Validation, got {:?}", other),
-        }
-    }
-
-    #[test]
-    fn test_delete_user_group() {
-        let conn = setup_test_db();
-        let genre = create_test_genre(&conn);
-        let pg = create_prompt_group(
-            &conn,
-            CreatePromptGroupRequest {
-                name: "Deletable".to_string(),
-                genre_id: Some(genre.id),
-                usage_type: "both".to_string(),
-                tags: vec!["a".to_string()],
-            },
-        )
-        .unwrap();
-
-        delete_prompt_group(&conn, &pg.id).unwrap();
-        assert!(get_prompt_group(&conn, &pg.id).is_err());
-    }
-
-    #[test]
-    fn test_update_genre_id_null_clear() {
-        let conn = setup_test_db();
-        let genre = create_test_genre(&conn);
-
-        let pg = create_prompt_group(
-            &conn,
-            CreatePromptGroupRequest {
-                name: "Has Genre".to_string(),
-                genre_id: Some(genre.id.clone()),
-                usage_type: "both".to_string(),
-                tags: vec![],
-            },
-        )
-        .unwrap();
-        assert_eq!(pg.genre_id, Some(genre.id));
-
-        // Update with Some(None) → should clear genre_id to NULL
-        update_prompt_group(
-            &conn,
-            UpdatePromptGroupRequest {
-                id: pg.id.clone(),
-                name: None,
-                genre_id: Some(None),
-                tags: None,
-                is_default_for_genre: None,
-            },
-        )
-        .unwrap();
-
-        let updated = get_prompt_group(&conn, &pg.id).unwrap();
-        assert_eq!(updated.genre_id, None);
-    }
+pub fn list_default_genres(
+    conn: &Connection,
+    prompt_group_id: &str,
+) -> Result<Vec<String>, AppError> {
+    pg_repo::list_default_genres(conn, prompt_group_id)
 }
+
+pub fn set_default_genres(
+    conn: &Connection,
+    prompt_group_id: &str,
+    genre_ids: &[String],
+) -> Result<(), AppError> {
+    // Confirm the group exists so the UI gets a clean error.
+    pg_repo::find_by_id(conn, prompt_group_id)?;
+    pg_repo::set_default_genres(conn, prompt_group_id, genre_ids)
+}
+
+#[cfg(test)]
+#[path = "prompt_group_tests.rs"]
+mod tests;
