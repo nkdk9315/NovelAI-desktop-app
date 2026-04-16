@@ -216,7 +216,9 @@
     "randomOptionFixed": "Fixed",
     "noVibesAvailable": "No compatible vibes available",
     "randomMin": "Min",
-    "randomMax": "Max"
+    "randomMax": "Max",
+    "directTagPlaceholder": "Search artist name...",
+    "directTagStrength": "Strength"
   },
   "tagDb": {
     "title": "Tag Database",

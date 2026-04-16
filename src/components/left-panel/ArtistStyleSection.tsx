@@ -14,6 +14,7 @@ import * as ipc from "@/lib/ipc";
 import StylePresetModal from "@/components/modals/StylePresetModal";
 import RandomPresetSettingsDialog from "@/components/modals/RandomPresetSettingsDialog";
 import PresetTweakPanel from "./PresetTweakPanel";
+import SidebarArtistTagInput from "./SidebarArtistTagInput";
 
 const GLOBAL_SETTINGS_KEY = "random_preset_settings";
 
@@ -29,6 +30,12 @@ export default function ArtistStyleSection() {
   const addRandomPreset = useGenerationParamsStore((s) => s.addRandomPreset);
   const rerollRandomPreset = useGenerationParamsStore((s) => s.rerollRandomPreset);
   const updateRandomPresetSettings = useGenerationParamsStore((s) => s.updateRandomPresetSettings);
+  const sidebarArtistTags = useGenerationParamsStore((s) => s.sidebarArtistTags);
+  const addSidebarArtistTag = useGenerationParamsStore((s) => s.addSidebarArtistTag);
+  const removeSidebarArtistTag = useGenerationParamsStore((s) => s.removeSidebarArtistTag);
+  const updateSidebarArtistTagStrength = useGenerationParamsStore((s) => s.updateSidebarArtistTagStrength);
+  const saveSidebarArtistTags = useGenerationParamsStore((s) => s.saveSidebarArtistTags);
+  const loadSidebarArtistTags = useGenerationParamsStore((s) => s.loadSidebarArtistTags);
 
   const [presets, setPresets] = useState<StylePresetDto[]>([]);
   const [vibes, setVibes] = useState<VibeDto[]>([]);
@@ -84,8 +91,9 @@ export default function ArtistStyleSection() {
   useEffect(() => {
     if (currentProject) {
       loadSidebarPresets(currentProject.id);
+      loadSidebarArtistTags(currentProject.id);
     }
-  }, [currentProject, loadSidebarPresets]);
+  }, [currentProject, loadSidebarPresets, loadSidebarArtistTags]);
 
   // Auto-save when sidebarPresets change
   useEffect(() => {
@@ -93,6 +101,13 @@ export default function ArtistStyleSection() {
       saveSidebarPresets(currentProject.id);
     }
   }, [sidebarPresets, currentProject, saveSidebarPresets]);
+
+  // Auto-save when sidebarArtistTags change
+  useEffect(() => {
+    if (currentProject) {
+      saveSidebarArtistTags(currentProject.id);
+    }
+  }, [sidebarArtistTags, currentProject, saveSidebarArtistTags]);
 
   const handleRemovePreset = (presetId: string) => {
     removeSidebarPreset(presetId);
@@ -166,6 +181,14 @@ export default function ArtistStyleSection() {
           </Button>
         </div>
       </div>
+
+      {/* Direct artist tags */}
+      <SidebarArtistTagInput
+        artistTags={sidebarArtistTags}
+        onAdd={addSidebarArtistTag}
+        onRemove={removeSidebarArtistTag}
+        onStrengthChange={updateSidebarArtistTagStrength}
+      />
 
       {/* Sidebar presets with inline tweak panels */}
       {resolvedPresets.length > 0 && (

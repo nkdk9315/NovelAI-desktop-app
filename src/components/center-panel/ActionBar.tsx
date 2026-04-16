@@ -67,7 +67,10 @@ export default function ActionBar() {
 
     // Collect artist tags and vibes from enabled presets + independent vibes
     // Merge by vibeId: presets first-wins, then independent vibes fill remaining
-    const allArtistTags = activePresets.flatMap((p) => p.artistTags);
+    const allArtistTags = [
+      ...params.sidebarArtistTags,
+      ...activePresets.flatMap((p) => p.artistTags),
+    ];
     const presetVibes = activePresets.flatMap((p) => p.selectedVibes.filter((v) => v.enabled));
     const independentVibes = params.selectedVibes.filter((v) => v.enabled);
     const seen = new Set<string>();

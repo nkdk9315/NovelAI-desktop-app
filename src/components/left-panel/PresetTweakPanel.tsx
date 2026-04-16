@@ -1,11 +1,10 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ImageIcon, Plus, Save, SaveAll, X } from "lucide-react";
+import { ImageIcon, Plus, Save, SaveAll, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useAutocomplete } from "@/hooks/use-autocomplete";
@@ -120,42 +119,46 @@ export default function PresetTweakPanel({ presetId, preset, vibes, onPresetsCha
     <div className="space-y-2 pt-1 border-t border-border mt-1">
       {/* Artist tags */}
       <div className="relative">
-        <Input
-          value={tagInput}
-          onChange={(e) => handleTagInputChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              setHighlightIndex((prev) => {
-                const next = Math.min(prev + 1, filteredSuggestions.length - 1);
-                suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
-                return next;
-              });
-            } else if (e.key === "ArrowUp") {
-              e.preventDefault();
-              setHighlightIndex((prev) => {
-                const next = Math.max(prev - 1, -1);
-                if (next >= 0) suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
-                return next;
-              });
-            } else if (e.key === "Enter") {
-              e.preventDefault();
-              if (highlightIndex >= 0 && highlightIndex < filteredSuggestions.length) {
-                handleAddTag(filteredSuggestions[highlightIndex].name);
-              } else {
-                handleAddTag(tagInput);
+        <div className="relative flex items-center">
+          <Search className="pointer-events-none absolute left-2 h-3 w-3 text-muted-foreground/60" />
+          <input
+            value={tagInput}
+            onChange={(e) => handleTagInputChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey && showSuggestions && filteredSuggestions.length > 0)) {
+                e.preventDefault();
+                setHighlightIndex((prev) => {
+                  const next = prev < filteredSuggestions.length - 1 ? prev + 1 : 0;
+                  suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
+                  return next;
+                });
+              } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey && showSuggestions && filteredSuggestions.length > 0)) {
+                e.preventDefault();
+                setHighlightIndex((prev) => {
+                  const next = prev > 0 ? prev - 1 : filteredSuggestions.length - 1;
+                  suggestionRefs.current[next]?.scrollIntoView({ block: "nearest" });
+                  return next;
+                });
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                if (highlightIndex >= 0 && highlightIndex < filteredSuggestions.length) {
+                  handleAddTag(filteredSuggestions[highlightIndex].name);
+                } else {
+                  handleAddTag(tagInput);
+                }
+              } else if (e.key === "Escape") {
+                setShowSuggestions(false);
+                setHighlightIndex(-1);
               }
-            } else if (e.key === "Escape") {
-              setShowSuggestions(false);
-            }
-          }}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-          placeholder={t("style.artistPlaceholder")}
-          className="h-6 text-[10px]"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-        />
+            }}
+            onBlur={() => setTimeout(() => { setShowSuggestions(false); setHighlightIndex(-1); }, 150)}
+            placeholder={t("style.artistPlaceholder")}
+            className="h-6 w-full rounded-md border border-border bg-muted/40 pl-6 pr-2 text-[10px] outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary/50 focus:bg-background"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+          />
+        </div>
         {showSuggestions && filteredSuggestions.length > 0 && (
           <div className="absolute z-50 mt-1 max-h-36 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md">
             {filteredSuggestions.map((tag, i) => (
@@ -163,7 +166,7 @@ export default function PresetTweakPanel({ presetId, preset, vibes, onPresetsCha
                 key={tag.name}
                 ref={(el) => { suggestionRefs.current[i] = el; }}
                 type="button"
-                className={`w-full px-2 py-0.5 text-left text-[10px] ${i === highlightIndex ? "bg-accent" : "hover:bg-accent"}`}
+                className={`w-full px-2 py-0.5 text-left text-[10px] ${i === highlightIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent hover:text-accent-foreground"}`}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => handleAddTag(tag.name)}
               >
