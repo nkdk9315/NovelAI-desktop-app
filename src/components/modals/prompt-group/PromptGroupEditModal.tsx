@@ -11,54 +11,35 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
-  AlertDialogTitle, AlertDialogTrigger,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import TagEditor from "./TagEditor";
 import type { GenreDto, PromptGroupDto, PromptGroupFolderDto, TagInput } from "@/types";
 
+interface SaveData { id: string; name: string; folderId: number | null; defaultGenreIds: string[]; tags: TagInput[]; isDefault: boolean; defaultStrength: number; }
+
 interface PromptGroupEditModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  group: PromptGroupDto | null;
-  genres: GenreDto[];
-  folders: PromptGroupFolderDto[];
+  open: boolean; onOpenChange: (open: boolean) => void; group: PromptGroupDto | null;
+  genres: GenreDto[]; folders: PromptGroupFolderDto[];
   createFolder: (title: string, parentId: number | null) => Promise<PromptGroupFolderDto>;
-  onSave: (data: {
-    id: string; name: string; folderId: number | null;
-    defaultGenreIds: string[]; tags: TagInput[];
-    isDefault: boolean; defaultStrength: number;
-  }) => void;
-  onDelete: (id: string) => void;
-  contentClassName?: string;
-  contentStyle?: React.CSSProperties;
+  onSave: (data: SaveData) => void; onDelete: (id: string) => void;
+  contentClassName?: string; contentStyle?: React.CSSProperties;
 }
 
-interface FolderOption { id: number; label: string }
-
-function buildFolderOptions(folders: PromptGroupFolderDto[]): FolderOption[] {
+function buildFolderOptions(folders: PromptGroupFolderDto[]) {
   const byParent = new Map<number | null, PromptGroupFolderDto[]>();
   for (const f of folders) { const arr = byParent.get(f.parentId) ?? []; arr.push(f); byParent.set(f.parentId, arr); }
   for (const arr of byParent.values()) arr.sort((a, b) => a.sortKey - b.sortKey || a.title.localeCompare(b.title));
-  const out: FolderOption[] = [];
+  const out: { id: number; label: string }[] = [];
   const walk = (parentId: number | null, depth: number) => {
-    for (const k of (byParent.get(parentId) ?? [])) { out.push({ id: k.id, label: `${"\u00A0\u00A0".repeat(depth)}${k.title}` }); walk(k.id, depth + 1); }
+    for (const k of byParent.get(parentId) ?? []) { out.push({ id: k.id, label: `${"\u00A0\u00A0".repeat(depth)}${k.title}` }); walk(k.id, depth + 1); }
   };
   walk(null, 0);
   return out;
 }
 
 export default function PromptGroupEditModal({
-  open,
-  onOpenChange,
-  group,
-  genres,
-  folders,
-  createFolder,
-  onSave,
-  onDelete,
-  contentClassName,
-  contentStyle,
+  open, onOpenChange, group, genres, folders, createFolder, onSave, onDelete, contentClassName, contentStyle,
 }: PromptGroupEditModalProps) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
@@ -92,22 +73,46 @@ export default function PromptGroupEditModal({
 
   if (!group) return null;
 
-  const toggleGenre = (id: string) => setDefaultGenreIds((prev) => {
-    const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next;
-  });
+  const toggleGenre = (id: string) => {
+    setDefaultGenreIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const handleCreateInlineFolder = async () => {
-    const trimmed = inlineFolderName.trim(); if (!trimmed) return;
-    try { const created = await createFolder(trimmed, null); setFolderId(created.id); setShowInlineFolder(false); setInlineFolderName(""); } catch {/* surfaced by parent */}
+    const trimmed = inlineFolderName.trim();
+    if (!trimmed) return;
+    try {
+      const created = await createFolder(trimmed, null);
+      setFolderId(created.id);
+      setShowInlineFolder(false);
+      setInlineFolderName("");
+    } catch {
+      // surfaced by parent
+    }
   };
 
   const handleSave = () => {
     if (!name.trim()) return;
-    onSave({ id: group.id, name: name.trim(), folderId, defaultGenreIds: Array.from(defaultGenreIds), tags, isDefault, defaultStrength });
+    onSave({
+      id: group.id,
+      name: name.trim(),
+      folderId,
+      defaultGenreIds: Array.from(defaultGenreIds),
+      tags,
+      isDefault,
+      defaultStrength,
+    });
     onOpenChange(false);
   };
 
-  const handleDelete = () => { onDelete(group.id); onOpenChange(false); };
+  const handleDelete = () => {
+    onDelete(group.id);
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

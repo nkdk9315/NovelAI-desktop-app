@@ -5,7 +5,7 @@ use crate::models::dto::VibeRow;
 
 pub fn list_all(conn: &Connection) -> Result<Vec<VibeRow>, AppError> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, file_path, model, created_at, thumbnail_path, is_favorite FROM vibes ORDER BY created_at DESC",
+        "SELECT id, name, file_path, model, created_at, thumbnail_path, is_favorite, folder_id FROM vibes ORDER BY created_at DESC",
     )?;
     let rows = stmt.query_map([], |row| {
         Ok(VibeRow {
@@ -16,6 +16,7 @@ pub fn list_all(conn: &Connection) -> Result<Vec<VibeRow>, AppError> {
             created_at: row.get(4)?,
             thumbnail_path: row.get(5)?,
             is_favorite: row.get::<_, i32>(6)? != 0,
+            folder_id: row.get(7)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
@@ -23,7 +24,7 @@ pub fn list_all(conn: &Connection) -> Result<Vec<VibeRow>, AppError> {
 
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<VibeRow, AppError> {
     conn.query_row(
-        "SELECT id, name, file_path, model, created_at, thumbnail_path, is_favorite FROM vibes WHERE id = ?1",
+        "SELECT id, name, file_path, model, created_at, thumbnail_path, is_favorite, folder_id FROM vibes WHERE id = ?1",
         [id],
         |row| {
             Ok(VibeRow {
@@ -34,6 +35,7 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<VibeRow, AppError> {
                 created_at: row.get(4)?,
                 thumbnail_path: row.get(5)?,
                 is_favorite: row.get::<_, i32>(6)? != 0,
+                folder_id: row.get(7)?,
             })
         },
     )
@@ -45,10 +47,30 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<VibeRow, AppError> {
 
 pub fn insert(conn: &Connection, row: &VibeRow) -> Result<(), AppError> {
     conn.execute(
-        "INSERT INTO vibes (id, name, file_path, model, created_at, thumbnail_path, is_favorite) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        rusqlite::params![row.id, row.name, row.file_path, row.model, row.created_at, row.thumbnail_path, row.is_favorite as i32],
+        "INSERT INTO vibes (id, name, file_path, model, created_at, thumbnail_path, is_favorite, folder_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        rusqlite::params![row.id, row.name, row.file_path, row.model, row.created_at, row.thumbnail_path, row.is_favorite as i32, row.folder_id],
     )?;
     Ok(())
+}
+
+pub fn set_folder(conn: &Connection, id: &str, folder_id: Option<i64>) -> Result<(), AppError> {
+    let updated = conn.execute(
+        "UPDATE vibes SET folder_id = ?1 WHERE id = ?2",
+        rusqlite::params![folder_id, id],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("vibe {id}")));
+    }
+    Ok(())
+}
+
+/// (folder_id, count) aggregation. `folder_id IS NULL` represents the
+/// virtual "unclassified" bucket.
+pub fn count_by_folder(conn: &Connection) -> Result<Vec<(Option<i64>, i64)>, AppError> {
+    let mut stmt = conn
+        .prepare("SELECT folder_id, COUNT(*) FROM vibes GROUP BY folder_id")?;
+    let rows = stmt.query_map([], |r| Ok((r.get::<_, Option<i64>>(0)?, r.get::<_, i64>(1)?)))?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
 }
 
 pub fn update_name(conn: &Connection, id: &str, name: &str) -> Result<(), AppError> {

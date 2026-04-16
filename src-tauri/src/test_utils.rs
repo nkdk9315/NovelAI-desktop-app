@@ -20,6 +20,9 @@ const MIGRATION_013: &str = include_str!("../migrations/013_tag_database.sql");
 const MIGRATION_014: &str = include_str!("../migrations/014_tag_group_favorites.sql");
 const MIGRATION_015: &str = include_str!("../migrations/015_system_group_genre_defaults.sql");
 const MIGRATION_016: &str = include_str!("../migrations/016_prompt_group_random_wildcard.sql");
+const MIGRATION_017: &str = include_str!("../migrations/017_vibe_folders.sql");
+const MIGRATION_018: &str = include_str!("../migrations/018_style_preset_folders.sql");
+const MIGRATION_019: &str = include_str!("../migrations/019_prompt_group_folders.sql");
 const MIGRATION_020: &str = include_str!("../migrations/020_prompt_group_default_genres.sql");
 
 pub fn setup_test_db() -> Connection {
@@ -45,6 +48,9 @@ pub fn setup_test_db() -> Connection {
     conn.execute_batch(MIGRATION_014).unwrap();
     conn.execute_batch(MIGRATION_015).unwrap();
     conn.execute_batch(MIGRATION_016).unwrap();
+    conn.execute_batch(MIGRATION_017).unwrap();
+    conn.execute_batch(MIGRATION_018).unwrap();
+    conn.execute_batch(MIGRATION_019).unwrap();
     conn.execute_batch(MIGRATION_020).unwrap();
     conn
 }
@@ -95,6 +101,7 @@ pub fn create_test_prompt_group(conn: &Connection) -> PromptGroupRow {
         random_count: 1,
         random_source: "enabled".to_string(),
         wildcard_token: None,
+        folder_id: None,
     };
     crate::repositories::prompt_group::insert(conn, &row).unwrap();
     row
@@ -126,6 +133,7 @@ pub fn create_test_vibe(conn: &Connection) -> VibeRow {
         created_at: "2026-01-01T00:00:00Z".to_string(),
         thumbnail_path: None,
         is_favorite: false,
+        folder_id: None,
     };
     crate::repositories::vibe::insert(conn, &row).unwrap();
     row
@@ -141,6 +149,7 @@ pub fn create_test_style_preset(conn: &Connection, vibe_ids: &[String]) -> Style
         thumbnail_path: None,
         is_favorite: false,
         model: "nai-diffusion-4-5-full".to_string(),
+        folder_id: None,
     };
     crate::repositories::style_preset::insert(conn, &row).unwrap();
     if !vibe_ids.is_empty() {

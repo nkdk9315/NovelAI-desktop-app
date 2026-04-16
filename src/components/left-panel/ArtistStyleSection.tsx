@@ -4,15 +4,10 @@ import { Dices, ImageIcon, Settings, Settings2, SlidersHorizontal, X } from "luc
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useProjectStore } from "@/stores/project-store";
-import type { RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
+import type { AssetFolderDto, RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
 import { DEFAULT_RANDOM_PRESET_SETTINGS } from "@/lib/constants";
 import { generateRandomPreset } from "@/lib/random-preset";
 import * as ipc from "@/lib/ipc";
@@ -44,31 +39,40 @@ export default function ArtistStyleSection() {
   const [presetSettingsId, setPresetSettingsId] = useState<string | null>(null);
 
   const loadData = async () => {
-    try {
-      const [p, v] = await Promise.all([ipc.listStylePresets(), ipc.listVibes()]);
-      setPresets(p);
-      setVibes(v);
-    } catch {
-      // silently fail
-    }
+    try { const [p, v] = await Promise.all([ipc.listStylePresets(), ipc.listVibes()]); setPresets(p); setVibes(v); } catch { /* silently fail */ }
   };
 
-  // Load global random preset settings
   const loadGlobalSettings = async () => {
-    try {
-      const settings = await ipc.getSettings();
-      const raw = settings[GLOBAL_SETTINGS_KEY];
-      if (raw) {
-        setGlobalSettings({ ...DEFAULT_RANDOM_PRESET_SETTINGS, ...JSON.parse(raw) });
-      }
-    } catch {
-      // use defaults
-    }
+    try { const settings = await ipc.getSettings(); const raw = settings[GLOBAL_SETTINGS_KEY]; if (raw) setGlobalSettings({ ...DEFAULT_RANDOM_PRESET_SETTINGS, ...JSON.parse(raw) }); } catch { /* use defaults */ }
   };
 
   const saveGlobalSettings = (s: RandomPresetSettings) => {
     setGlobalSettings(s);
     ipc.setSetting(GLOBAL_SETTINGS_KEY, JSON.stringify(s)).catch(() => {});
+  };
+
+  // Walks the full vibe-folder tree. Used to resolve descendant folders when
+  // the user scopes random generation to parent folders.
+  const loadAllFolders = async (): Promise<AssetFolderDto[]> => {
+    try {
+      const roots = await ipc.listVibeFolderRoots();
+      const collected: AssetFolderDto[] = [...roots];
+      let queue = roots.filter((f) => f.childCount > 0);
+      while (queue.length > 0) {
+        const results = await Promise.all(queue.map((f) => ipc.listVibeFolderChildren(f.id)));
+        const nextQueue: AssetFolderDto[] = [];
+        for (const children of results) {
+          collected.push(...children);
+          for (const c of children) {
+            if (c.childCount > 0) nextQueue.push(c);
+          }
+        }
+        queue = nextQueue;
+      }
+      return collected;
+    } catch {
+      return [];
+    }
   };
 
   useEffect(() => {
@@ -98,7 +102,8 @@ export default function ArtistStyleSection() {
     try {
       const allVibes = vibes.length > 0 ? vibes : await ipc.listVibes();
       const settings = settingsOverride ?? globalSettings;
-      const preset = await generateRandomPreset(settings, allVibes, model);
+      const folders = await loadAllFolders();
+      const preset = await generateRandomPreset(settings, allVibes, model, folders);
       addRandomPreset(preset);
     } catch (e) {
       if (String(e).includes("no_compatible_vibes")) {
@@ -113,7 +118,8 @@ export default function ArtistStyleSection() {
     try {
       const allVibes = vibes.length > 0 ? vibes : await ipc.listVibes();
       const settings = sidebar.randomSettings ?? globalSettings;
-      const newPreset = await generateRandomPreset(settings, allVibes, model);
+      const folders = await loadAllFolders();
+      const newPreset = await generateRandomPreset(settings, allVibes, model, folders);
       rerollRandomPreset(presetId, {
         artistTags: newPreset.artistTags,
         selectedVibes: newPreset.selectedVibes,
@@ -259,6 +265,8 @@ export default function ArtistStyleSection() {
         onOpenChange={setGlobalSettingsOpen}
         settings={globalSettings}
         onSettingsChange={saveGlobalSettings}
+        allVibes={vibes}
+        currentModel={model}
       />
 
       {/* Per-preset random settings dialog */}
@@ -271,6 +279,8 @@ export default function ArtistStyleSection() {
             onOpenChange={(open) => { if (!open) setPresetSettingsId(null); }}
             settings={sp.randomSettings ?? globalSettings}
             onSettingsChange={(s) => updateRandomPresetSettings(presetSettingsId, s)}
+            allVibes={vibes}
+            currentModel={model}
           />
         );
       })()}

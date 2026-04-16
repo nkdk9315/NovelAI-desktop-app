@@ -5,6 +5,7 @@ use crate::test_utils::{create_test_genre, setup_test_db};
 fn empty_create(name: &str) -> CreatePromptGroupRequest {
     CreatePromptGroupRequest {
         name: name.to_string(),
+        folder_id: None,
         default_genre_ids: vec![],
         tags: vec![],
         default_strength: None,
@@ -19,7 +20,8 @@ fn test_create_with_tags() {
         &conn,
         CreatePromptGroupRequest {
             name: "Test Group".to_string(),
-                default_genre_ids: vec![],
+            folder_id: None,
+            default_genre_ids: vec![],
             tags: vec![
                 TagInput { name: None, tag: "tag1".to_string(), default_strength: None, thumbnail_path: None },
                 TagInput { name: None, tag: "tag2".to_string(), default_strength: Some(3), thumbnail_path: None },
@@ -34,19 +36,26 @@ fn test_create_with_tags() {
     assert_eq!(pg.tags.len(), 3);
     assert_eq!(pg.tags[1].default_strength, 3);
     assert!(pg.default_genre_ids.is_empty());
+    assert!(pg.folder_id.is_none());
     assert!(!pg.is_system);
 }
 
 #[test]
-fn test_create_with_default_genres() {
+fn test_create_with_folder_and_default_genres() {
     let conn = setup_test_db();
     let g1 = create_test_genre(&conn);
     let g2 = create_test_genre(&conn);
+    conn.execute(
+        "INSERT INTO prompt_group_folders (id, title, parent_id, sort_key) VALUES (1, 'F', NULL, 0)",
+        [],
+    )
+    .unwrap();
 
     let pg = create_prompt_group(
         &conn,
         CreatePromptGroupRequest {
             name: "G".to_string(),
+            folder_id: Some(1),
             default_genre_ids: vec![g1.id.clone(), g2.id.clone()],
             tags: vec![],
             default_strength: None,
@@ -54,6 +63,7 @@ fn test_create_with_default_genres() {
     )
     .unwrap();
 
+    assert_eq!(pg.folder_id, Some(1));
     assert_eq!(pg.default_genre_ids.len(), 2);
 }
 
@@ -67,7 +77,8 @@ fn test_update_default_genres_replaces() {
         &conn,
         CreatePromptGroupRequest {
             name: "G".to_string(),
-                default_genre_ids: vec![g1.id.clone()],
+            folder_id: None,
+            default_genre_ids: vec![g1.id.clone()],
             tags: vec![],
             default_strength: None,
         },
@@ -79,7 +90,8 @@ fn test_update_default_genres_replaces() {
         UpdatePromptGroupRequest {
             id: pg.id.clone(),
             name: None,
-                default_genre_ids: Some(vec![g2.id.clone()]),
+            folder_id: None,
+            default_genre_ids: Some(vec![g2.id.clone()]),
             tags: None,
             is_default: None,
             thumbnail_path: None,
@@ -94,6 +106,58 @@ fn test_update_default_genres_replaces() {
 
     let reloaded = get_prompt_group(&conn, &pg.id).unwrap();
     assert_eq!(reloaded.default_genre_ids, vec![g2.id]);
+}
+
+#[test]
+fn test_update_folder_id_partial() {
+    let conn = setup_test_db();
+    conn.execute(
+        "INSERT INTO prompt_group_folders (id, title, parent_id, sort_key) VALUES (1, 'F', NULL, 0)",
+        [],
+    )
+    .unwrap();
+    let pg = create_prompt_group(&conn, empty_create("G")).unwrap();
+
+    update_prompt_group(
+        &conn,
+        UpdatePromptGroupRequest {
+            id: pg.id.clone(),
+            name: None,
+            folder_id: Some(Some(1)),
+            default_genre_ids: None,
+            tags: None,
+            is_default: None,
+            thumbnail_path: None,
+            default_strength: None,
+            random_mode: None,
+            random_count: None,
+            random_source: None,
+            wildcard_token: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(get_prompt_group(&conn, &pg.id).unwrap().folder_id, Some(1));
+
+    // Clear back to NULL via Some(None).
+    update_prompt_group(
+        &conn,
+        UpdatePromptGroupRequest {
+            id: pg.id.clone(),
+            name: None,
+            folder_id: Some(None),
+            default_genre_ids: None,
+            tags: None,
+            is_default: None,
+            thumbnail_path: None,
+            default_strength: None,
+            random_mode: None,
+            random_count: None,
+            random_source: None,
+            wildcard_token: None,
+        },
+    )
+    .unwrap();
+    assert!(get_prompt_group(&conn, &pg.id).unwrap().folder_id.is_none());
 }
 
 #[test]
@@ -119,7 +183,8 @@ fn test_delete_system_group_rejected() {
             random_count: 1,
             random_source: "enabled".to_string(),
             wildcard_token: None,
-            },
+            folder_id: None,
+        },
     )
     .unwrap();
 

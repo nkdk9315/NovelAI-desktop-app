@@ -4,7 +4,7 @@ use crate::error::AppError;
 use crate::models::dto::{PresetVibeRef, StylePresetRow};
 
 pub fn list_all(conn: &Connection) -> Result<Vec<StylePresetRow>, AppError> {
-    let mut stmt = conn.prepare("SELECT id, name, artist_tags, created_at, thumbnail_path, is_favorite, model FROM style_presets ORDER BY created_at DESC")?;
+    let mut stmt = conn.prepare("SELECT id, name, artist_tags, created_at, thumbnail_path, is_favorite, model, folder_id FROM style_presets ORDER BY created_at DESC")?;
     let rows = stmt.query_map([], |row| {
         Ok(StylePresetRow {
             id: row.get(0)?,
@@ -14,6 +14,7 @@ pub fn list_all(conn: &Connection) -> Result<Vec<StylePresetRow>, AppError> {
             thumbnail_path: row.get(4)?,
             is_favorite: row.get::<_, i32>(5)? != 0,
             model: row.get(6)?,
+            folder_id: row.get(7)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
@@ -21,7 +22,7 @@ pub fn list_all(conn: &Connection) -> Result<Vec<StylePresetRow>, AppError> {
 
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<StylePresetRow, AppError> {
     conn.query_row(
-        "SELECT id, name, artist_tags, created_at, thumbnail_path, is_favorite, model FROM style_presets WHERE id = ?1",
+        "SELECT id, name, artist_tags, created_at, thumbnail_path, is_favorite, model, folder_id FROM style_presets WHERE id = ?1",
         [id],
         |row| {
             Ok(StylePresetRow {
@@ -32,6 +33,7 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<StylePresetRow, AppErro
                 thumbnail_path: row.get(4)?,
                 is_favorite: row.get::<_, i32>(5)? != 0,
                 model: row.get(6)?,
+                folder_id: row.get(7)?,
             })
         },
     )
@@ -43,10 +45,28 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<StylePresetRow, AppErro
 
 pub fn insert(conn: &Connection, row: &StylePresetRow) -> Result<(), AppError> {
     conn.execute(
-        "INSERT INTO style_presets (id, name, artist_tags, created_at, thumbnail_path, is_favorite, model) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        rusqlite::params![row.id, row.name, row.artist_tags, row.created_at, row.thumbnail_path, row.is_favorite as i32, row.model],
+        "INSERT INTO style_presets (id, name, artist_tags, created_at, thumbnail_path, is_favorite, model, folder_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        rusqlite::params![row.id, row.name, row.artist_tags, row.created_at, row.thumbnail_path, row.is_favorite as i32, row.model, row.folder_id],
     )?;
     Ok(())
+}
+
+pub fn set_folder(conn: &Connection, id: &str, folder_id: Option<i64>) -> Result<(), AppError> {
+    let updated = conn.execute(
+        "UPDATE style_presets SET folder_id = ?1 WHERE id = ?2",
+        rusqlite::params![folder_id, id],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("style_preset {id}")));
+    }
+    Ok(())
+}
+
+pub fn count_by_folder(conn: &Connection) -> Result<Vec<(Option<i64>, i64)>, AppError> {
+    let mut stmt = conn
+        .prepare("SELECT folder_id, COUNT(*) FROM style_presets GROUP BY folder_id")?;
+    let rows = stmt.query_map([], |r| Ok((r.get::<_, Option<i64>>(0)?, r.get::<_, i64>(1)?)))?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.into())
 }
 
 pub fn update(conn: &Connection, row: &StylePresetRow) -> Result<(), AppError> {

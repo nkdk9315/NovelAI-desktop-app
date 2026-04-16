@@ -41,6 +41,7 @@ pub struct PromptGroupRow {
     pub random_count: i32,
     pub random_source: String,
     pub wildcard_token: Option<String>,
+    pub folder_id: Option<i64>,
 }
 
 pub struct PromptGroupTagRow {
@@ -74,6 +75,7 @@ pub struct VibeRow {
     pub created_at: String,
     pub thumbnail_path: Option<String>,
     pub is_favorite: bool,
+    pub folder_id: Option<i64>,
 }
 
 #[derive(Debug)]
@@ -85,6 +87,16 @@ pub struct StylePresetRow {
     pub thumbnail_path: Option<String>,
     pub is_favorite: bool,
     pub model: String,
+    pub folder_id: Option<i64>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AssetFolderRow {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i64,
+    pub child_count: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -132,6 +144,7 @@ pub struct GenreDto {
 pub struct PromptGroupDto {
     pub id: String,
     pub name: String,
+    pub folder_id: Option<i64>,
     pub default_genre_ids: Vec<String>,
     pub is_system: bool,
     pub usage_type: String,
@@ -184,6 +197,7 @@ pub struct VibeDto {
     pub created_at: String,
     pub thumbnail_path: Option<String>,
     pub is_favorite: bool,
+    pub folder_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -197,6 +211,29 @@ pub struct StylePresetDto {
     pub thumbnail_path: Option<String>,
     pub is_favorite: bool,
     pub model: String,
+    pub folder_id: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetFolderDto {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i64,
+    pub child_count: i64,
+}
+
+impl From<AssetFolderRow> for AssetFolderDto {
+    fn from(row: AssetFolderRow) -> Self {
+        Self {
+            id: row.id,
+            title: row.title,
+            parent_id: row.parent_id,
+            sort_key: row.sort_key,
+            child_count: row.child_count,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -432,6 +469,8 @@ pub struct TagInput {
 pub struct CreatePromptGroupRequest {
     pub name: String,
     #[serde(default)]
+    pub folder_id: Option<i64>,
+    #[serde(default)]
     pub default_genre_ids: Vec<String>,
     pub tags: Vec<TagInput>,
     pub default_strength: Option<f64>,
@@ -442,6 +481,8 @@ pub struct CreatePromptGroupRequest {
 pub struct UpdatePromptGroupRequest {
     pub id: String,
     pub name: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_double_option_i64")]
+    pub folder_id: Option<Option<i64>>,
     pub default_genre_ids: Option<Vec<String>>,
     pub tags: Option<Vec<TagInput>>,
     pub is_default: Option<bool>,
@@ -453,6 +494,64 @@ pub struct UpdatePromptGroupRequest {
     pub random_source: Option<String>,
     #[serde(default, deserialize_with = "deserialize_double_option")]
     pub wildcard_token: Option<Option<String>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PromptGroupFolderRow {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PromptGroupFolderDto {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i32,
+}
+
+impl From<PromptGroupFolderRow> for PromptGroupFolderDto {
+    fn from(row: PromptGroupFolderRow) -> Self {
+        Self {
+            id: row.id,
+            title: row.title,
+            parent_id: row.parent_id,
+            sort_key: row.sort_key as i32,
+        }
+    }
+}
+
+// NOTE: The command layer currently takes folder CRUD args positionally
+// (`title`, `parent_id`, etc.) rather than bundling them into request DTOs.
+// These structs are kept as part of the documented IPC contract surface so
+// tests / future refactors can wire them in uniformly — allow dead_code.
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePromptGroupFolderRequest {
+    pub title: String,
+    #[serde(default)]
+    pub parent_id: Option<i64>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePromptGroupFolderRequest {
+    pub id: i64,
+    pub title: String,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MovePromptGroupFolderRequest {
+    pub id: i64,
+    #[serde(default)]
+    pub new_parent_id: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -579,6 +678,7 @@ impl PromptGroupRow {
         PromptGroupDto {
             id: self.id,
             name: self.name,
+            folder_id: self.folder_id,
             default_genre_ids,
             is_system: self.is_system != 0,
             usage_type: self.usage_type,
@@ -638,6 +738,7 @@ impl From<VibeRow> for VibeDto {
             created_at: row.created_at,
             thumbnail_path: row.thumbnail_path,
             is_favorite: row.is_favorite,
+            folder_id: row.folder_id,
         }
     }
 }
@@ -665,6 +766,7 @@ impl StylePresetRow {
             thumbnail_path: self.thumbnail_path,
             is_favorite: self.is_favorite,
             model: self.model,
+            folder_id: self.folder_id,
         }
     }
 }
@@ -694,3 +796,9 @@ where
     Ok(Some(Option::deserialize(deserializer)?))
 }
 
+fn deserialize_double_option_i64<'de, D>(deserializer: D) -> Result<Option<Option<i64>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Some(Option::deserialize(deserializer)?))
+}

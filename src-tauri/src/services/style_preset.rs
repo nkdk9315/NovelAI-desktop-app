@@ -32,6 +32,7 @@ pub fn create_style_preset(
         thumbnail_path: None,
         is_favorite: false,
         model: req.model,
+        folder_id: None,
     };
     style_preset_repo::insert(conn, &row)?;
     style_preset_repo::replace_vibe_refs(conn, &row.id, &req.vibe_refs)?;

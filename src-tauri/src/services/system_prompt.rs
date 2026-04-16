@@ -181,6 +181,7 @@ pub fn seed_system_prompt_groups(conn: &Connection) -> Result<(), AppError> {
             random_count: 1,
             random_source: "enabled".to_string(),
             wildcard_token: None,
+            folder_id: None,
         };
         pg_repo::insert(conn, &row)?;
     }

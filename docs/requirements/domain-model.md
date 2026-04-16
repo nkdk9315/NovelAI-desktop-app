@@ -158,6 +158,37 @@
 
 複合PK: (style_preset_id, vibe_id)
 
+### Asset Folders（アセットフォルダ -- migration 017-019）
+
+3 つのアセットドメイン（Vibe / StylePreset / PromptGroup）それぞれに独立したフォルダテーブルを持つ。
+
+| テーブル | 対象テーブル | FK on delete（対象側） |
+|---|---|---|
+| `vibe_folders` | `vibes.folder_id` | SET NULL |
+| `style_preset_folders` | `style_presets.folder_id` | SET NULL |
+| `prompt_group_folders` | `prompt_groups.folder_id` | CASCADE |
+
+各フォルダテーブルの共通スキーマ:
+
+| フィールド | 型 | 説明 |
+|------------|-----|------|
+| id | INTEGER | PK (AUTOINCREMENT) |
+| title | TEXT NOT NULL | フォルダ名 |
+| parent_id | INTEGER (NULL許容) | FK → 同テーブル.id（CASCADE DELETE）。自己参照でネスト可能 |
+| sort_key | INTEGER | 兄弟間の表示順（DEFAULT 0） |
+| created_at | TEXT | 作成日時 |
+| updated_at | TEXT | 更新日時 |
+
+**`folder_id` カラム追加（対象テーブル側）:**
+
+| テーブル | カラム | FK | ON DELETE |
+|---|---|---|---|
+| `vibes` | `folder_id INTEGER` | → `vibe_folders(id)` | SET NULL |
+| `style_presets` | `folder_id INTEGER` | → `style_preset_folders(id)` | SET NULL |
+| `prompt_groups` | `folder_id INTEGER` | → `prompt_group_folders(id)` | CASCADE |
+
+**サイクル検出:** `move_folder` 操作時に `new_parent_id` から親を辿り、移動元 `id` に到達した場合は `AppError::Validation` で拒否。
+
 ### Settings（設定）
 
 Key-Valueストア。
@@ -386,6 +417,42 @@ CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+-- Vibeフォルダ (migration 017)
+CREATE TABLE vibe_folders (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    title      TEXT NOT NULL,
+    parent_id  INTEGER REFERENCES vibe_folders(id) ON DELETE CASCADE,
+    sort_key   INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT,
+    updated_at TEXT
+);
+ALTER TABLE vibes ADD COLUMN folder_id INTEGER
+    REFERENCES vibe_folders(id) ON DELETE SET NULL;
+
+-- スタイルプリセットフォルダ (migration 018)
+CREATE TABLE style_preset_folders (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    title      TEXT NOT NULL,
+    parent_id  INTEGER REFERENCES style_preset_folders(id) ON DELETE CASCADE,
+    sort_key   INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT,
+    updated_at TEXT
+);
+ALTER TABLE style_presets ADD COLUMN folder_id INTEGER
+    REFERENCES style_preset_folders(id) ON DELETE SET NULL;
+
+-- プロンプトグループフォルダ (migration 019)
+CREATE TABLE prompt_group_folders (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    title      TEXT NOT NULL,
+    parent_id  INTEGER REFERENCES prompt_group_folders(id) ON DELETE CASCADE,
+    sort_key   INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT,
+    updated_at TEXT
+);
+ALTER TABLE prompt_groups ADD COLUMN folder_id INTEGER
+    REFERENCES prompt_group_folders(id) ON DELETE CASCADE;
 ```
 
 ---
