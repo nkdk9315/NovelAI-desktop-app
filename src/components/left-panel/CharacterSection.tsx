@@ -9,6 +9,9 @@ import CharacterHeader from "./CharacterHeader";
 import CharacterPromptGroups from "./CharacterPromptGroups";
 import PromptGroupModal from "@/components/modals/PromptGroupModal";
 import { assembleNegativeFromGroups } from "@/lib/prompt-assembly";
+import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
+import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store";
+import { usePresetStore } from "@/stores/preset-store";
 
 interface CharacterSectionProps {
   index: number;
@@ -30,7 +33,14 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
   const charTarget = character ? targets[character.id] : undefined;
   const charGroups = charTarget?.groups ?? [];
   const negativeOverride = charTarget?.negativeOverride ?? null;
-  const assembledNegative = useMemo(() => assembleNegativeFromGroups(charGroups), [charGroups]);
+  const presetInstances = useSidebarPresetGroupStore((s) => s.instances);
+  const allPresets = usePresetStore((s) => s.presets);
+  const assembledNegative = useMemo(() => {
+    const base = assembleNegativeFromGroups(charGroups);
+    if (!character) return base;
+    const contrib = getPresetContributionsForCharacter(character.id, presetInstances, allPresets);
+    return appendContributions(base, contrib.negative);
+  }, [charGroups, character, presetInstances, allPresets]);
 
   // Migrate legacy character.negativePrompt → negativeOverride (once, when target becomes available)
   const charTargetReady = charTarget != null;

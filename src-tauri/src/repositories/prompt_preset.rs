@@ -92,7 +92,7 @@ pub fn list_slots(
 ) -> Result<Vec<PresetCharacterSlotRow>, AppError> {
     let mut stmt = conn.prepare(
         "SELECT id, preset_id, slot_index, slot_label, genre_id, positive_prompt, \
-         negative_prompt, role FROM preset_character_slots \
+         negative_prompt, role, position_x, position_y FROM preset_character_slots \
          WHERE preset_id = ?1 ORDER BY slot_index ASC",
     )?;
     let rows = stmt.query_map([preset_id], |row| {
@@ -105,28 +105,33 @@ pub fn list_slots(
             positive_prompt: row.get(5)?,
             negative_prompt: row.get(6)?,
             role: row.get(7)?,
+            position_x: row.get(8)?,
+            position_y: row.get(9)?,
         })
     })?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
-/// Slot tuple: (id, slot_index, slot_label, genre_id, positive_prompt, negative_prompt, role)
+/// Slot tuple: (id, slot_index, slot_label, genre_id, positive_prompt,
+/// negative_prompt, role, position_x, position_y)
 #[allow(clippy::type_complexity)]
 pub fn replace_slots(
     conn: &Connection,
     preset_id: &str,
-    slots: &[(String, i32, String, Option<String>, String, String, String)],
+    slots: &[(String, i32, String, Option<String>, String, String, String, f64, f64)],
 ) -> Result<(), AppError> {
     conn.execute(
         "DELETE FROM preset_character_slots WHERE preset_id = ?1",
         [preset_id],
     )?;
-    for (id, slot_index, slot_label, genre_id, positive_prompt, negative_prompt, role) in slots {
+    for (id, slot_index, slot_label, genre_id, positive_prompt, negative_prompt, role, px, py) in slots {
         conn.execute(
             "INSERT INTO preset_character_slots \
-             (id, preset_id, slot_index, slot_label, genre_id, positive_prompt, negative_prompt, role) \
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            rusqlite::params![id, preset_id, slot_index, slot_label, genre_id, positive_prompt, negative_prompt, role],
+             (id, preset_id, slot_index, slot_label, genre_id, positive_prompt, \
+              negative_prompt, role, position_x, position_y) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            rusqlite::params![id, preset_id, slot_index, slot_label, genre_id,
+                positive_prompt, negative_prompt, role, px, py],
         )?;
     }
     Ok(())

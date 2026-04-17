@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,37 +7,60 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import type { GenreDto, PresetFolderDto, PresetSlotInput, PromptPresetDto, CreatePromptPresetRequest } from "@/types";
+import type {
+  GenreDto, PresetFolderDto, PresetSlotInput, PromptPresetDto, CreatePromptPresetRequest,
+  PresetCharacterSlotDto,
+} from "@/types";
+import PresetPositionPicker from "./PresetPositionPicker";
 
+// Simplified model: a preset is a 2-role interaction template (source + target).
+// Legacy presets with >2 slots, role="none" slots, or genre/slotLabel set are
+// silently reduced to first source + first target on load.
 interface SlotState {
-  slotLabel: string;
-  genreId: string | null;
   positivePrompt: string;
   negativePrompt: string;
-  role: "target" | "source" | "none";
+  positionX: number;
+  positionY: number;
 }
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preset: PromptPresetDto | null;
-  genres: GenreDto[];
+  // `genres` is unused in the simplified editor — kept for signature stability
+  // with callers that still pass it.
+  genres?: GenreDto[];
   folders: PresetFolderDto[];
   initialFolderId?: number | null;
   onSave: (data: CreatePromptPresetRequest) => Promise<void>;
   contentClassName?: string;
 }
 
-const DEFAULT_SLOT: SlotState = { slotLabel: "", genreId: null, positivePrompt: "", negativePrompt: "", role: "none" };
+const EMPTY_SLOT: SlotState = { positivePrompt: "", negativePrompt: "", positionX: 0.5, positionY: 0.5 };
 
-export default function PresetEditorModal({ open, onOpenChange, preset, genres, folders, initialFolderId, onSave, contentClassName }: Props) {
+function pickFirstByRole(
+  slots: PresetCharacterSlotDto[],
+  role: "source" | "target",
+): SlotState {
+  const match = slots.find((s) => s.role === role);
+  if (!match) return { ...EMPTY_SLOT };
+  return {
+    positivePrompt: match.positivePrompt,
+    negativePrompt: match.negativePrompt,
+    positionX: match.positionX,
+    positionY: match.positionY,
+  };
+}
+
+export default function PresetEditorModal({
+  open, onOpenChange, preset, folders, initialFolderId, onSave, contentClassName,
+}: Props) {
   const { t } = useTranslation();
   const [name, setName] = useState("");
   const [folderId, setFolderId] = useState<number | null>(null);
-  const [slots, setSlots] = useState<SlotState[]>([{ ...DEFAULT_SLOT }, { ...DEFAULT_SLOT }]);
+  const [sourceSlot, setSourceSlot] = useState<SlotState>({ ...EMPTY_SLOT });
+  const [targetSlot, setTargetSlot] = useState<SlotState>({ ...EMPTY_SLOT });
   const [interactionTag, setInteractionTag] = useState("");
-  const [actorIdx, setActorIdx] = useState(0);
-  const [receiverIdx, setReceiverIdx] = useState(1);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -46,65 +68,111 @@ export default function PresetEditorModal({ open, onOpenChange, preset, genres, 
     if (preset) {
       setName(preset.name);
       setFolderId(preset.folderId);
-      setSlots(preset.slots.map((s) => ({
-        slotLabel: s.slotLabel,
-        genreId: s.genreId,
-        positivePrompt: s.positivePrompt,
-        negativePrompt: s.negativePrompt,
-        role: s.role,
-      })));
+      setSourceSlot(pickFirstByRole(preset.slots, "source"));
+      setTargetSlot(pickFirstByRole(preset.slots, "target"));
     } else {
       setName("");
       setFolderId(initialFolderId ?? null);
-      setSlots([{ ...DEFAULT_SLOT }, { ...DEFAULT_SLOT }]);
+      setSourceSlot({ ...EMPTY_SLOT });
+      setTargetSlot({ ...EMPTY_SLOT });
     }
     setInteractionTag("");
-    setActorIdx(0);
-    setReceiverIdx(1);
   }, [open, preset, initialFolderId]);
 
-  const updateSlot = (index: number, partial: Partial<SlotState>) => {
-    setSlots((prev) => prev.map((s, i) => i === index ? { ...s, ...partial } : s));
-  };
+  const updateSource = (partial: Partial<SlotState>) =>
+    setSourceSlot((prev) => ({ ...prev, ...partial }));
+  const updateTarget = (partial: Partial<SlotState>) =>
+    setTargetSlot((prev) => ({ ...prev, ...partial }));
 
-  const addSlot = () => setSlots((prev) => [...prev, { ...DEFAULT_SLOT }]);
-  const removeSlot = (index: number) => {
-    if (slots.length <= 2) return;
-    setSlots((prev) => prev.filter((_, i) => i !== index));
-  };
-
+  // Add `target#tag` to source (the actor targets someone),
+  // and `source#tag` to target (the receiver has someone sourcing the action).
   const addInteraction = () => {
     const tag = interactionTag.trim();
-    if (!tag || actorIdx === receiverIdx) return;
-    setSlots((prev) => prev.map((s, i) => {
-      if (i === actorIdx) {
-        const sep = s.positivePrompt.trim() ? ", " : "";
-        return { ...s, positivePrompt: s.positivePrompt + sep + `target#${tag}` };
-      }
-      if (i === receiverIdx) {
-        const sep = s.positivePrompt.trim() ? ", " : "";
-        return { ...s, positivePrompt: s.positivePrompt + sep + `source#${tag}` };
-      }
-      return s;
-    }));
+    if (!tag) return;
+    const sourceSep = sourceSlot.positivePrompt.trim() ? ", " : "";
+    const targetSep = targetSlot.positivePrompt.trim() ? ", " : "";
+    setSourceSlot((s) => ({ ...s, positivePrompt: s.positivePrompt + sourceSep + `target#${tag}` }));
+    setTargetSlot((s) => ({ ...s, positivePrompt: s.positivePrompt + targetSep + `source#${tag}` }));
     setInteractionTag("");
   };
 
   const handleSave = async () => {
-    if (!name.trim() || slots.length < 2) return;
+    if (!name.trim()) return;
     setSaving(true);
     try {
-      const slotInputs: PresetSlotInput[] = slots.map((s) => ({
-        slotLabel: s.slotLabel,
-        genreId: s.genreId,
-        positivePrompt: s.positivePrompt,
-        negativePrompt: s.negativePrompt || undefined,
-        role: s.role,
-      }));
-      await onSave({ name: name.trim(), folderId, slots: slotInputs });
+      const slots: PresetSlotInput[] = [
+        {
+          slotLabel: "",
+          genreId: null,
+          positivePrompt: sourceSlot.positivePrompt,
+          negativePrompt: sourceSlot.negativePrompt || undefined,
+          role: "source",
+          positionX: sourceSlot.positionX,
+          positionY: sourceSlot.positionY,
+        },
+        {
+          slotLabel: "",
+          genreId: null,
+          positivePrompt: targetSlot.positivePrompt,
+          negativePrompt: targetSlot.negativePrompt || undefined,
+          role: "target",
+          positionX: targetSlot.positionX,
+          positionY: targetSlot.positionY,
+        },
+      ];
+      await onSave({ name: name.trim(), folderId, slots });
       onOpenChange(false);
     } finally { setSaving(false); }
   };
+
+  const renderSlotCard = (
+    slot: SlotState,
+    update: (partial: Partial<SlotState>) => void,
+    roleLabel: string,
+    roleHint: string,
+    peerSlot: SlotState,
+    color: string,
+    peerColor: string,
+  ) => (
+    <div className="rounded-md border border-border p-2.5 space-y-2">
+      <div className="flex items-baseline gap-2">
+        <span className="text-[11px] font-semibold text-primary">{roleLabel}</span>
+        <span className="text-[10px] text-muted-foreground">{roleHint}</span>
+      </div>
+      <div>
+        <Label className="text-[10px]">{t("preset.positivePrompt")}</Label>
+        <Textarea
+          value={slot.positivePrompt}
+          onChange={(e) => update({ positivePrompt: e.target.value })}
+          className="mt-0.5 min-h-[3rem] text-[11px] font-mono"
+          rows={2}
+        />
+      </div>
+      <div>
+        <Label className="text-[10px]">{t("preset.negativePrompt")}</Label>
+        <Textarea
+          value={slot.negativePrompt}
+          onChange={(e) => update({ negativePrompt: e.target.value })}
+          className="mt-0.5 min-h-[2rem] text-[11px] font-mono"
+          rows={1}
+        />
+      </div>
+      <div>
+        <Label className="text-[10px]">{t("preset.position")}</Label>
+        <div className="mt-0.5">
+          <PresetPositionPicker
+            x={slot.positionX}
+            y={slot.positionY}
+            onChange={(x, y) => update({ positionX: x, positionY: y })}
+            color={color}
+            peerX={peerSlot.positionX}
+            peerY={peerSlot.positionY}
+            peerColor={peerColor}
+          />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -116,13 +184,21 @@ export default function PresetEditorModal({ open, onOpenChange, preset, genres, 
         <div className="space-y-3">
           <div>
             <Label className="text-xs">{t("preset.name")}</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("preset.namePlaceholder")} className="mt-1 h-8 text-xs" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t("preset.namePlaceholder")}
+              className="mt-1 h-8 text-xs"
+            />
           </div>
 
           {folders.length > 0 && (
             <div>
               <Label className="text-xs">{t("promptGroup.selectFolder")}</Label>
-              <Select value={folderId?.toString() ?? "__none__"} onValueChange={(v) => setFolderId(v === "__none__" ? null : Number(v))}>
+              <Select
+                value={folderId?.toString() ?? "__none__"}
+                onValueChange={(v) => setFolderId(v === "__none__" ? null : Number(v))}
+              >
                 <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">{t("preset.folder.uncategorized")}</SelectItem>
@@ -134,63 +210,24 @@ export default function PresetEditorModal({ open, onOpenChange, preset, genres, 
 
           <Separator />
 
-          {slots.map((slot, idx) => (
-            <div key={idx} className="rounded-md border border-border p-2.5 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold text-muted-foreground">{t("preset.slot")} {idx + 1}</span>
-                <div className="flex-1" />
-                {slots.length > 2 && (
-                  <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => removeSlot(idx)}>
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </Button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label className="text-[10px]">{t("preset.slotLabel")}</Label>
-                  <Input value={slot.slotLabel} onChange={(e) => updateSlot(idx, { slotLabel: e.target.value })}
-                    placeholder={t("preset.slotLabelPlaceholder")} className="mt-0.5 h-7 text-[11px]" />
-                </div>
-                <div>
-                  <Label className="text-[10px]">{t("preset.genre")}</Label>
-                  <Select value={slot.genreId ?? "__unset__"} onValueChange={(v) => updateSlot(idx, { genreId: v === "__unset__" ? null : v })}>
-                    <SelectTrigger className="mt-0.5 h-7 text-[11px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__unset__">{t("preset.genreUnset")}</SelectItem>
-                      {genres.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-[10px]">{t("preset.role")}</Label>
-                  <Select value={slot.role} onValueChange={(v) => updateSlot(idx, { role: v as SlotState["role"] })}>
-                    <SelectTrigger className="mt-0.5 h-7 text-[11px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t("preset.roleNone")}</SelectItem>
-                      <SelectItem value="target">{t("preset.roleTarget")}</SelectItem>
-                      <SelectItem value="source">{t("preset.roleSource")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-[10px]">{t("preset.positivePrompt")}</Label>
-                <Textarea value={slot.positivePrompt} onChange={(e) => updateSlot(idx, { positivePrompt: e.target.value })}
-                  className="mt-0.5 min-h-[3rem] text-[11px] font-mono" rows={2} />
-              </div>
-              <div>
-                <Label className="text-[10px]">{t("preset.negativePrompt")}</Label>
-                <Textarea value={slot.negativePrompt} onChange={(e) => updateSlot(idx, { negativePrompt: e.target.value })}
-                  className="mt-0.5 min-h-[2rem] text-[11px] font-mono" rows={1} />
-              </div>
-            </div>
-          ))}
-
-          <Button size="sm" variant="outline" className="w-full h-7 text-[11px]" onClick={addSlot}>
-            <Plus className="h-3 w-3 mr-1" />{t("preset.addSlot")}
-          </Button>
+          {renderSlotCard(
+            sourceSlot,
+            updateSource,
+            t("preset.roleSource"),
+            t("preset.roleSourceHint"),
+            targetSlot,
+            "#a855f7",
+            "#f97316",
+          )}
+          {renderSlotCard(
+            targetSlot,
+            updateTarget,
+            t("preset.roleTarget"),
+            t("preset.roleTargetHint"),
+            sourceSlot,
+            "#f97316",
+            "#a855f7",
+          )}
 
           <Separator />
 
@@ -199,45 +236,32 @@ export default function PresetEditorModal({ open, onOpenChange, preset, genres, 
             <div className="flex items-end gap-1.5">
               <div className="flex-1">
                 <Label className="text-[10px]">{t("preset.interactionTag")}</Label>
-                <Input value={interactionTag} onChange={(e) => setInteractionTag(e.target.value)}
-                  placeholder={t("preset.interactionTagPlaceholder")} className="mt-0.5 h-7 text-[11px]"
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addInteraction(); } }} />
+                <Input
+                  value={interactionTag}
+                  onChange={(e) => setInteractionTag(e.target.value)}
+                  placeholder={t("preset.interactionTagPlaceholder")}
+                  className="mt-0.5 h-7 text-[11px]"
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addInteraction(); } }}
+                />
               </div>
-              <div>
-                <Label className="text-[10px]">{t("preset.actor")}</Label>
-                <Select value={actorIdx.toString()} onValueChange={(v) => {
-                  const idx = Number(v);
-                  setActorIdx(idx);
-                  if (slots.length === 2 && idx === receiverIdx) setReceiverIdx(idx === 0 ? 1 : 0);
-                }}>
-                  <SelectTrigger className="mt-0.5 h-7 w-24 text-[11px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {slots.map((s, i) => <SelectItem key={i} value={i.toString()}>{s.slotLabel || `Slot ${i + 1}`}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-[10px]">{t("preset.receiver")}</Label>
-                <Select value={receiverIdx.toString()} onValueChange={(v) => {
-                  const idx = Number(v);
-                  setReceiverIdx(idx);
-                  if (slots.length === 2 && idx === actorIdx) setActorIdx(idx === 0 ? 1 : 0);
-                }}>
-                  <SelectTrigger className="mt-0.5 h-7 w-24 text-[11px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {slots.map((s, i) => <SelectItem key={i} value={i.toString()}>{s.slotLabel || `Slot ${i + 1}`}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button size="sm" className="h-7 px-2 text-[11px]" disabled={!interactionTag.trim() || actorIdx === receiverIdx}
-                onClick={addInteraction}>{t("preset.addInteraction")}</Button>
+              <Button
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                disabled={!interactionTag.trim()}
+                onClick={addInteraction}
+              >
+                {t("preset.addInteraction")}
+              </Button>
             </div>
+            <p className="text-[10px] text-muted-foreground leading-snug">
+              {t("preset.interactionHelperDescription")}
+            </p>
           </div>
         </div>
 
         <DialogFooter>
           <Button size="sm" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
-          <Button size="sm" disabled={saving || !name.trim() || slots.length < 2} onClick={() => void handleSave()}>
+          <Button size="sm" disabled={saving || !name.trim()} onClick={() => void handleSave()}>
             {t("common.save")}
           </Button>
         </DialogFooter>

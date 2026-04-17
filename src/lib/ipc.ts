@@ -53,6 +53,10 @@ export {
   listPresetFolders, createPresetFolder, renamePresetFolder,
   movePresetFolder, deletePresetFolder, deletePresetsInFolder,
   countPresetsInFolder, setPresetFolder,
+  listSidebarPresetGroupInstances, createSidebarPresetGroupInstance,
+  updateSidebarPresetGroupPair, setSidebarPresetGroupActivePresets,
+  deleteSidebarPresetGroupInstance, reorderSidebarPresetGroupInstances,
+  updateSidebarPresetGroupDefaultStrength, setSidebarPresetGroupPresetStrength,
 } from "./ipc-preset";
 
 // ---- Settings ----

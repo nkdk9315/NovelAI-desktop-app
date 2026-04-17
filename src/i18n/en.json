@@ -14,7 +14,8 @@
     "edit": "Edit",
     "copy": "Copy",
     "copied": "Copied!",
-    "search": "Search..."
+    "search": "Search...",
+    "select": "Select"
   },
   "project": {
     "title": "Projects",
@@ -362,6 +363,42 @@
       "delete": "Delete folder (with contents)",
       "deleteConfirm": "Delete this folder and everything inside? ({{count}} preset(s) will be removed)",
       "createPresetHere": "Create preset in this folder"
+    },
+    "roleTargetHint": "Adds target#tags to this character's prompt",
+    "roleSourceHint": "Adds source#tags to this character's prompt",
+    "interactionHelperDescription": "Typed tag is auto-added as target#tag to the actor and source#tag to the receiver.",
+    "position": "Character position"
+  },
+  "sidebarPresetGroups": {
+    "title": "Preset Groups",
+    "addInstance": "Add preset group",
+    "folder": "Group (folder)",
+    "folderPlaceholder": "Select a folder",
+    "noFolders": "No folders contain any presets",
+    "emptyFolder": "This folder has no presets",
+    "unknownFolder": "(unknown folder)",
+    "pair": {
+      "source": "Receiver (source)",
+      "target": "Actor (target)",
+      "edit": "Edit pair",
+      "pickerPlaceholder": "Select a character",
+      "sameError": "Receiver and actor must be different characters"
+    },
+    "folderPicker": {
+      "title": "Select a preset folder"
+    },
+    "defaultStrength": {
+      "title": "Default strength",
+      "positive": "Positive strength",
+      "negative": "Negative strength",
+      "description": "Applied by default to all active presets in this instance (per-preset overrides win)."
+    },
+    "presetStrength": {
+      "title": "Per-preset strength",
+      "overridePositive": "Override positive",
+      "overrideNegative": "Override negative",
+      "resetToDefault": "Reset to default",
+      "customBadge": "custom strength"
     }
   }
 }

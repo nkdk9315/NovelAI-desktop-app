@@ -2,6 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   PromptPresetDto, PresetFolderDto,
   CreatePromptPresetRequest, UpdatePromptPresetRequest,
+  SidebarPresetGroupInstanceDto,
+  CreateSidebarPresetGroupInstanceRequest,
+  UpdateSidebarPresetGroupPairRequest,
+  SetSidebarPresetGroupActivePresetsRequest,
+  ReorderSidebarPresetGroupInstancesRequest,
+  UpdateSidebarPresetGroupDefaultStrengthRequest,
+  SetSidebarPresetGroupPresetStrengthRequest,
 } from "@/types";
 
 // ---- Prompt Presets ----
@@ -58,4 +65,48 @@ export function countPresetsInFolder(folderId: number): Promise<number> {
 
 export function setPresetFolder(presetId: string, folderId: number | null): Promise<void> {
   return invoke("set_preset_folder", { presetId, folderId });
+}
+
+// ---- Sidebar Preset Group Instances ----
+
+export function listSidebarPresetGroupInstances(projectId: string): Promise<SidebarPresetGroupInstanceDto[]> {
+  return invoke("list_sidebar_preset_group_instances", { projectId });
+}
+
+export function createSidebarPresetGroupInstance(
+  req: CreateSidebarPresetGroupInstanceRequest,
+): Promise<SidebarPresetGroupInstanceDto> {
+  return invoke("create_sidebar_preset_group_instance", { req });
+}
+
+export function updateSidebarPresetGroupPair(req: UpdateSidebarPresetGroupPairRequest): Promise<void> {
+  return invoke("update_sidebar_preset_group_pair", { req });
+}
+
+export function setSidebarPresetGroupActivePresets(
+  req: SetSidebarPresetGroupActivePresetsRequest,
+): Promise<void> {
+  return invoke("set_sidebar_preset_group_active_presets", { req });
+}
+
+export function deleteSidebarPresetGroupInstance(id: string): Promise<void> {
+  return invoke("delete_sidebar_preset_group_instance", { id });
+}
+
+export function reorderSidebarPresetGroupInstances(
+  req: ReorderSidebarPresetGroupInstancesRequest,
+): Promise<void> {
+  return invoke("reorder_sidebar_preset_group_instances", { req });
+}
+
+export function updateSidebarPresetGroupDefaultStrength(
+  req: UpdateSidebarPresetGroupDefaultStrengthRequest,
+): Promise<void> {
+  return invoke("update_sidebar_preset_group_default_strength", { req });
+}
+
+export function setSidebarPresetGroupPresetStrength(
+  req: SetSidebarPresetGroupPresetStrengthRequest,
+): Promise<void> {
+  return invoke("set_sidebar_preset_group_preset_strength", { req });
 }

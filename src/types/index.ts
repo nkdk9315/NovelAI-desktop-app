@@ -183,6 +183,8 @@ export interface PresetCharacterSlotDto {
   positivePrompt: string;
   negativePrompt: string;
   role: "target" | "source" | "none";
+  positionX: number;
+  positionY: number;
 }
 
 export interface PresetFolderDto {
@@ -190,6 +192,65 @@ export interface PresetFolderDto {
   title: string;
   parentId: number | null;
   sortKey: number;
+}
+
+// ---- Sidebar Preset Group Instances ----
+
+export interface SidebarPresetGroupActivePreset {
+  presetId: string;
+  positiveStrength: number | null;
+  negativeStrength: number | null;
+  activatedAt: string;
+}
+
+export interface SidebarPresetGroupInstanceDto {
+  id: string;
+  projectId: string;
+  folderId: number;
+  sourceCharacterId: string;
+  targetCharacterId: string;
+  position: number;
+  defaultPositiveStrength: number;
+  defaultNegativeStrength: number;
+  activePresets: SidebarPresetGroupActivePreset[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSidebarPresetGroupInstanceRequest {
+  projectId: string;
+  folderId: number;
+  sourceCharacterId: string;
+  targetCharacterId: string;
+}
+
+export interface UpdateSidebarPresetGroupPairRequest {
+  id: string;
+  sourceCharacterId: string;
+  targetCharacterId: string;
+}
+
+export interface SetSidebarPresetGroupActivePresetsRequest {
+  id: string;
+  presetIds: string[];
+}
+
+export interface ReorderSidebarPresetGroupInstancesRequest {
+  projectId: string;
+  orderedIds: string[];
+}
+
+export interface UpdateSidebarPresetGroupDefaultStrengthRequest {
+  id: string;
+  defaultPositiveStrength: number;
+  defaultNegativeStrength: number;
+}
+
+export interface SetSidebarPresetGroupPresetStrengthRequest {
+  instanceId: string;
+  presetId: string;
+  positiveStrength: number | null;
+  negativeStrength: number | null;
 }
 
 // ---- Requests ----
@@ -372,6 +433,8 @@ export interface PresetSlotInput {
   positivePrompt: string;
   negativePrompt?: string;
   role: "target" | "source" | "none";
+  positionX?: number;
+  positionY?: number;
 }
 
 export interface CreatePromptPresetRequest {

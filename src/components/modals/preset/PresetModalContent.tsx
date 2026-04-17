@@ -48,13 +48,18 @@ function buildTree(folders: PresetFolderDto[], presets: PromptPresetDto[]): Fold
   return roots;
 }
 
+export interface PresetModalSelectionMode {
+  onSelectFolder: (folderId: number) => void;
+}
+
 interface Props {
   targetId: string;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  selectionMode?: PresetModalSelectionMode;
 }
 
-export default function PresetModalContent({ targetId, searchQuery, onSearchChange }: Props) {
+export default function PresetModalContent({ targetId, searchQuery, onSearchChange, selectionMode }: Props) {
   const { t } = useTranslation();
   const presets = usePresetStore((s) => s.presets);
   const presetFolders = usePresetStore((s) => s.presetFolders);
@@ -115,14 +120,16 @@ export default function PresetModalContent({ targetId, searchQuery, onSearchChan
     setNewFolderInput("");
   };
 
-  const renderPresetCard = (preset: PromptPresetDto) => (
+  const renderPresetChip = (preset: PromptPresetDto) => (
     <ContextMenu key={preset.id}>
       <ContextMenuTrigger asChild>
-        <button type="button" className="flex w-full items-center gap-1.5 rounded px-1 py-1.5 text-left text-xs hover:bg-accent/50 transition-colors"
-          onClick={() => setApplyingPreset(preset)}>
-          <Users className="h-3 w-3 shrink-0 text-muted-foreground" />
-          <span className="flex-1 truncate font-medium">{preset.name}</span>
-          <span className="shrink-0 text-[9px] text-muted-foreground">{t("preset.slotsCount", { count: preset.slots.length })}</span>
+        <button type="button"
+          className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] hover:bg-accent/50 transition-colors disabled:opacity-50 max-w-[10rem]"
+          disabled={!!selectionMode}
+          onClick={() => { if (!selectionMode) setApplyingPreset(preset); }}
+          title={preset.name}>
+          <Users className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+          <span className="truncate font-medium">{preset.name}</span>
         </button>
       </ContextMenuTrigger>
       <ContextMenuContent className="min-w-[7rem] p-0.5 text-[11px]">
@@ -142,16 +149,29 @@ export default function PresetModalContent({ targetId, searchQuery, onSearchChan
     const title = isUncat ? t("preset.folder.uncategorized") : node.title;
     const total = node.presets.length + node.children.reduce((a, c) => a + c.presets.length, 0);
 
+    const canSelectFolder = !!selectionMode && !isUncat;
+
     return (
       <div key={`pf-${node.id}`}>
         <ContextMenu>
           <ContextMenuTrigger asChild>
-            <button type="button" className="flex w-full items-center gap-0.5 rounded px-1 py-1 text-xs hover:bg-accent/30 transition-colors"
-              style={{ paddingLeft: `${depth * 12 + 4}px` }} onClick={() => toggleFolder(node.id)}>
-              <ChevronRight className={`h-2.5 w-2.5 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
-              <span className="truncate text-muted-foreground">{title}</span>
-              {total > 0 && <span className="ml-1 text-[9px] text-muted-foreground/50">{total}</span>}
-            </button>
+            <div className="flex w-full items-center gap-0.5 rounded hover:bg-accent/30 transition-colors"
+              style={{ paddingLeft: `${depth * 12 + 4}px` }}>
+              <button type="button"
+                className="flex flex-1 min-w-0 items-center gap-0.5 px-1 py-1 text-xs"
+                onClick={() => toggleFolder(node.id)}>
+                <ChevronRight className={`h-2.5 w-2.5 shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                <span className="truncate text-muted-foreground">{title}</span>
+                {total > 0 && <span className="ml-1 text-[9px] text-muted-foreground/50">{total}</span>}
+              </button>
+              {canSelectFolder && (
+                <button type="button"
+                  onClick={(e) => { e.stopPropagation(); selectionMode!.onSelectFolder(node.id); }}
+                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/10 mr-1">
+                  {t("common.select")}
+                </button>
+              )}
+            </div>
           </ContextMenuTrigger>
           {!isUncat && (
             <ContextMenuContent className="min-w-[9rem] p-0.5 text-[11px]">
@@ -173,7 +193,14 @@ export default function PresetModalContent({ targetId, searchQuery, onSearchChan
         </ContextMenu>
         {isOpen && (
           <div>
-            {node.presets.map(renderPresetCard)}
+            {node.presets.length > 0 && (
+              <div
+                className="flex flex-wrap items-center gap-1 py-0.5"
+                style={{ paddingLeft: `${(depth + 1) * 12 + 4}px` }}
+              >
+                {node.presets.map(renderPresetChip)}
+              </div>
+            )}
             {node.children.map((child) => renderFolderNode(child, depth + 1))}
           </div>
         )}
