@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, FolderPlus, Plus, Trash2, Pencil, Users } from "lucide-react";
+import { ChevronRight, FolderPlus, Plus } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -15,9 +15,7 @@ import {
   arrayMove,
   rectSortingStrategy,
   sortableKeyboardCoordinates,
-  useSortable,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { toastError } from "@/lib/toast-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,93 +29,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { usePresetStore } from "@/stores/preset-store";
 import { usePromptStore } from "@/stores/prompt-store";
-import type { PromptPresetDto, PresetFolderDto } from "@/types";
+import type { PromptPresetDto } from "@/types";
 import * as ipc from "@/lib/ipc";
 import PresetEditorModal from "./PresetEditorModal";
 import ApplyPresetDialog from "./ApplyPresetDialog";
+import SortablePresetChip from "./SortablePresetChip";
+import { UNCATEGORIZED, buildTree, type FolderTreeNode } from "./preset-folder-tree";
 
-const UNCATEGORIZED = -1;
-
-interface SortablePresetChipProps {
-  preset: PromptPresetDto;
-  disabled: boolean;
-  onApply: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  editLabel: string;
-  deleteLabel: string;
-}
-
-function SortablePresetChip({
-  preset, disabled, onApply, onEdit, onDelete, editLabel, deleteLabel,
-}: SortablePresetChipProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: preset.id });
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-    touchAction: "none",
-  };
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <button
-          type="button"
-          ref={setNodeRef}
-          style={style}
-          className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] hover:bg-accent/50 transition-colors max-w-[10rem] cursor-grab active:cursor-grabbing"
-          onClick={() => { if (!disabled) onApply(); }}
-          title={preset.name}
-          {...attributes}
-          {...listeners}
-        >
-          <Users className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
-          <span className="truncate font-medium">{preset.name}</span>
-        </button>
-      </ContextMenuTrigger>
-      <ContextMenuContent className="min-w-[7rem] p-0.5 text-[11px]">
-        <ContextMenuItem className="text-[11px] py-1 px-2" onClick={onEdit}>
-          <Pencil className="h-3 w-3 mr-1.5" />{editLabel}
-        </ContextMenuItem>
-        <ContextMenuItem className="text-[11px] py-1 px-2 text-destructive" onClick={onDelete}>
-          <Trash2 className="h-3 w-3 mr-1.5" />{deleteLabel}
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
-  );
-}
-
-interface FolderTreeNode {
-  id: number;
-  title: string;
-  children: FolderTreeNode[];
-  presets: PromptPresetDto[];
-}
-
-function buildTree(folders: PresetFolderDto[], presets: PromptPresetDto[]): FolderTreeNode[] {
-  const map = new Map<number, FolderTreeNode>();
-  for (const f of folders) map.set(f.id, { id: f.id, title: f.title, children: [], presets: [] });
-  const roots: FolderTreeNode[] = [];
-  for (const f of folders) {
-    const node = map.get(f.id)!;
-    if (f.parentId != null && map.has(f.parentId)) map.get(f.parentId)!.children.push(node);
-    else roots.push(node);
-  }
-  const uncategorized: PromptPresetDto[] = [];
-  for (const p of presets) {
-    if (p.folderId != null && map.has(p.folderId)) map.get(p.folderId)!.presets.push(p);
-    else uncategorized.push(p);
-  }
-  if (uncategorized.length > 0 || roots.length === 0) {
-    roots.unshift({ id: UNCATEGORIZED, title: "", children: [], presets: uncategorized });
-  }
-  return roots;
-}
-
-export interface PresetModalSelectionMode {
-  onSelectFolder: (folderId: number) => void;
-}
+export interface PresetModalSelectionMode { onSelectFolder: (folderId: number) => void }
 
 interface Props {
   targetId: string;
