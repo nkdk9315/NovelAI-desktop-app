@@ -281,6 +281,8 @@ pub fn remove_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, App
 
 FTS5 エスケープ (`to_fts_match`) は repo 層に閉じている。サービス層は raw 文字列を渡すだけ。
 
+上記のうちお気に入り系（`list_favorite_*`, `toggle_favorite`, `count_favorite_descendants_per_group`）は 300 行制限のため `repositories/tag_favorite.rs` に分割されているが、インターフェース上は `tag` モジュール経由で公開される。
+
 ## 2.9 prompt_preset_repo
 
 ```rust
@@ -356,3 +358,34 @@ pub fn update_preset_strength(
     negative_strength: Option<f64>,
 ) -> Result<(), AppError>;
 ```
+
+## 2.12 system_group_settings_repo
+
+```rust
+// --- repositories/system_group_settings.rs ---
+
+/// system グループ × genre のデフォルト紐付け（`prompt_group_default_genres` 経由, post-migration 020）
+pub fn list_default_genres_for_system_group(conn, system_group_id: &str) -> Result<Vec<SystemGroupGenreDefaultRow>, AppError>;
+pub fn replace_default_genres_for_system_group(conn, system_group_id: &str, entries: &[SystemGroupGenreDefaultRow]) -> Result<(), AppError>;
+pub fn list_system_groups_for_default_genre(conn, genre_id: &str) -> Result<Vec<String>, AppError>;
+```
+
+## 2.13 Folder Repositories（共通パターン）
+
+`prompt_group_folder` / `vibe_folder` / `style_preset_folder` の 3 リポジトリは同形 CRUD を実装する（対応テーブル: `prompt_group_folders`, `vibe_folders`, `style_preset_folders`）。`preset_folder` は §2.10 を参照。
+
+```rust
+// --- repositories/{prompt_group,vibe,style_preset}_folder.rs ---
+
+pub fn list_roots(conn) -> Result<Vec<FolderRow>, AppError>;
+pub fn list_children(conn, parent_id: i64) -> Result<Vec<FolderRow>, AppError>;
+pub fn find_by_id(conn, id: i64) -> Result<FolderRow, AppError>;
+pub fn insert(conn, title: &str, parent_id: Option<i64>) -> Result<i64, AppError>;
+pub fn rename(conn, id: i64, title: &str) -> Result<(), AppError>;
+pub fn move_folder(conn, id: i64, new_parent_id: Option<i64>) -> Result<(), AppError>;
+pub fn delete(conn, id: i64) -> Result<(), AppError>;
+pub fn set_entity_folder(conn, entity_id, folder_id: Option<i64>) -> Result<(), AppError>;
+pub fn count_entities_per_folder(conn) -> Result<Vec<(i64, i64)>, AppError>;
+```
+
+`move_folder` は自身の子孫を新親に指定できない循環チェックを行う。`delete` は対応エンティティを NULL フォルダ（ルート）へ戻すか、CASCADE で削除するかを呼び出し側（service）で切り替える。

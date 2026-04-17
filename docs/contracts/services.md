@@ -433,7 +433,61 @@ pub fn reorder(conn: &mut Connection, req: ReorderSidebarPresetGroupInstancesReq
 - 強度は `is_finite()` かつ `1.0..=10.0`
 - reorder は各 `ordered_ids[i]` が `project_id` に属することを確認してから適用
 
-## 3.15 tokens_service
+## 3.15 Folder Services（共通パターン）
+
+`prompt_group_folder` / `vibe_folder` / `style_preset_folder` は自己参照木の CRUD を同形のシグネチャで提供する。`preset_folder` は §3.13 を参照。
+
+```rust
+// --- services/prompt_group_folder.rs / vibe_folder.rs / style_preset_folder.rs ---
+
+pub fn list_roots(conn) -> Result<Vec<FolderDto>, AppError>;
+pub fn list_children(conn, parent_id: i64) -> Result<Vec<FolderDto>, AppError>;
+pub fn create(conn, title: &str, parent_id: Option<i64>) -> Result<FolderDto, AppError>;
+pub fn rename(conn, id: i64, title: &str) -> Result<(), AppError>;
+pub fn move_to(conn, id: i64, new_parent_id: Option<i64>) -> Result<(), AppError>;
+pub fn delete(conn, id: i64) -> Result<(), AppError>;  // CASCADE for descendants
+pub fn set_folder_of_entity(conn, entity_id, folder_id: Option<i64>) -> Result<(), AppError>;
+pub fn count_per_folder(conn) -> Result<Vec<CountByIdDto>, AppError>;
+```
+
+バリデーション:
+- title は trim 後の空禁止・最大 255 文字
+- `move_to` は循環防止（自身の子孫を新親に指定できない）
+- 深さは UI 側で目安 5 階層まで、DB 制約はなし
+
+## 3.16 tag_seed_service
+
+```rust
+// --- services/tag_seed.rs / tag_seed_csv.rs ---
+
+/// `tags` が空の場合だけ CSV + tag_groups.json + character_groups.json を読み込んで seed する。
+/// 既に seed 済みなら no-op。失敗時は bail して startup を停止（半端な状態で起動しない）。
+pub fn seed_if_empty(conn: &mut Connection, resources_dir: &Path) -> Result<(), AppError>;
+
+/// Danbooru CSV をパースして `(tag_name, csv_category, post_count, aliases)` を返す。
+/// BufRead 経由のストリーミング実装（メモリ効率のため）。
+pub fn parse_csv<R: BufRead>(reader: R) -> impl Iterator<Item = Result<TagCsvRow, AppError>>;
+```
+
+`lib.rs` の `setup` で呼ばれる。ユーザーフォルダに配置したタグ DB は残るため、アプリ再起動で再 seed されない。
+
+## 3.17 vibe_encode_service
+
+```rust
+// --- services/vibe_encode.rs ---
+
+/// 画像 → Vibe Transfer 用エンコーディングの生成と永続化を分離したヘルパー。
+/// `generation_service::generate_image` から、また `commands::encode_vibe` から利用される。
+pub async fn encode_to_file(
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
+    src_image_path: &Path,
+    dest_naiv4vibe_path: &Path,
+    model: &str,
+    info_extracted: f32,
+) -> Result<(), AppError>;
+```
+
+## 3.18 tokens_service
 
 ```rust
 // --- services/tokens.rs ---

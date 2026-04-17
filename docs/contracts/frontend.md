@@ -1,5 +1,12 @@
 # Frontend Types & Utilities (TypeScript)
 
+> **Stores 一覧（`src/stores/`, 12 ストア）**: `settings-store`, `project-store`, `generation-store`, `generation-params-store`, `history-store`, `prompt-store`, `preset-store`, `sidebar-prompt-store`, `sidebar-preset-group-store`, `sidebar-artist-tags-store`, `layout-store`（サイドバー幅, PR #25）, `theme-store`（ダーク/ライト切替）。
+>
+> **IPC モジュール（`src/lib/`, 5 ファイル）**: `ipc.ts`（基盤 + settings/projects/images/genres/system_prompts/tags/tokens 等）、`ipc-tags.ts`（Tag DB）、`ipc-prompt.ts`（Prompt Group + Folders + system_group_settings）、`ipc-assets.ts`（Vibe / Style Preset + 各 Folder）、`ipc-preset.ts`（Prompt Preset / Preset Folder / Sidebar Preset Group）。
+>
+> **Hooks（`src/hooks/`, 5 フック）**: `use-debounce`, `use-autocomplete`, `use-cost-estimate`, `use-artist-tag-input`, `use-prompt-token-counts`。
+
+
 ## 5.1 型定義
 
 ```typescript
@@ -530,6 +537,14 @@ export function searchSystemPrompts(
 | `toggleTagGroupFavorite` | groupId | `boolean` | お気に入りトグル（新状態を返す） |
 | `countTagMembersPerGroup` | — | `CountByIdDto[]` | グループ別メンバータグ数 |
 | `countFavoriteDescendantsPerGroup` | — | `CountByIdDto[]` | グループ別お気に入り子孫数 |
+
+## 5.3a IPC ラッパー — Prompt Group (`src/lib/ipc-prompt.ts`)
+
+`prompt_groups` と `prompt_group_folders` の Tauri コマンドをラップする（`system_group_settings` も同ファイル内に同居）。関数名は Rust コマンドの camelCase 変換に従う：`listPromptGroups / listPromptGroupFolders / createPromptGroupFolder / renamePromptGroupFolder / movePromptGroupFolder / deletePromptGroupFolder / deletePromptGroupsInFolder / countGroupsInFolderSubtree / listPromptGroupDefaultGenres / setPromptGroupDefaultGenres / getPromptGroup / createPromptGroup / updatePromptGroup / updatePromptGroupThumbnail / deletePromptGroup / getSystemGroupGenreDefaults / setSystemGroupGenreDefaults / listDefaultSystemGroupsForGenre`。
+
+## 5.3b IPC ラッパー — Assets (`src/lib/ipc-assets.ts`)
+
+Vibe / StylePreset / 各 Folder 系コマンドを集約。`listVibes / addVibe / deleteVibe / encodeVibe / updateVibe* / toggleVibeFavorite / addVibeToProject / listProjectVibesAll` 等に加え、`listVibeFolderRoots / listVibeFolderChildren / createVibeFolder / renameVibeFolder / moveVibeFolder / deleteVibeFolder / setVibeFolder / countVibesPerFolder` と、対応する `*StylePresetFolder*` 一式を提供する。フォルダ系の戻り値は `AssetFolderDto` 共通型。
 
 ## 5.4 IPC ラッパー — Preset (`src/lib/ipc-preset.ts`)
 
