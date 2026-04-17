@@ -648,6 +648,40 @@ function useArtistTagInput(onAdd: (name: string) => void): {
 
 ---
 
+## 6.6 useHistoryStore (`src/stores/history-store.ts`)
+
+生成履歴の管理と複数選択保存を担うストア。
+
+```typescript
+interface HistoryState {
+  images: GeneratedImageDto[];
+  isLoading: boolean;
+  selectedImageIds: string[];       // 一括保存対象として選択中の画像 ID
+
+  loadImages(projectId: string, savedOnly?: boolean): Promise<void>;
+  saveImage(imageId: string): Promise<void>;
+  saveAllImages(projectId: string): Promise<void>;
+  deleteImage(imageId: string): Promise<void>;
+
+  toggleImageSelection(imageId: string): void;  // チェックボックスで ON/OFF
+  clearSelection(): void;                        // 全選択解除
+  saveSelectedImages(): Promise<void>;           // 選択中の画像を一括保存して選択解除
+}
+```
+
+**saveSelectedImages の挙動**:
+1. `selectedImageIds` のコピーを取得
+2. 全 ID に対して `ipc.saveImage(id)` を並列実行（`Promise.all`）
+3. 成功時: 対象画像の `isSaved = true` に更新し `selectedImageIds = []` にリセット
+4. 失敗時: エラーを呼び出し元（HistoryHeader）に throw して toast 表示
+
+**選択状態と表示状態の分離**:
+- `selectedImageIds` — 一括保存対象（青枠 + チェックマーク）
+- `lastResult` (GenerationStore) — 中央パネルに表示中の画像（primary 枠）
+- 両方が重なった場合は `selectedImageIds` の青枠を優先表示
+
+---
+
 ## Tag DB — コンポーネント構成 (`src/components/modals/tag-database/`)
 
 | ファイル | 役割 |

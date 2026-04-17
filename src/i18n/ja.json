@@ -69,7 +69,10 @@
     "free": "無料",
     "confirmTitle": "アンラスを消費します",
     "confirmDescription": "この生成には {{cost}} Anlas が必要です。実行しますか？",
-    "confirmGenerate": "生成"
+    "confirmGenerate": "生成",
+    "saveSuccess": "保存しました",
+    "saveAllSuccess": "すべて保存しました",
+    "saveError": "保存に失敗しました"
   },
   "prompt": {
     "clearOverride": "オーバーライドを解除",
@@ -100,7 +103,12 @@
     "title": "履歴",
     "all": "すべて",
     "saved": "保存済み",
-    "emptyState": "履歴がありません"
+    "emptyState": "履歴がありません",
+    "selectedCount": "{{count}}枚を選択中",
+    "saveSelected": "選択を保存",
+    "clearSelection": "選択解除",
+    "saveSelectedSuccess": "{{count}}枚を保存しました",
+    "saveSelectedError": "保存に失敗しました"
   },
   "character": {
     "add": "キャラクター追加",
