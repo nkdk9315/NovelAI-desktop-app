@@ -460,7 +460,7 @@ export const useThemeStore = create<ThemeState>()(
 |  header     h-12  shrink-0  border-b                              |
 +----------+----------------------------+-------------------------+
 |  aside    |  main                      |  aside                  |
-|  w-80     |  flex-1                    |  w-64                   |
+|  w:240-560|  flex-1                    |  w:200-480              |
 |  shrink-0 |  overflow-hidden           |  shrink-0               |
 |  overflow-y-auto  border-r             |  overflow-y-auto        |
 |           |                            |  border-l               |
@@ -469,19 +469,25 @@ export const useThemeStore = create<ThemeState>()(
 
 **ファイル**: `src/pages/GenerationPage.tsx`
 
+> **PR #25（2026-04-17）以降**: 左右サイドバーは固定幅ではなく、`layout-store` が管理する可変幅（初期 320 / 256 px、左 240〜560 / 右 200〜480 px、ドラッグハンドルでリサイズ・`localStorage` 永続化）。`ResizeHandle` コンポーネントで実装。
+
 ```tsx
 function GenerationPage() {
+  const { leftSidebarWidth, rightSidebarWidth, setLeftSidebarWidth, setRightSidebarWidth } =
+    useLayoutStore();
   return (
     <div className="flex h-screen flex-col">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-80 shrink-0 border-r border-border overflow-y-auto">
+        <aside style={{ width: leftSidebarWidth }} className="shrink-0 border-r border-border overflow-y-auto">
           <LeftPanel />
         </aside>
+        <ResizeHandle value={leftSidebarWidth} onChange={setLeftSidebarWidth} min={240} max={560} />
         <main className="flex-1 overflow-hidden">
           <CenterPanel />
         </main>
-        <aside className="w-64 shrink-0 border-l border-border overflow-y-auto">
+        <ResizeHandle value={rightSidebarWidth} onChange={setRightSidebarWidth} min={200} max={480} edge="right" />
+        <aside style={{ width: rightSidebarWidth }} className="shrink-0 border-l border-border overflow-y-auto">
           <RightPanel />
         </aside>
       </div>
@@ -495,6 +501,7 @@ function GenerationPage() {
 - `overflow-hidden` (外側 flex): 子要素のスクロールを独立させる
 - `overflow-y-auto` (サイドパネル): 各パネルが独立スクロール
 - `flex-1` (中央): 残りスペースを全て占有
+- サイドバー幅はインラインスタイル（`style={{ width }}`）で付与し、`layout-store` の値を反映
 
 ### 7.2 S1 プロジェクト一覧レイアウト
 

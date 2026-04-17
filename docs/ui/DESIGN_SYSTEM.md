@@ -1,5 +1,7 @@
 # デザインシステム
 
+> **実装の真実源は `src/index.css`**。本ドキュメントのカラートークン表は 2026-04 時点の実装に追従しているが、細部の oklch 値（L, C, H の 3 桁精度）は `src/index.css` 側が最終。齟齬を発見したら `src/index.css` を優先すること。
+
 ## 1. デザイン方針
 
 | 項目 | 方針 |
@@ -15,7 +17,7 @@
 
 ## 2. カラーパレット
 
-oklch カラースペースで定義。shadcn/ui v2+ 互換。ニュートラルグレー（chroma = 0）で統一し、アクセントはインディゴブルーのみ使用する。
+oklch カラースペースで定義。shadcn/ui v2+ 互換。背景・サイドバーはわずかに青紫を含むスレート（chroma ≈ 0.008, hue 245）で統一し、アクセントはブルー（hue 230）を使用する（PR #23 で cyan hue 195 → blue hue 230 に変更）。
 
 ### 2.1 ダークモード（デフォルト）
 
@@ -27,7 +29,7 @@ oklch カラースペースで定義。shadcn/ui v2+ 互換。ニュートラル
 | `--card-foreground` | `0.95 0 0` | #f0f0f0 | カード上のテキスト |
 | `--popover` | `0.17 0 0` | #222222 | ポップオーバー背景 |
 | `--popover-foreground` | `0.95 0 0` | #f0f0f0 | ポップオーバーテキスト |
-| `--primary` | `0.62 0.14 260` | #5b7bd5 | ボタン、リンク、フォーカス |
+| `--primary` | `0.62 0.10 230` | #5b7bd5 | ボタン、リンク、フォーカス |
 | `--primary-foreground` | `0.98 0 0` | #fafafa | primary 上のテキスト |
 | `--secondary` | `0.22 0 0` | #2d2d2d | サブトル表面 |
 | `--secondary-foreground` | `0.9 0 0` | #e0e0e0 | secondary 上のテキスト |
@@ -39,7 +41,7 @@ oklch カラースペースで定義。shadcn/ui v2+ 互換。ニュートラル
 | `--destructive-foreground` | `0.98 0 0` | #fafafa | destructive 上のテキスト |
 | `--border` | `0.28 0 0` | #3a3a3a | ボーダー・ディバイダー |
 | `--input` | `0.28 0 0` | #3a3a3a | 入力フィールドボーダー |
-| `--ring` | `0.62 0.14 260` | #5b7bd5 | フォーカスリング |
+| `--ring` | `0.62 0.10 230` | #5b7bd5 | フォーカスリング |
 
 #### サイドバー（左パネル・右パネル）
 
@@ -50,7 +52,7 @@ oklch カラースペースで定義。shadcn/ui v2+ 互換。ニュートラル
 | `--sidebar-border` | `0.25 0 0` | #333333 |
 | `--sidebar-accent` | `0.25 0 0` | #333333 |
 | `--sidebar-accent-foreground` | `0.95 0 0` | #f0f0f0 |
-| `--sidebar-ring` | `0.62 0.14 260` | #5b7bd5 |
+| `--sidebar-ring` | `0.62 0.10 230` | #5b7bd5 |
 
 ### 2.2 ライトモード
 
@@ -62,7 +64,7 @@ oklch カラースペースで定義。shadcn/ui v2+ 互換。ニュートラル
 | `--card-foreground` | `0.12 0 0` | #1a1a1a | カード上のテキスト |
 | `--popover` | `1.0 0 0` | #ffffff | ポップオーバー背景 |
 | `--popover-foreground` | `0.12 0 0` | #1a1a1a | ポップオーバーテキスト |
-| `--primary` | `0.55 0.16 260` | #4a65c0 | ボタン、リンク、フォーカス |
+| `--primary` | `0.55 0.11 230` | #4a65c0 | ボタン、リンク、フォーカス |
 | `--primary-foreground` | `0.98 0 0` | #fafafa | primary 上のテキスト |
 | `--secondary` | `0.96 0 0` | #f2f2f2 | サブトル表面 |
 | `--secondary-foreground` | `0.2 0 0` | #282828 | secondary 上のテキスト |
@@ -74,7 +76,7 @@ oklch カラースペースで定義。shadcn/ui v2+ 互換。ニュートラル
 | `--destructive-foreground` | `0.98 0 0` | #fafafa | destructive 上のテキスト |
 | `--border` | `0.90 0 0` | #e0e0e0 | ボーダー |
 | `--input` | `0.90 0 0` | #e0e0e0 | 入力フィールドボーダー |
-| `--ring` | `0.55 0.16 260` | #4a65c0 | フォーカスリング |
+| `--ring` | `0.55 0.11 230` | #4a65c0 | フォーカスリング |
 
 #### サイドバー（ライトモード）
 
@@ -85,7 +87,7 @@ oklch カラースペースで定義。shadcn/ui v2+ 互換。ニュートラル
 | `--sidebar-border` | `0.90 0 0` | #e0e0e0 |
 | `--sidebar-accent` | `0.93 0 0` | #ebebeb |
 | `--sidebar-accent-foreground` | `0.15 0 0` | #1e1e1e |
-| `--sidebar-ring` | `0.55 0.16 260` | #4a65c0 |
+| `--sidebar-ring` | `0.55 0.11 230` | #4a65c0 |
 
 ### 2.3 セマンティックカラーの使い分け
 
@@ -106,14 +108,15 @@ oklch カラースペースで定義。shadcn/ui v2+ 互換。ニュートラル
 
 | 用途 | フォント | フォールバック |
 |------|----------|----------------|
-| UI テキスト | Inter (Variable) | Noto Sans JP, ui-sans-serif, system-ui, sans-serif |
-| 日本語 | Noto Sans JP (400, 500, 700) | — |
-| コード・数値 | JetBrains Mono (Variable) | ui-monospace, monospace |
+| UI テキスト（英数） | IBM Plex Sans (400, 500, 600, 700) | IBM Plex Sans JP, Noto Sans JP, ui-sans-serif, system-ui, sans-serif |
+| 日本語 | Noto Sans JP (400, 500, 700) / IBM Plex Sans JP | — |
+| コード・数値 | JetBrains Mono (Variable) | IBM Plex Mono, ui-monospace, monospace |
 
-フォントは `@fontsource` でセルフホスト（デスクトップアプリなので CDN 不使用）。
+フォントは `@fontsource` / `@fontsource-variable` でセルフホスト（デスクトップアプリなので CDN 不使用）。PR #22（2026-04-16）で Inter → IBM Plex Sans に移行。
 
 ```
-npm install @fontsource-variable/inter @fontsource/noto-sans-jp @fontsource-variable/jetbrains-mono
+npm install @fontsource/ibm-plex-sans @fontsource/ibm-plex-sans-jp \
+            @fontsource/noto-sans-jp @fontsource-variable/jetbrains-mono
 ```
 
 ### 3.2 OpenType Features
@@ -185,16 +188,20 @@ Tailwind CSS のデフォルトスケール（4px 刻み）をそのまま使用
 | Select trigger | h-9 (36px) | — |
 | Badge | h-5 (20px) | Anlas 表示等 |
 
-### 4.3 レイアウト固定値
+### 4.3 レイアウト固定値・可変値
 
-| 要素 | 値 | Tailwind クラス |
-|------|-----|-----------------|
-| 左パネル幅 | 320px | `w-80` |
-| 右パネル幅 | 256px | `w-64` |
-| 中央パネル | 残りスペース | `flex-1` |
-| ヘッダー高さ | 48px | `h-12` |
-| 初期ウィンドウサイズ | 1400×900 | Tauri 設定 |
-| 最小ウィンドウ幅 | ~800px | — |
+PR #25（2026-04-17）で左右サイドバーは**ドラッグリサイズ可能**となった。幅は `src/stores/layout-store.ts` が管理し `localStorage` に永続化する。
+
+| 要素 | 初期値 | 最小 | 最大 | 実装 |
+|------|-------|------|------|------|
+| 左パネル幅 | 320px | 240px | 560px | `layout-store.leftSidebarWidth` |
+| 右パネル幅 | 256px | 200px | 480px | `layout-store.rightSidebarWidth` |
+| 中央パネル | 残りスペース | — | — | `flex-1` |
+| ヘッダー高さ | 48px | — | — | `h-12` |
+| 初期ウィンドウサイズ | 1400×900 | — | — | Tauri 設定 |
+| 最小ウィンドウ幅 | ~800px | — | — | — |
+
+永続化キーは `layout-state`（Zustand `persist` middleware）。
 
 ---
 
@@ -288,16 +295,19 @@ Tailwind CSS のデフォルトスケール（4px 刻み）をそのまま使用
 
 ## 9. CSS 実装（`src/index.css`）
 
+> 現在の `src/index.css` を正とする。以下は骨格イメージ。実装ではカラートークンは CSS 変数参照（`var(--primary)` 等）で `@theme` 内に登録される（Tailwind v4 `@theme` 構文）。
+
 ```css
 @import "tailwindcss";
 
 /* ── Tailwind v4 テーマ拡張 ── */
 @theme {
-  --font-sans: "Inter", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "IBM Plex Sans", "IBM Plex Sans JP", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
   --radius-lg: 0.75rem;
   --radius-md: calc(var(--radius-lg) - 2px);
   --radius-sm: calc(var(--radius-lg) - 4px);
+  /* カラートークンは CSS 変数を参照する（--color-primary: var(--primary) など） */
 }
 
 /* ── ダークモード（デフォルト） ── */
@@ -308,7 +318,7 @@ Tailwind CSS のデフォルトスケール（4px 刻み）をそのまま使用
   --card-foreground: oklch(0.95 0 0);
   --popover: oklch(0.17 0 0);
   --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.62 0.14 260);
+  --primary: oklch(0.62 0.10 230);
   --primary-foreground: oklch(0.98 0 0);
   --secondary: oklch(0.22 0 0);
   --secondary-foreground: oklch(0.9 0 0);
@@ -320,13 +330,13 @@ Tailwind CSS のデフォルトスケール（4px 刻み）をそのまま使用
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.28 0 0);
   --input: oklch(0.28 0 0);
-  --ring: oklch(0.62 0.14 260);
+  --ring: oklch(0.62 0.10 230);
   --sidebar-background: oklch(0.16 0 0);
   --sidebar-foreground: oklch(0.9 0 0);
   --sidebar-border: oklch(0.25 0 0);
   --sidebar-accent: oklch(0.25 0 0);
   --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-ring: oklch(0.62 0.14 260);
+  --sidebar-ring: oklch(0.62 0.10 230);
 }
 
 /* ── ライトモード ── */
@@ -337,7 +347,7 @@ Tailwind CSS のデフォルトスケール（4px 刻み）をそのまま使用
   --card-foreground: oklch(0.12 0 0);
   --popover: oklch(1.0 0 0);
   --popover-foreground: oklch(0.12 0 0);
-  --primary: oklch(0.55 0.16 260);
+  --primary: oklch(0.55 0.11 230);
   --primary-foreground: oklch(0.98 0 0);
   --secondary: oklch(0.96 0 0);
   --secondary-foreground: oklch(0.2 0 0);
@@ -349,13 +359,13 @@ Tailwind CSS のデフォルトスケール（4px 刻み）をそのまま使用
   --destructive-foreground: oklch(0.98 0 0);
   --border: oklch(0.90 0 0);
   --input: oklch(0.90 0 0);
-  --ring: oklch(0.55 0.16 260);
+  --ring: oklch(0.55 0.11 230);
   --sidebar-background: oklch(0.97 0 0);
   --sidebar-foreground: oklch(0.2 0 0);
   --sidebar-border: oklch(0.90 0 0);
   --sidebar-accent: oklch(0.93 0 0);
   --sidebar-accent-foreground: oklch(0.15 0 0);
-  --sidebar-ring: oklch(0.55 0.16 260);
+  --sidebar-ring: oklch(0.55 0.11 230);
 }
 
 /* ── ベーススタイル ── */

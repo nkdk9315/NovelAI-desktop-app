@@ -2,108 +2,84 @@
 
 ## 1. ディレクトリ構成
 
+> 本ディレクトリツリーは `src-tauri/src/{commands,services,repositories}/mod.rs` および `src/{stores,lib,components,hooks,pages}` の実体を単一真実源とする。テスト専用 `*_tests.rs` は除外して数える。
+
+**モジュール数サマリ**: commands 17 / services 22 / repositories 17 / frontend stores 12 / ipc modules 5
+
 ```
 src-tauri/
 ├── Cargo.toml
 ├── tauri.conf.json
 ├── build.rs
 ├── resources/
-│   └── danbooru_tags.csv                # バンドルCSV (167,907件)
+│   └── danbooru_tags.csv                # バンドルCSV
 ├── migrations/
-│   └── 001_init.sql                     # フルスキーマ (9テーブル)
+│   └── 001_init.sql 〜 026_*.sql         # 順次追加（現在 026 まで）
 └── src/
-    ├── main.rs                          # Tauri bootstrap, state登録, command登録
-    ├── state.rs                         # AppState定義
-    ├── error.rs                         # AppError (thiserror + Serialize)
-    ├── db.rs                            # DB接続, WAL, FK, マイグレーション
-    ├── commands/
-    │   ├── mod.rs                       # re-export + register_commands()
-    │   ├── settings.rs                  # get_settings, set_setting, initialize_client, get_anlas_balance
-    │   ├── projects.rs                  # list/create/open/delete_project
-    │   ├── images.rs                    # generate_image, estimate_cost, save/delete/get/cleanup
-    │   ├── prompt_groups.rs             # list/get/create/update/delete_prompt_group
-    │   ├── genres.rs                    # list/create/delete_genre
-    │   ├── vibes.rs                     # list/add/delete/encode_vibe
-    │   ├── style_presets.rs             # list/create/update/delete_style_preset
-    │   └── system_prompts.rs            # get_categories, search
-    ├── services/
-    │   ├── mod.rs
-    │   ├── settings.rs                  # KVS操作, クライアント初期化
-    │   ├── project.rs                   # CRUD + クリーンアップ
-    │   ├── generation.rs                # パラメータ組立, API呼出, ファイル書込, DB挿入
-    │   ├── prompt_group.rs              # CRUD, デフォルト制御
-    │   ├── genre.rs                     # CRUD, システムジャンル保護
-    │   ├── vibe.rs                      # import, ファイルコピー, encode
-    │   ├── style_preset.rs             # CRUD + Vibe junction
-    │   └── system_prompt.rs             # CSV読込, インメモリ検索
-    ├── repositories/
-    │   ├── mod.rs
-    │   ├── settings.rs                  # settings KVS
-    │   ├── project.rs                   # projects テーブル
-    │   ├── image.rs                     # generated_images テーブル
-    │   ├── prompt_group.rs              # prompt_groups + prompt_group_tags
-    │   ├── genre.rs                     # genres テーブル
-    │   ├── vibe.rs                      # vibes テーブル
-    │   └── style_preset.rs             # style_presets + style_preset_vibes
+    ├── main.rs / state.rs / error.rs / db.rs
+    ├── commands/                        # 17 モジュール
+    │   ├── settings.rs                  # KVS, APIクライアント初期化, Anlas
+    │   ├── projects.rs                  # Project CRUD / open / cleanup
+    │   ├── images.rs                    # generate / estimate_cost / save / delete
+    │   ├── prompt_groups.rs             # PromptGroup CRUD + タグ差し替え
+    │   ├── prompt_group_folders.rs      # PromptGroup 用フォルダ木 CRUD
+    │   ├── genres.rs                    # Genre CRUD + デフォルト紐付け
+    │   ├── vibes.rs                     # Vibe import/delete/encode
+    │   ├── vibe_folders.rs              # Vibe 用フォルダ木 CRUD
+    │   ├── style_presets.rs             # StylePreset CRUD + Vibe junction
+    │   ├── style_preset_folders.rs      # StylePreset 用フォルダ木 CRUD
+    │   ├── system_group_settings.rs     # system グループ is_enabled 上書き
+    │   ├── system_prompts.rs            # 内蔵プロンプト検索
+    │   ├── tags.rs                      # Tag DB 検索・お気に入り・グループ
+    │   ├── tokens.rs                    # CLIP トークンカウント
+    │   ├── prompt_presets.rs            # PromptPreset + キャラクタースロット
+    │   ├── preset_folders.rs            # PromptPreset 用フォルダ木 CRUD
+    │   └── sidebar_preset_groups.rs     # サイドバープリセットグループ
+    ├── services/                        # 22 モジュール（テスト除く）
+    │   ├── settings / project / project_vibe / image / generation
+    │   ├── prompt_group / prompt_group_folder / prompt_preset / preset_folder
+    │   ├── genre / system_prompt / system_group_settings
+    │   ├── vibe / vibe_encode / vibe_folder
+    │   ├── style_preset / style_preset_folder
+    │   ├── sidebar_preset_group
+    │   ├── tag / tag_seed / tag_seed_csv
+    │   └── tokens
+    ├── repositories/                    # 17 モジュール（テスト除く）
+    │   ├── settings / project / project_vibe / image
+    │   ├── prompt_group / prompt_group_folder / prompt_preset / preset_folder
+    │   ├── genre / system_group_settings
+    │   ├── vibe / vibe_folder
+    │   ├── style_preset / style_preset_folder
+    │   ├── sidebar_preset_group
+    │   └── tag / tag_favorite
     └── models/
         ├── mod.rs
         └── dto.rs                       # IPC用DTO (Serialize/Deserialize)
 
 src/
-├── main.tsx                             # Reactエントリ, ルーター
-├── App.tsx                              # ルートレイアウト (Header + 3パネル)
-├── lib/
-│   ├── ipc.ts                           # typed invoke() wrapper (全コマンド1:1対応)
-│   ├── cost.ts                          # Anlasコスト計算 (pure function)
-│   └── constants.ts                     # モデル, サンプラー, デフォルト値, 制約
-├── types/
-│   └── index.ts                         # 全TS型定義 (Rust DTOミラー)
-├── stores/
-│   ├── settings-store.ts                # APIキー, デフォルトパラメータ, Anlas残高, tier
-│   ├── project-store.ts                 # プロジェクト一覧, 現在のプロジェクト
-│   ├── generation-store.ts              # プロンプト, キャラクター, Vibe, パラメータ, isGenerating
-│   ├── history-store.ts                 # 生成画像一覧, 選択中画像
-│   └── prompt-group-store.ts            # ジャンル, グループ (ピッカー/マネージャー用)
-├── hooks/
-│   ├── use-debounce.ts
-│   ├── use-autocomplete.ts              # デバウンス付きシステムプロンプト検索
-│   └── use-cost-estimate.ts             # パラメータからリアクティブにコスト計算
-├── components/
-│   ├── ui/                              # shadcn/ui primitives (Button, Input, Slider, Dialog...)
-│   ├── header/
-│   │   ├── Header.tsx                   # ヘッダーバー全体
-│   │   ├── AnlasDisplay.tsx             # Anlas残高表示
-│   │   ├── ModelSelector.tsx            # モデル選択ドロップダウン
-│   │   ├── SizeSelector.tsx             # 幅×高さ設定
-│   │   ├── ParamControls.tsx            # サンプラー, ステップ, スケール, 枚数
-│   │   └── CostEstimate.tsx             # コスト予測表示
-│   ├── left-panel/
-│   │   ├── LeftPanel.tsx                # スクロール可能コンテナ
-│   │   ├── MainPromptSection.tsx        # メインプロンプト + ネガティブ + グループ
-│   │   ├── PromptTextarea.tsx           # オートコンプリート付きテキストエリア
-│   │   ├── CharacterAddButtons.tsx      # ジャンル別追加ボタン群
-│   │   ├── CharacterSection.tsx         # キャラクターごとのUI
-│   │   ├── PromptGroupPicker.tsx        # グループ選択UI
-│   │   ├── ArtistStyleSection.tsx       # アーティストタグ + スタイルプリセット
-│   │   └── VibeSection.tsx              # Vibe一覧 + ON/OFF + スライダー
-│   ├── center-panel/
-│   │   ├── CenterPanel.tsx
-│   │   ├── ImageViewer.tsx              # 生成画像表示
-│   │   ├── GenerateButton.tsx           # 生成ボタン + ローディング
-│   │   └── SaveControls.tsx             # 保存/破棄コントロール
-│   ├── right-panel/
-│   │   ├── RightPanel.tsx               # 縦スクロールコンテナ
-│   │   └── HistoryItem.tsx              # サムネイル + 保存状態
-│   └── modals/
-│       ├── SettingsDialog.tsx
-│       ├── PromptGroupManager.tsx       # グループCRUD管理モーダル
-│       ├── VibeManager.tsx
-│       ├── StylePresetManager.tsx
-│       └── ProjectCreateDialog.tsx
+├── main.tsx / App.tsx / index.css
+├── lib/                                 # 5 IPC + ユーティリティ
+│   ├── ipc.ts / ipc-assets.ts / ipc-preset.ts / ipc-prompt.ts / ipc-tags.ts
+│   ├── cost.ts / constants.ts / utils.ts
+│   ├── prompt-assembly.ts / preset-contributions.ts / preset-positions.ts
+│   ├── normalize-strength.ts / random-preset.ts / vibe-utils.ts
+│   ├── genre-icons.ts / toast-error.ts
+├── types/index.ts                       # 全TS型定義
+├── stores/                              # 12 stores
+│   ├── settings-store / project-store
+│   ├── generation-store / generation-params-store
+│   ├── history-store / prompt-store / preset-store
+│   ├── sidebar-prompt-store / sidebar-preset-group-store / sidebar-artist-tags-store
+│   ├── layout-store                     # サイドバー幅（動的リサイズ, PR #25）
+│   └── theme-store                      # ダーク/ライト切替
+├── hooks/                               # use-debounce / use-autocomplete / use-cost-estimate /
+│                                        # use-artist-tag-input / use-prompt-token-counts
+├── components/                          # 100+ コンポーネント
+│   ├── ui/                              # shadcn/ui primitives
+│   ├── header/ / left-panel/ / center-panel/ / right-panel/ / modals/ / shared/
 ├── pages/
-│   ├── ProjectListPage.tsx              # プロジェクト選択/作成
-│   └── GenerationPage.tsx               # メイン3パネルワークスペース
-└── index.css                            # Tailwindディレクティブ
+│   ├── ProjectListPage.tsx / GenerationPage.tsx
+└── i18n/                                # ja.json / en.json
 ```
 
 ---
@@ -237,6 +213,47 @@ Vibeインポート/管理、スタイルプリセット。
 - [x] generation-params-store: selectedVibes, artistTags, selectedStylePresetId
 - [x] ActionBar: Vibe統合 + artistTags → プロンプトプレフィックス
 
+### Phase 6: Folder 階層管理 ✅ 完了
+
+PromptGroup / Vibe / StylePreset / PromptPreset をフォルダ木で整理。
+
+- [x] migration: `prompt_group_folders`, `vibe_folders`, `style_preset_folders`, `preset_folders` テーブル（parent_id 自己参照）
+- [x] repositories/services/commands: Folder 系 4 セット（共通 CRUD: list_tree / rename / move / reorder / delete_cascade）
+- [x] Frontend: 各マネージャーモーダルのフォルダツリー UI 化
+
+### Phase 7: Tag DB & Seed ✅ 完了
+
+Danbooru タグを SQLite FTS5 に格納し全文検索。
+
+- [x] migration 013-014: `tags` / `tags_fts` / `tag_groups` / `tag_group_members`
+- [x] services/tag_seed + tag_seed_csv: 起動時 CSV → DB seed（進捗通知）
+- [x] repositories/tag + tag_favorite
+- [x] commands/tags: 検索・お気に入り・グループ操作
+- [x] Frontend: useAutocomplete / sidebar-artist-tags-store を Tag DB 経由に移行
+
+### Phase 8: Prompt Preset & Sidebar Preset Group ✅ 完了
+
+複数キャラクタースロットを含むプロンプトプリセットと、サイドバーでの組合せ切替。
+
+- [x] migration 022-026: `prompt_presets`, `preset_character_slots`, `sidebar_preset_group_instances`, `sidebar_preset_group_active_presets`, `sort_key`
+- [x] repositories/services/commands: prompt_preset, preset_folder, sidebar_preset_group
+- [x] Frontend: preset-store, sidebar-preset-group-store, PresetModalContent, サイドバーカードグループ
+
+### Phase 9: Token Counter ✅ 完了
+
+プロンプト token 数のリアルタイム表示。
+
+- [x] services/tokens: CLIP トークナイザ
+- [x] commands/tokens: count_tokens / get_max_prompt_tokens
+- [x] Frontend: usePromptTokenCounts, TokenCounter コンポーネント
+
+### Phase 10: UI Refresh (PR #22–#25) ✅ 完了
+
+- [x] #22 (b7f044a): テーマ / タイポグラフィ刷新（IBM Plex Sans + Noto Sans JP + JetBrains Mono, Tailwind v4 `@theme`）
+- [x] #23 (34162d1): Primary hue を cyan(195) → blue(230) に変更
+- [x] #24 (1318294): カスタム画像サイズ入力 + グループ化プリセット
+- [x] #25 (90e1ef2): サイドバードラッグリサイズ（layout-store, localStorage 永続化）
+
 ---
 
 ## 5. 変更履歴
@@ -249,3 +266,4 @@ Vibeインポート/管理、スタイルプリセット。
 | 2026-04-07 | Phase 3 完了マーク |
 | 2026-04-08 | Phase 4 完了マーク |
 | 2026-04-08 | Phase 5 完了マーク |
+| 2026-04-17 | doc-refresh: ディレクトリ構成を実装（17/22/17）に正準化、Phase 6〜10 を追記 |

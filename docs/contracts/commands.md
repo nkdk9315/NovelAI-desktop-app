@@ -140,6 +140,12 @@ pub fn create_genre(
 ) -> Result<GenreDto, String>;
 
 #[tauri::command]
+pub fn update_genre(
+    state: State<'_, AppState>,
+    req: UpdateGenreRequest,
+) -> Result<GenreDto, String>;
+
+#[tauri::command]
 pub fn delete_genre(state: State<'_, AppState>, id: String) -> Result<(), String>;
 ```
 
@@ -309,7 +315,50 @@ pub fn list_default_system_groups_for_genre(state, genre_id: String) -> Result<V
 | `update_sidebar_preset_group_default_strength` | req | `()` |
 | `set_sidebar_preset_group_preset_strength` | req | `()` |
 
-## 4.13 commands/tokens.rs
+## 4.14 Folder Commands (共通パターン)
+
+`prompt_group_folders` / `vibe_folders` / `style_preset_folders` / `preset_folders` は自己参照木（`parent_id` NULL=ルート）の CRUD を共通パターンで提供する。実装は `commands/{prompt_group,vibe,style_preset,preset}_folders.rs`。
+
+### 4.14.1 commands/prompt_group_folders.rs
+
+| コマンド | 引数 | 戻り値 |
+|---|---|---|
+| `list_prompt_group_folders` | — | `Vec<PromptGroupFolderDto>` |
+| `create_prompt_group_folder` | title, parentId? | `PromptGroupFolderDto` |
+| `rename_prompt_group_folder` | folderId, title | `()` |
+| `move_prompt_group_folder` | folderId, newParentId? | `()` |
+| `delete_prompt_group_folder` | folderId | `()` |
+| `delete_prompt_groups_in_folder` | folderId | `usize`（削除件数） |
+| `count_prompt_groups_in_folder` | folderId | `i64` |
+| `set_prompt_group_folder` | promptGroupId, folderId? | `()` |
+
+### 4.14.2 commands/vibe_folders.rs
+
+| コマンド | 引数 | 戻り値 |
+|---|---|---|
+| `list_vibe_folder_roots` | — | `Vec<VibeFolderDto>` |
+| `list_vibe_folder_children` | parentId | `Vec<VibeFolderDto>` |
+| `create_vibe_folder` | title, parentId? | `VibeFolderDto` |
+| `rename_vibe_folder` | folderId, title | `()` |
+| `move_vibe_folder` | folderId, newParentId? | `()` |
+| `delete_vibe_folder` | folderId | `()` |
+| `set_vibe_folder` | vibeId, folderId? | `()` |
+| `count_vibes_per_folder` | — | `Vec<CountByIdDto>` |
+
+### 4.14.3 commands/style_preset_folders.rs
+
+| コマンド | 引数 | 戻り値 |
+|---|---|---|
+| `list_style_preset_folder_roots` | — | `Vec<StylePresetFolderDto>` |
+| `list_style_preset_folder_children` | parentId | `Vec<StylePresetFolderDto>` |
+| `create_style_preset_folder` | title, parentId? | `StylePresetFolderDto` |
+| `rename_style_preset_folder` | folderId, title | `()` |
+| `move_style_preset_folder` | folderId, newParentId? | `()` |
+| `delete_style_preset_folder` | folderId | `()` |
+| `set_style_preset_folder` | presetId, folderId? | `()` |
+| `count_style_presets_per_folder` | — | `Vec<CountByIdDto>` |
+
+## 4.15 commands/tokens.rs
 
 ```rust
 #[tauri::command]

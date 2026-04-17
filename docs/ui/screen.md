@@ -1,5 +1,7 @@
 # 画面設計書
 
+> **本ドキュメントは 2026-01-15 時点のスナップショット**（最終コミット `5ee5106`）。以降の変更は末尾の「Addendum: 2026-01-15 以降の変更差分」を優先する。本体と Addendum が矛盾する場合、Addendum を正とする。
+
 ## 1. 画面一覧
 
 | ID | 画面名 | 種類 | 説明 |
@@ -556,3 +558,37 @@ App
 - **中央パネル**: 残りスペースをflex-1で占有
 - **モバイル対応**: 不要（デスクトップ専用）
 - **最小幅**: 左 + 右パネル + 最低限の中央パネル ≈ 800px 程度
+
+---
+
+## Addendum: 2026-01-15 以降の変更差分（コミット `5ee5106..90e1ef2`）
+
+> 本 Addendum は本体との矛盾時に優先される。
+
+### A1. PR #22 — テーマ / タイポグラフィ刷新（`b7f044a`, 2026-04-XX）
+
+- UI フォントを Inter → **IBM Plex Sans** + IBM Plex Sans JP + Noto Sans JP に移行
+- モノスペースフォントを JetBrains Mono（Variable）+ IBM Plex Mono のフォールバックに統一
+- Tailwind v4 `@theme` 構文を採用。カラートークンは `--color-*` が `--primary` などの CSS 変数を参照する二段構成に
+- レスポンシブ性を向上（S1 カードグリッド、モーダル最大幅）
+- 詳細: `docs/ui/DESIGN_SYSTEM.md` §3 Typography
+
+### A2. PR #23 — Primary hue 195 → 230（`34162d1`, 2026-04-XX）
+
+- `--primary` / `--ring` / `--sidebar-ring` の hue を **cyan(195) → blue(230)** に変更
+- ダーク `oklch(0.72 0.10 230)` / ライト `oklch(0.55 0.11 230)`
+- アクセントを「青シアン」から「ダークブルー」へ寄せて、全画面のプライマリカラー（Generate ボタン / フォーカスリング / アクティブタブ）に反映
+
+### A3. PR #24 — カスタム画像サイズ入力（`1318294`, 2026-04-XX）
+
+- S2 ヘッダーの `SizeSelector` にカスタム入力フィールドを追加（任意の幅/高さを数値入力）
+- プリセットはグループ化して表示（`Portrait / Landscape / Square / Wallpaper` などのカテゴリ化）
+- Tauri コマンドではなく純粋フロントエンド実装（`generation-params-store` の `width`/`height` を直接更新）
+
+### A4. PR #25 — サイドバードラッグリサイズ（`90e1ef2`, 2026-04-XX）
+
+- 左右サイドバー（S2 の aside）を**固定幅から可変幅**に変更
+- 実装: `src/stores/layout-store.ts`（`leftSidebarWidth` / `rightSidebarWidth`）+ `ResizeHandle` コンポーネント
+- 範囲: 左 240〜560 px（初期 320）、右 200〜480 px（初期 256）
+- 永続化: Zustand `persist`、`localStorage` キー `layout-state`
+- 「12. レスポンシブ方針」の「左/右パネル 固定幅」の記述はこの Addendum で上書きされる
