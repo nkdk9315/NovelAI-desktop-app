@@ -2,7 +2,9 @@ import { useTranslation } from "react-i18next";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -14,23 +16,42 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SlidersHorizontal } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
-import { MODELS, SAMPLERS } from "@/lib/constants";
+import {
+  MODELS,
+  SAMPLERS,
+  SIZE_PRESET_GROUPS,
+  MIN_DIMENSION,
+  MAX_DIMENSION,
+  DIMENSION_STEP,
+  MAX_TOTAL_PIXELS,
+} from "@/lib/constants";
 
-const SIZE_PRESETS = [
-  { label: "832x1216", w: 832, h: 1216 },
-  { label: "1024x1024", w: 1024, h: 1024 },
-  { label: "1216x832", w: 1216, h: 832 },
-  { label: "1024x1536", w: 1024, h: 1536 },
-  { label: "1536x1024", w: 1536, h: 1024 },
-] as const;
+const CUSTOM_SIZE_VALUE = "__custom__";
+
+function clampDimension(v: number): number {
+  if (!Number.isFinite(v)) return MIN_DIMENSION;
+  const stepped = Math.round(v / DIMENSION_STEP) * DIMENSION_STEP;
+  return Math.max(MIN_DIMENSION, Math.min(MAX_DIMENSION, stepped));
+}
 
 export default function GenerationParams() {
   const { t } = useTranslation();
   const { model, width, height, steps, scale, sampler, setParam } = useGenerationParamsStore();
 
-  const sizeLabel = `${width}x${height}`;
+  const matchedPreset = SIZE_PRESET_GROUPS.flatMap((g) =>
+    g.items.map((item) => ({ ...item, group: g.group })),
+  ).find((p) => p.w === width && p.h === height);
+
+  const selectValue = matchedPreset
+    ? `${matchedPreset.group}:${matchedPreset.w}x${matchedPreset.h}`
+    : CUSTOM_SIZE_VALUE;
+
+  const totalPixels = width * height;
+  const totalPixelError = totalPixels > MAX_TOTAL_PIXELS;
+  const isCustom = !matchedPreset;
 
   return (
     <div className="flex items-center gap-2">
@@ -46,26 +67,91 @@ export default function GenerationParams() {
       </Select>
 
       <Select
-        value={sizeLabel}
+        value={selectValue}
         onValueChange={(v) => {
-          const preset = SIZE_PRESETS.find((p) => p.label === v);
-          if (preset) {
-            setParam("width", preset.w);
-            setParam("height", preset.h);
+          if (v === CUSTOM_SIZE_VALUE) return;
+          const [, dims] = v.split(":");
+          const [wStr, hStr] = dims.split("x");
+          const w = Number(wStr);
+          const h = Number(hStr);
+          if (Number.isFinite(w) && Number.isFinite(h)) {
+            setParam("width", w);
+            setParam("height", h);
           }
         }}
       >
-        <SelectTrigger className="h-8 w-28 text-xs">
-          <SelectValue />
+        <SelectTrigger className="h-8 w-40 text-xs">
+          <SelectValue>
+            {isCustom
+              ? `${t("generation.sizeCustom")} (${width}x${height})`
+              : `${t(`generation.sizeOrient.${matchedPreset.orient}`)} (${matchedPreset.w}x${matchedPreset.h})`}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {SIZE_PRESETS.map((p) => (
-            <SelectItem key={p.label} value={p.label} className="text-xs">
-              {p.label}
-            </SelectItem>
+          {SIZE_PRESET_GROUPS.map((group) => (
+            <SelectGroup key={group.group}>
+              <SelectLabel>{t(`generation.sizeGroup.${group.group}`)}</SelectLabel>
+              {group.items.map((p) => {
+                const value = `${group.group}:${p.w}x${p.h}`;
+                return (
+                  <SelectItem key={value} value={value} className="text-xs">
+                    {t(`generation.sizeOrient.${p.orient}`)} ({p.w}x{p.h})
+                  </SelectItem>
+                );
+              })}
+            </SelectGroup>
           ))}
+          <SelectGroup>
+            <SelectLabel>{t("generation.sizeGroup.custom")}</SelectLabel>
+            <SelectItem value={CUSTOM_SIZE_VALUE} className="text-xs">
+              {t("generation.sizeCustom")}
+            </SelectItem>
+          </SelectGroup>
         </SelectContent>
       </Select>
+
+      {isCustom && (
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            min={MIN_DIMENSION}
+            max={MAX_DIMENSION}
+            step={DIMENSION_STEP}
+            value={width}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n)) setParam("width", n);
+            }}
+            onBlur={(e) => setParam("width", clampDimension(Number(e.target.value)))}
+            className="h-8 w-20 text-xs"
+            aria-label={t("generation.width")}
+            aria-invalid={totalPixelError}
+            title={t("generation.sizeHint")}
+          />
+          <span className="text-xs text-muted-foreground">×</span>
+          <Input
+            type="number"
+            min={MIN_DIMENSION}
+            max={MAX_DIMENSION}
+            step={DIMENSION_STEP}
+            value={height}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n)) setParam("height", n);
+            }}
+            onBlur={(e) => setParam("height", clampDimension(Number(e.target.value)))}
+            className="h-8 w-20 text-xs"
+            aria-label={t("generation.height")}
+            aria-invalid={totalPixelError}
+            title={t("generation.sizeHint")}
+          />
+          {totalPixelError && (
+            <span className="text-xs text-destructive" role="alert">
+              {t("generation.sizeErrorTotal", { max: MAX_TOTAL_PIXELS })}
+            </span>
+          )}
+        </div>
+      )}
 
       <Popover>
         <PopoverTrigger asChild>

@@ -36,6 +36,58 @@ export const DEFAULT_SCALE = 5.0;
 export const DEFAULT_CFG_RESCALE = 0.0;
 export const DEFAULT_WIDTH = 832;
 export const DEFAULT_HEIGHT = 1216;
+
+export const MIN_DIMENSION = 64;
+export const MAX_DIMENSION = 2048;
+export const DIMENSION_STEP = 64;
+export const MAX_TOTAL_PIXELS = 3_145_728;
+
+type Orient = "portrait" | "landscape" | "square";
+
+export interface SizePreset {
+  orient: Orient;
+  w: number;
+  h: number;
+}
+
+export interface SizePresetGroup {
+  group: "normal" | "large" | "wallpaper" | "small";
+  items: SizePreset[];
+}
+
+export const SIZE_PRESET_GROUPS: SizePresetGroup[] = [
+  {
+    group: "normal",
+    items: [
+      { orient: "portrait", w: 832, h: 1216 },
+      { orient: "landscape", w: 1216, h: 832 },
+      { orient: "square", w: 1024, h: 1024 },
+    ],
+  },
+  {
+    group: "large",
+    items: [
+      { orient: "portrait", w: 1024, h: 1536 },
+      { orient: "landscape", w: 1536, h: 1024 },
+      { orient: "square", w: 1472, h: 1472 },
+    ],
+  },
+  {
+    group: "wallpaper",
+    items: [
+      { orient: "portrait", w: 1088, h: 1920 },
+      { orient: "landscape", w: 1920, h: 1088 },
+    ],
+  },
+  {
+    group: "small",
+    items: [
+      { orient: "portrait", w: 512, h: 768 },
+      { orient: "landscape", w: 768, h: 512 },
+      { orient: "square", w: 640, h: 640 },
+    ],
+  },
+];
 export const MAX_CHARACTERS = 6;
 export const MAX_VIBES = 10;
 export const MAX_TOTAL_VIBES = 16;
