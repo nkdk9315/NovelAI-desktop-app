@@ -283,11 +283,17 @@ App
             ├── RightPanel (aside, w-64, ScrollArea)
             │   ├── HistoryHeader
             │   │   ├── Label ("History")
-            │   │   └── ToggleGroup (All / Saved)
+            │   │   ├── ToggleGroup (All / Saved)
+            │   │   └── SelectionToolbar (選択時のみ表示)
+            │   │       ├── Label ("N枚を選択中")
+            │   │       ├── Button ("選択を保存")
+            │   │       └── Button ("選択解除")
             │   └── ThumbnailGrid
-            │       └── ThumbnailItem × N
-            │           ├── img (サムネイル)
-            │           └── SaveIndicator
+            │       └── ThumbnailItem × N (div wrapper)
+            │           ├── Button (画像クリック → 中央表示)
+            │           │   └── img (サムネイル)
+            │           ├── SaveIndicator (Bookmark, isSaved 時)
+            │           └── CheckboxButton (ホバーで表示、選択中は常時表示)
             │
             ├── SettingsDialog (S3)
             ├── PromptGroupModal (S4)
@@ -359,7 +365,7 @@ App
 | `useGenerationStore` | `stores/generation-store.ts` | 生成状態、生成パラメータ、最新結果 | — |
 | `usePromptStore` | `stores/prompt-store.ts` | プロンプト、キャラクター、グループ、ジャンル、Vibe、プリセット | — |
 | `useSidebarPromptStore` | `stores/sidebar-prompt-store.ts` | ターゲット別グループ選択・タグ有効状態・negativeOverride | `persist` |
-| `useHistoryStore` | `stores/history-store.ts` | 生成履歴、フィルタ、選択画像 | — |
+| `useHistoryStore` | `stores/history-store.ts` | 生成履歴、フィルタ、複数選択保存 | — |
 | `useThemeStore` | `stores/theme-store.ts` | テーマ状態（dark/light） | `persist` |
 
 ### 6.2 Store 間の依存関係
@@ -651,7 +657,7 @@ src/
 │   ├── prompt-store.ts                   # プロンプト・キャラクター・グループ等（既存 stub、要実装）
 │   ├── sidebar-prompt-store.ts           # ターゲット別グループ選択・negativeOverride 管理
 │   ├── sidebar-prompt-utils.ts           # SidebarPromptTag / TargetPromptState 型・変換ロジック
-│   ├── history-store.ts                  # 履歴管理（既存 stub、要実装）
+│   ├── history-store.ts                  # 履歴管理・複数選択保存（selectedImageIds）
 │   └── theme-store.ts                    # テーマ切替（新規）
 │
 ├── hooks/
