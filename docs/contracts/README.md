@@ -23,3 +23,4 @@
 | 2026-04-16 | PR-C: Prompt Group overhaul — schema 009-020、DTO/Repo/Service/Command全面更新、system_group_settings互換シム |
 | 2026-04-16 | PR-E: negative_prompt per entry — migration 021、TagInput/PromptGroupTagRow/Dto更新、SidebarPromptTag.negativePrompt、TargetPromptState.negativeOverride、assembleNegativeFromGroups追加 |
 | 2026-04-16 | contracts.md を論理セクション別ファイルに分割 |
+| 2026-04-17 | Token limit validation — `tokens` service/command 追加、`CountTokensRequest`/`CountTokensResponse` DTO、`usePromptTokenCounts` フック、`TokenCounter` コンポーネント、`ActionBar` で overflow 時 Generate ボタン無効化 |

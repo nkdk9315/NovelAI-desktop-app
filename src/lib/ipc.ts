@@ -86,6 +86,21 @@ export function deleteImage(imageId: string): Promise<void> { return invoke("del
 export function getProjectImages(projectId: string, savedOnly?: boolean): Promise<GeneratedImageDto[]> { return invoke("get_project_images", { projectId, savedOnly }); }
 export function cleanupUnsavedImages(projectId: string): Promise<void> { return invoke("cleanup_unsaved_images", { projectId }); }
 
+// ---- Tokens ----
+
+export interface CountTokensResponse {
+  counts: number[];
+  maxTokens: number;
+}
+
+export function countTokens(texts: string[]): Promise<CountTokensResponse> {
+  return invoke("count_tokens", { req: { texts } });
+}
+
+export function getMaxPromptTokens(): Promise<number> {
+  return invoke("get_max_prompt_tokens");
+}
+
 // ---- Genres ----
 
 export function listGenres(): Promise<GenreDto[]> { return invoke("list_genres"); }

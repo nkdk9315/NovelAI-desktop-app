@@ -70,6 +70,10 @@
     "confirmTitle": "アンラスを消費します",
     "confirmDescription": "この生成には {{cost}} Anlas が必要です。実行しますか？",
     "confirmGenerate": "生成",
+    "tokensPositive": "ポジ",
+    "tokensNegative": "ネガ",
+    "tokenLimitExceeded": "プロンプトが {{max}} トークンの上限を超えています。短くしてください。",
+    "tokenLimitExceededToast": "プロンプトのトークン数が上限（{{max}}）を超えています。",
     "saveSuccess": "保存しました",
     "saveAllSuccess": "すべて保存しました",
     "saveError": "保存に失敗しました"

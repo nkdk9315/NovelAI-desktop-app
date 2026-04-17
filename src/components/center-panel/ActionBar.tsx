@@ -24,6 +24,8 @@ import { MAX_TOTAL_VIBES, NEGATIVE_PRESETS, QUALITY_TAGS } from "@/lib/constants
 import { calculateCost } from "@/lib/cost";
 import { normalizeStrengths } from "@/lib/normalize-strength";
 import { rollPromptForGeneration, substituteWildcards, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
+import { usePromptTokenCounts } from "@/hooks/use-prompt-token-counts";
+import TokenCounter from "@/components/shared/TokenCounter";
 import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
 import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store";
 import { usePresetStore } from "@/stores/preset-store";
@@ -44,6 +46,7 @@ export default function ActionBar() {
   const settings = useSettingsStore((s) => s.settings);
   const params = useGenerationParamsStore();
   const sidebarArtistTags = useSidebarArtistTagsStore((s) => s.sidebarArtistTags);
+  const tokenCounts = usePromptTokenCounts();
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -69,6 +72,10 @@ export default function ActionBar() {
 
   const executeGenerate = async () => {
     if (!projectId || isGenerating) return;
+    if (tokenCounts.overflow) {
+      toast.error(t("generation.tokenLimitExceededToast", { max: tokenCounts.maxTokens }));
+      return;
+    }
 
     // Collect artist tags and vibes from enabled presets + independent vibes
     // Merge by vibeId: presets first-wins, then independent vibes fill remaining
@@ -184,6 +191,10 @@ export default function ActionBar() {
   };
 
   const handleGenerateClick = () => {
+    if (tokenCounts.overflow) {
+      toast.error(t("generation.tokenLimitExceededToast", { max: tokenCounts.maxTokens }));
+      return;
+    }
     if (!cost.isOpusFree && costConfirmMode === "confirm") {
       setConfirmOpen(true);
     } else {
@@ -227,10 +238,12 @@ export default function ActionBar() {
   }
 
   return (
-    <div className="flex items-center justify-center gap-2 border-t border-border p-3">
+    <div className="flex flex-col items-center gap-2 border-t border-border p-3">
+      <TokenCounter counts={tokenCounts} />
+      <div className="flex items-center justify-center gap-2">
       <Button
         onClick={handleGenerateClick}
-        disabled={isGenerating}
+        disabled={isGenerating || tokenCounts.overflow}
         size="sm"
         variant={buttonVariant}
       >
@@ -281,6 +294,7 @@ export default function ActionBar() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>
   );
 }

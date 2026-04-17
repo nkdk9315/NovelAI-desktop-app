@@ -395,6 +395,21 @@ export function cleanupUnsavedImages(projectId: string): Promise<void> {
   return invoke("cleanup_unsaved_images", { projectId });
 }
 
+// ---- Tokens ----
+
+export interface CountTokensResponse {
+  counts: number[];
+  maxTokens: number;
+}
+
+export function countTokens(texts: string[]): Promise<CountTokensResponse> {
+  return invoke("count_tokens", { req: { texts } });
+}
+
+export function getMaxPromptTokens(): Promise<number> {
+  return invoke("get_max_prompt_tokens");
+}
+
 // ---- Prompt Groups ----
 
 export function listPromptGroups(
@@ -647,6 +662,52 @@ function useArtistTagInput(onAdd: (name: string) => void): {
 - キーボード操作: ArrowDown/Up・Tab（フォーカス移動）・Enter（確定）・Escape（閉じる）
 
 ---
+
+## 6.7 usePromptTokenCounts (`src/hooks/use-prompt-token-counts.ts`)
+
+生成直前のプロンプト組立結果に対して T5 トークン数を計算し、API の 512 トークン上限
+（ポジティブ / ネガティブそれぞれ）に対するオーバーフロー状態を返すフック。
+
+```typescript
+interface PromptTokenCounts {
+  positiveTotal: number;
+  negativeTotal: number;
+  maxTokens: number;
+  positiveOverflow: boolean;
+  negativeOverflow: boolean;
+  overflow: boolean;   // positiveOverflow || negativeOverflow
+  loading: boolean;
+}
+
+function usePromptTokenCounts(): PromptTokenCounts;
+```
+
+- **組立ロジック**: `ActionBar.executeGenerate` と同じ順序で
+  `artist プレフィックス + mainTarget + QUALITY_TAGS suffix` をポジティブ側に、
+  `NEGATIVE_PRESETS[preset] + mainTarget.negativeOverride` をネガティブ側に結合。
+  キャラクターは `characters[i]` ごとに1エントリずつ `sidebar-prompt-store` の target を参照。
+- **デバウンス**: 250ms（`useDebounce`）。
+- **IPC**: `ipc.countTokens(allTexts)` に `[positives..., negatives...]` の順で渡し、
+  レスポンスを `positives.length` で分割して合計。
+- **レースコンディション対策**: `reqIdRef` で最新リクエストのみ反映。
+- **フェイルセーフ**: バックエンドエラー時は loading=false に戻し、
+  直前の集計値を維持する（ユーザー操作をブロックしない）。
+
+## 6.8 TokenCounter (`src/components/shared/TokenCounter.tsx`)
+
+`usePromptTokenCounts()` の結果を受け取って Pos / Neg カウントを表示するプレゼンテーション
+コンポーネント。オーバーフロー時は `text-destructive` + 警告メッセージを表示する。
+
+```tsx
+interface TokenCounterProps {
+  counts: PromptTokenCounts;
+  compact?: boolean;
+}
+```
+
+`ActionBar` の生成ボタン直上に配置し、`tokenCounts.overflow` 時は `Generate` ボタンを
+disabled にした上で、クリック時にも `toast.error(t("generation.tokenLimitExceededToast"))`
+でユーザーに通知する。
 
 ## 6.6 useHistoryStore (`src/stores/history-store.ts`)
 

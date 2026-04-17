@@ -307,3 +307,19 @@ pub fn list_default_system_groups_for_genre(state, genre_id: String) -> Result<V
 | `reorder_sidebar_preset_group_instances` | req | `()` |
 | `update_sidebar_preset_group_default_strength` | req | `()` |
 | `set_sidebar_preset_group_preset_strength` | req | `()` |
+
+## 4.13 commands/tokens.rs
+
+```rust
+#[tauri::command]
+pub async fn count_tokens(req: CountTokensRequest) -> Result<CountTokensResponse, String>;
+// → tokens_service::count_tokens(req).await
+
+#[tauri::command]
+pub fn get_max_prompt_tokens() -> usize;
+// → tokens_service::max_tokens() (= novelai_api::constants::MAX_TOKENS, 512)
+```
+
+フロントエンドは `count_tokens` に `[main_positive, char1_positive, …, main_negative, char1_negative, …]`
+の形で一括送信し、返ってきた `counts` を前半（ポジティブ）と後半（ネガティブ）で合計して
+それぞれ `max_tokens` と比較する。`AppState` を参照しないため並行実行可能。

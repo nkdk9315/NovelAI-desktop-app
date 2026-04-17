@@ -70,6 +70,10 @@
     "confirmTitle": "Anlas will be consumed",
     "confirmDescription": "This generation requires {{cost}} Anlas. Proceed?",
     "confirmGenerate": "Generate",
+    "tokensPositive": "Pos",
+    "tokensNegative": "Neg",
+    "tokenLimitExceeded": "Prompt exceeds the {{max}} token limit. Shorten it to generate.",
+    "tokenLimitExceededToast": "Prompt token count exceeds the limit ({{max}}).",
     "saveSuccess": "Saved",
     "saveAllSuccess": "All saved",
     "saveError": "Save failed"
