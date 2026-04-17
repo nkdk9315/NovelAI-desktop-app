@@ -256,7 +256,7 @@ export default function SidebarPresetGroupInstanceCard({ instance }: Props) {
             value={renameInput ?? ""}
             onChange={(e) => setRenameInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void submitRename(); } }}
-            autoFocus
+            autoFocus // eslint-disable-line jsx-a11y/no-autofocus
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameInput(null)}>{t("common.cancel")}</Button>

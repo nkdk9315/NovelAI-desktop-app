@@ -823,6 +823,7 @@ pub struct PromptPresetRow {
 
 pub struct PresetCharacterSlotRow {
     pub id: String,
+    #[allow(dead_code)]
     pub preset_id: String,
     pub slot_index: i32,
     pub slot_label: String,
