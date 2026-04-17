@@ -1,6 +1,9 @@
 use tauri::State;
 
-use crate::models::dto::{CreatePromptPresetRequest, PromptPresetDto, UpdatePromptPresetRequest};
+use crate::models::dto::{
+    CreatePromptPresetRequest, PromptPresetDto, ReorderPromptPresetsRequest,
+    UpdatePromptPresetRequest,
+};
 use crate::state::AppState;
 
 #[tauri::command]
@@ -44,4 +47,13 @@ pub fn update_prompt_preset(
 pub fn delete_prompt_preset(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     crate::services::prompt_preset::delete_prompt_preset(&conn, &id).map_err(|e| e.into())
+}
+
+#[tauri::command]
+pub fn reorder_prompt_presets(
+    state: State<'_, AppState>,
+    req: ReorderPromptPresetsRequest,
+) -> Result<(), String> {
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    crate::services::prompt_preset::reorder_prompt_presets(&mut conn, req).map_err(|e| e.into())
 }

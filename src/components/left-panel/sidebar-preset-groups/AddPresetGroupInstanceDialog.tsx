@@ -7,6 +7,7 @@ import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store"
 import { usePresetStore } from "@/stores/preset-store";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import PresetFolderPickerDialog from "@/components/modals/preset/PresetFolderPickerDialog";
+import CharacterAddButtons from "@/components/left-panel/CharacterAddButtons";
 import CharacterPicker from "./CharacterPicker";
 
 interface Props {
@@ -81,6 +82,9 @@ export default function AddPresetGroupInstanceDialog({ open, onOpenChange }: Pro
             {source && target && source === target && (
               <p className="text-xs text-destructive">{t("sidebarPresetGroups.pair.sameError")}</p>
             )}
+            <div className="pt-1 border-t border-border/50">
+              <CharacterAddButtons />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>

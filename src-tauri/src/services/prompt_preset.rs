@@ -3,7 +3,7 @@ use rusqlite::Connection;
 use crate::error::AppError;
 use crate::models::dto::{
     CreatePromptPresetRequest, PresetCharacterSlotDto, PromptPresetDto, PromptPresetRow,
-    UpdatePromptPresetRequest,
+    ReorderPromptPresetsRequest, UpdatePromptPresetRequest,
 };
 use crate::repositories::prompt_preset as repo;
 
@@ -81,10 +81,12 @@ pub fn create_prompt_preset(
     let now = chrono::Utc::now().to_rfc3339();
     let id = uuid::Uuid::new_v4().to_string();
 
+    let sort_key = repo::next_sort_key(conn, req.folder_id)?;
     let row = PromptPresetRow {
         id: id.clone(),
         name: req.name.trim().to_string(),
         folder_id: req.folder_id,
+        sort_key,
         created_at: now.clone(),
         updated_at: now,
     };
@@ -128,4 +130,25 @@ pub fn update_prompt_preset(
 
 pub fn delete_prompt_preset(conn: &Connection, id: &str) -> Result<(), AppError> {
     repo::delete(conn, id)
+}
+
+pub fn reorder_prompt_presets(
+    conn: &mut Connection,
+    req: ReorderPromptPresetsRequest,
+) -> Result<(), AppError> {
+    for id in &req.ordered_ids {
+        let row = repo::find_by_id(conn, id)?;
+        if row.folder_id != req.folder_id {
+            return Err(AppError::Validation(format!(
+                "preset {id} does not belong to the given folder"
+            )));
+        }
+    }
+
+    let tx = conn.transaction()?;
+    for (idx, id) in req.ordered_ids.iter().enumerate() {
+        repo::set_sort_key(&tx, id, idx as i64)?;
+    }
+    tx.commit()?;
+    Ok(())
 }

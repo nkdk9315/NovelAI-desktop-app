@@ -49,7 +49,7 @@ export {
 
 export {
   listPromptPresets, getPromptPreset, createPromptPreset,
-  updatePromptPreset, deletePromptPreset,
+  updatePromptPreset, deletePromptPreset, reorderPromptPresets,
   listPresetFolders, createPresetFolder, renamePresetFolder,
   movePresetFolder, deletePresetFolder, deletePresetsInFolder,
   countPresetsInFolder, setPresetFolder,

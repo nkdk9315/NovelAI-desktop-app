@@ -11,6 +11,7 @@ function makePreset(id: string, sourcePos: string, targetPos: string, targetNeg 
     id,
     name: id,
     folderId: 1,
+    sortKey: 0,
     slots: [
       {
         id: `${id}-source`,

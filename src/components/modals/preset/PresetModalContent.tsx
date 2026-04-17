@@ -1,6 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, FolderPlus, Plus, Trash2, Pencil, Users } from "lucide-react";
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { toastError } from "@/lib/toast-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +37,56 @@ import PresetEditorModal from "./PresetEditorModal";
 import ApplyPresetDialog from "./ApplyPresetDialog";
 
 const UNCATEGORIZED = -1;
+
+interface SortablePresetChipProps {
+  preset: PromptPresetDto;
+  disabled: boolean;
+  onApply: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  editLabel: string;
+  deleteLabel: string;
+}
+
+function SortablePresetChip({
+  preset, disabled, onApply, onEdit, onDelete, editLabel, deleteLabel,
+}: SortablePresetChipProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: preset.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    touchAction: "none",
+  };
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <button
+          type="button"
+          ref={setNodeRef}
+          style={style}
+          className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] hover:bg-accent/50 transition-colors max-w-[10rem] cursor-grab active:cursor-grabbing"
+          onClick={() => { if (!disabled) onApply(); }}
+          title={preset.name}
+          {...attributes}
+          {...listeners}
+        >
+          <Users className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
+          <span className="truncate font-medium">{preset.name}</span>
+        </button>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="min-w-[7rem] p-0.5 text-[11px]">
+        <ContextMenuItem className="text-[11px] py-1 px-2" onClick={onEdit}>
+          <Pencil className="h-3 w-3 mr-1.5" />{editLabel}
+        </ContextMenuItem>
+        <ContextMenuItem className="text-[11px] py-1 px-2 text-destructive" onClick={onDelete}>
+          <Trash2 className="h-3 w-3 mr-1.5" />{deleteLabel}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
 
 interface FolderTreeNode {
   id: number;
@@ -68,9 +135,15 @@ export default function PresetModalContent({ targetId, searchQuery, onSearchChan
   const createPresetAction = usePresetStore((s) => s.createPreset);
   const updatePresetAction = usePresetStore((s) => s.updatePreset);
   const deletePresetAction = usePresetStore((s) => s.deletePreset);
+  const reorderPresetsAction = usePresetStore((s) => s.reorderPresets);
   const createPresetFolderAction = usePresetStore((s) => s.createPresetFolder);
   const deletePresetFolderAction = usePresetStore((s) => s.deletePresetFolder);
   const genres = usePromptStore((s) => s.genres);
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const [expFolders, setExpFolders] = useState<Set<number>>(() => new Set([UNCATEGORIZED]));
   const [showEditor, setShowEditor] = useState(false);
@@ -121,27 +194,36 @@ export default function PresetModalContent({ targetId, searchQuery, onSearchChan
   };
 
   const renderPresetChip = (preset: PromptPresetDto) => (
-    <ContextMenu key={preset.id}>
-      <ContextMenuTrigger asChild>
-        <button type="button"
-          className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[11px] hover:bg-accent/50 transition-colors disabled:opacity-50 max-w-[10rem]"
-          disabled={!!selectionMode}
-          onClick={() => { if (!selectionMode) setApplyingPreset(preset); }}
-          title={preset.name}>
-          <Users className="h-2.5 w-2.5 shrink-0 text-muted-foreground" />
-          <span className="truncate font-medium">{preset.name}</span>
-        </button>
-      </ContextMenuTrigger>
-      <ContextMenuContent className="min-w-[7rem] p-0.5 text-[11px]">
-        <ContextMenuItem className="text-[11px] py-1 px-2" onClick={() => { setEditingPreset(preset); setShowEditor(true); }}>
-          <Pencil className="h-3 w-3 mr-1.5" />{t("common.edit")}
-        </ContextMenuItem>
-        <ContextMenuItem className="text-[11px] py-1 px-2 text-destructive" onClick={() => setDeleteConfirm(preset.id)}>
-          <Trash2 className="h-3 w-3 mr-1.5" />{t("common.delete")}
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+    <SortablePresetChip
+      key={preset.id}
+      preset={preset}
+      disabled={!!selectionMode}
+      onApply={() => { if (!selectionMode) setApplyingPreset(preset); }}
+      onEdit={() => { setEditingPreset(preset); setShowEditor(true); }}
+      onDelete={() => setDeleteConfirm(preset.id)}
+      editLabel={t("common.edit")}
+      deleteLabel={t("common.delete")}
+    />
   );
+
+  const handlePresetDragEnd = async (
+    event: DragEndEvent,
+    folderId: number | null,
+    presetsInFolder: PromptPresetDto[],
+  ) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const ids = presetsInFolder.map((p) => p.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const orderedIds = arrayMove(ids, oldIndex, newIndex);
+    try {
+      await reorderPresetsAction({ folderId, orderedIds });
+    } catch (e) {
+      toastError(String(e));
+    }
+  };
 
   const renderFolderNode = (node: FolderTreeNode, depth: number): React.ReactNode => {
     const isUncat = node.id === UNCATEGORIZED;
@@ -198,7 +280,15 @@ export default function PresetModalContent({ targetId, searchQuery, onSearchChan
                 className="flex flex-wrap items-center gap-1 py-0.5"
                 style={{ paddingLeft: `${(depth + 1) * 12 + 4}px` }}
               >
-                {node.presets.map(renderPresetChip)}
+                <DndContext
+                  sensors={dndSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(e) => handlePresetDragEnd(e, isUncat ? null : node.id, node.presets)}
+                >
+                  <SortableContext items={node.presets.map((p) => p.id)} strategy={rectSortingStrategy}>
+                    {node.presets.map(renderPresetChip)}
+                  </SortableContext>
+                </DndContext>
               </div>
             )}
             {node.children.map((child) => renderFolderNode(child, depth + 1))}

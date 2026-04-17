@@ -232,15 +232,21 @@ export interface AppError {
   message: string;
 }
 
-// ---- Prompt Presets & Sidebar Preset Groups (migrations 022–025) ----
+// ---- Prompt Presets & Sidebar Preset Groups (migrations 022–026) ----
 
 export interface PromptPresetDto {
   id: string;
   name: string;
   folderId: number | null;
+  sortKey: number;                        // migration 026
   slots: PresetCharacterSlotDto[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ReorderPromptPresetsRequest {
+  folderId: number | null;
+  orderedIds: string[];
 }
 
 export interface PresetCharacterSlotDto {
@@ -536,6 +542,7 @@ export function searchSystemPrompts(
 | `createPromptPreset` | req | `PromptPresetDto` | 作成（slot 最低 2） |
 | `updatePromptPreset` | req | `void` | 更新 |
 | `deletePromptPreset` | id | `void` | 削除 |
+| `reorderPromptPresets` | req: `ReorderPromptPresetsRequest` | `void` | フォルダ内並び替え（ドラッグ&ドロップ） |
 | `listPresetFolders` | — | `PresetFolderDto[]` | フォルダ一覧 |
 | `createPresetFolder` | title, parentId? | `PresetFolderDto` | フォルダ作成 |
 | `renamePresetFolder` | id, title | `void` | フォルダ名変更 |
@@ -778,6 +785,7 @@ interface PresetState {
   createPreset: (req: CreatePromptPresetRequest) => Promise<PromptPresetDto>;
   updatePreset: (req: UpdatePromptPresetRequest) => Promise<void>;
   deletePreset: (id: string) => Promise<void>;
+  reorderPresets: (req: ReorderPromptPresetsRequest) => Promise<void>;
   // folder mutations ...
 }
 ```

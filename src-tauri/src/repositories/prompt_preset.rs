@@ -8,22 +8,23 @@ fn map_row(row: &rusqlite::Row) -> rusqlite::Result<PromptPresetRow> {
         id: row.get(0)?,
         name: row.get(1)?,
         folder_id: row.get(2)?,
-        created_at: row.get(3)?,
-        updated_at: row.get(4)?,
+        sort_key: row.get(3)?,
+        created_at: row.get(4)?,
+        updated_at: row.get(5)?,
     })
 }
 
 pub fn list(conn: &Connection, search: Option<&str>) -> Result<Vec<PromptPresetRow>, AppError> {
-    let sql = "SELECT id, name, folder_id, created_at, updated_at \
+    let sql = "SELECT id, name, folder_id, sort_key, created_at, updated_at \
                FROM prompt_presets WHERE (?1 IS NULL OR name LIKE '%' || ?1 || '%') \
-               ORDER BY created_at DESC";
+               ORDER BY sort_key ASC, created_at DESC";
     let mut stmt = conn.prepare(sql)?;
     let rows = stmt.query_map(rusqlite::params![search], map_row)?;
     rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
 }
 
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<PromptPresetRow, AppError> {
-    let sql = "SELECT id, name, folder_id, created_at, updated_at \
+    let sql = "SELECT id, name, folder_id, sort_key, created_at, updated_at \
                FROM prompt_presets WHERE id = ?1";
     conn.query_row(sql, [id], map_row).map_err(|e| match e {
         rusqlite::Error::QueryReturnedNoRows => {
@@ -35,9 +36,9 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<PromptPresetRow, AppErr
 
 pub fn insert(conn: &Connection, row: &PromptPresetRow) -> Result<(), AppError> {
     conn.execute(
-        "INSERT INTO prompt_presets (id, name, folder_id, created_at, updated_at) \
-         VALUES (?1, ?2, ?3, ?4, ?5)",
-        rusqlite::params![row.id, row.name, row.folder_id, row.created_at, row.updated_at],
+        "INSERT INTO prompt_presets (id, name, folder_id, sort_key, created_at, updated_at) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        rusqlite::params![row.id, row.name, row.folder_id, row.sort_key, row.created_at, row.updated_at],
     )?;
     Ok(())
 }
@@ -47,6 +48,27 @@ pub fn update(conn: &Connection, row: &PromptPresetRow) -> Result<(), AppError> 
         "UPDATE prompt_presets SET name = ?2, folder_id = ?3, updated_at = ?4 WHERE id = ?1",
         rusqlite::params![row.id, row.name, row.folder_id, row.updated_at],
     )?;
+    Ok(())
+}
+
+pub fn next_sort_key(conn: &Connection, folder_id: Option<i64>) -> Result<i64, AppError> {
+    let next: i64 = conn.query_row(
+        "SELECT COALESCE(MAX(sort_key), -1) + 1 FROM prompt_presets \
+         WHERE (?1 IS NULL AND folder_id IS NULL) OR folder_id = ?1",
+        rusqlite::params![folder_id],
+        |r| r.get(0),
+    )?;
+    Ok(next)
+}
+
+pub fn set_sort_key(conn: &Connection, id: &str, sort_key: i64) -> Result<(), AppError> {
+    let updated = conn.execute(
+        "UPDATE prompt_presets SET sort_key = ?2 WHERE id = ?1",
+        rusqlite::params![id, sort_key],
+    )?;
+    if updated == 0 {
+        return Err(AppError::NotFound(format!("prompt_preset {id}")));
+    }
     Ok(())
 }
 

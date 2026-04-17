@@ -547,7 +547,7 @@ pub struct CountByIdDto { pub id: i64, pub count: i64 }
 
 ## Prompt Presets & Sidebar Preset Groups
 
-マルチキャラクター対話プリセット機能（migrations 022–025）。
+マルチキャラクター対話プリセット機能（migrations 022–026）。
 
 ### Row Structs
 
@@ -556,6 +556,7 @@ pub struct PromptPresetRow {
     pub id: String,              // UUID
     pub name: String,
     pub folder_id: Option<i64>,  // FK → preset_folders(id), ON DELETE SET NULL
+    pub sort_key: i64,           // migration 026, per-folder 並び順
     pub created_at: String,
     pub updated_at: String,
 }
@@ -602,6 +603,7 @@ pub struct PromptPresetDto {
     pub id: String,
     pub name: String,
     pub folder_id: Option<i64>,
+    pub sort_key: i32,                      // migration 026
     pub slots: Vec<PresetCharacterSlotDto>,
     pub created_at: String,
     pub updated_at: String,
@@ -664,6 +666,7 @@ pub struct SetSidebarPresetGroupActivePresetsRequest { pub id: String, pub prese
 
 #[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
 pub struct ReorderSidebarPresetGroupInstancesRequest { pub project_id: String, pub ordered_ids: Vec<String> }
+pub struct ReorderPromptPresetsRequest { pub folder_id: Option<i64>, pub ordered_ids: Vec<String> }
 
 #[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
 pub struct UpdateSidebarPresetGroupDefaultStrengthRequest {

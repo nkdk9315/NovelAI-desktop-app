@@ -830,6 +830,7 @@ pub struct PromptPresetRow {
     pub id: String,
     pub name: String,
     pub folder_id: Option<i64>,
+    pub sort_key: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -862,6 +863,7 @@ pub struct PromptPresetDto {
     pub id: String,
     pub name: String,
     pub folder_id: Option<i64>,
+    pub sort_key: i32,
     pub slots: Vec<PresetCharacterSlotDto>,
     pub created_at: String,
     pub updated_at: String,
@@ -923,6 +925,7 @@ impl PromptPresetRow {
             id: self.id,
             name: self.name,
             folder_id: self.folder_id,
+            sort_key: self.sort_key as i32,
             slots,
             created_at: self.created_at,
             updated_at: self.updated_at,
@@ -1019,6 +1022,13 @@ pub struct SetSidebarPresetGroupActivePresetsRequest {
 #[serde(rename_all = "camelCase")]
 pub struct ReorderSidebarPresetGroupInstancesRequest {
     pub project_id: String,
+    pub ordered_ids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReorderPromptPresetsRequest {
+    pub folder_id: Option<i64>,
     pub ordered_ids: Vec<String>,
 }
 

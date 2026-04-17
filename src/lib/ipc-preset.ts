@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type {
   PromptPresetDto, PresetFolderDto,
   CreatePromptPresetRequest, UpdatePromptPresetRequest,
+  ReorderPromptPresetsRequest,
   SidebarPresetGroupInstanceDto,
   CreateSidebarPresetGroupInstanceRequest,
   UpdateSidebarPresetGroupPairRequest,
@@ -31,6 +32,10 @@ export function updatePromptPreset(req: UpdatePromptPresetRequest): Promise<void
 
 export function deletePromptPreset(id: string): Promise<void> {
   return invoke("delete_prompt_preset", { id });
+}
+
+export function reorderPromptPresets(req: ReorderPromptPresetsRequest): Promise<void> {
+  return invoke("reorder_prompt_presets", { req });
 }
 
 // ---- Preset Folders ----

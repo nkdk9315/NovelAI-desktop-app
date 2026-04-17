@@ -281,6 +281,7 @@ pub fn list_default_system_groups_for_genre(state, genre_id: String) -> Result<V
 | `create_prompt_preset` | req: `CreatePromptPresetRequest` | `PromptPresetDto` |
 | `update_prompt_preset` | req: `UpdatePromptPresetRequest` | `()` |
 | `delete_prompt_preset` | id | `()` |
+| `reorder_prompt_presets` | req: `ReorderPromptPresetsRequest` | `()` |
 
 ## 4.11 commands/preset_folders.rs
 

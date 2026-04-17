@@ -170,9 +170,15 @@ export interface PromptPresetDto {
   id: string;
   name: string;
   folderId: number | null;
+  sortKey: number;
   slots: PresetCharacterSlotDto[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ReorderPromptPresetsRequest {
+  folderId: number | null;
+  orderedIds: string[];
 }
 
 export interface PresetCharacterSlotDto {

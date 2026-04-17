@@ -182,6 +182,7 @@ pub fn run() {
             commands::prompt_presets::create_prompt_preset,
             commands::prompt_presets::update_prompt_preset,
             commands::prompt_presets::delete_prompt_preset,
+            commands::prompt_presets::reorder_prompt_presets,
             commands::preset_folders::list_preset_folders,
             commands::preset_folders::create_preset_folder,
             commands::preset_folders::rename_preset_folder,

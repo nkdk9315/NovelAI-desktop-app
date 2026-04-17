@@ -27,6 +27,7 @@ const MIGRATION_022: &str = include_str!("../migrations/022_prompt_presets.sql")
 const MIGRATION_023: &str = include_str!("../migrations/023_sidebar_preset_groups.sql");
 const MIGRATION_024: &str = include_str!("../migrations/024_sidebar_preset_group_strength.sql");
 const MIGRATION_025: &str = include_str!("../migrations/025_preset_slot_positions.sql");
+const MIGRATION_026: &str = include_str!("../migrations/026_prompt_preset_sort_key.sql");
 
 pub fn init_db(path: &str) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;
@@ -250,6 +251,14 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
             rusqlite::params!["schema_version", "25"],
+        )?;
+    }
+
+    if version < 26 {
+        conn.execute_batch(MIGRATION_026)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "26"],
         )?;
     }
 

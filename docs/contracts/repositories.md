@@ -291,6 +291,8 @@ pub fn find_by_id(conn: &Connection, id: &str) -> Result<PromptPresetRow, AppErr
 pub fn insert(conn: &Connection, row: &PromptPresetRow) -> Result<(), AppError>;
 pub fn update(conn: &Connection, row: &PromptPresetRow) -> Result<(), AppError>;
 pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError>;
+pub fn next_sort_key(conn: &Connection, folder_id: Option<i64>) -> Result<i64, AppError>;
+pub fn set_sort_key(conn: &Connection, id: &str, sort_key: i64) -> Result<(), AppError>;
 
 pub fn list_slots(conn: &Connection, preset_id: &str) -> Result<Vec<PresetCharacterSlotRow>, AppError>;
 // tuple: (id, slot_index, slot_label, genre_id, positive_prompt, negative_prompt, role, position_x, position_y)

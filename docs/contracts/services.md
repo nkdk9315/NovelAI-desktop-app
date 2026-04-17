@@ -387,12 +387,15 @@ pub fn get_prompt_preset(conn: &Connection, id: &str) -> Result<PromptPresetDto,
 pub fn create_prompt_preset(conn: &Connection, req: CreatePromptPresetRequest) -> Result<PromptPresetDto, AppError>;
 pub fn update_prompt_preset(conn: &Connection, req: UpdatePromptPresetRequest) -> Result<(), AppError>;
 pub fn delete_prompt_preset(conn: &Connection, id: &str) -> Result<(), AppError>;
+pub fn reorder_prompt_presets(conn: &mut Connection, req: ReorderPromptPresetsRequest) -> Result<(), AppError>;
 ```
 
 バリデーション:
 - プリセット名 trim 後の空禁止 / 最大 255 文字
 - slot 数は最低 2 必須（create および update で slots を更新する場合）
 - UUID は Service 層で `uuid::Uuid::new_v4()` 生成
+- `create_prompt_preset` は `repo::next_sort_key(folder_id)` でフォルダ内末尾の `sort_key` を自動採番
+- `reorder_prompt_presets` は `ordered_ids` の全プリセットが `folder_id` に所属することを確認し、トランザクション内で `sort_key = index` を一括更新
 
 ## 3.13 preset_folder_service
 

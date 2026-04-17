@@ -7,6 +7,7 @@ function preset(id: string, sourceXY: [number, number], targetXY: [number, numbe
     id,
     name: id,
     folderId: 1,
+    sortKey: 0,
     slots: [
       {
         id: `${id}-s`, slotIndex: 0, slotLabel: "", genreId: null,

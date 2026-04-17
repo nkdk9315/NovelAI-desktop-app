@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type {
   PromptPresetDto, PresetFolderDto,
   CreatePromptPresetRequest, UpdatePromptPresetRequest,
+  ReorderPromptPresetsRequest,
 } from "@/types";
 import * as ipc from "@/lib/ipc";
 
@@ -19,6 +20,7 @@ interface PresetState {
   movePresetFolder: (id: number, parentId: number | null) => Promise<void>;
   deletePresetFolder: (id: number) => Promise<void>;
   deletePresetsInFolder: (folderId: number) => Promise<number>;
+  reorderPresets: (req: ReorderPromptPresetsRequest) => Promise<void>;
 }
 
 export const usePresetStore = create<PresetState>()((set, get) => ({
@@ -67,5 +69,9 @@ export const usePresetStore = create<PresetState>()((set, get) => ({
     const count = await ipc.deletePresetsInFolder(folderId);
     await get().loadPresets();
     return count;
+  },
+  reorderPresets: async (req) => {
+    await ipc.reorderPromptPresets(req);
+    await get().loadPresets();
   },
 }));
