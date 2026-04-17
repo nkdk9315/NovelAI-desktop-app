@@ -21,6 +21,8 @@
         "title": "NovelAI Desktop",
         "width": 1400,
         "height": 900,
+        "minWidth": 1024,
+        "minHeight": 720,
         "resizable": true,
         "fullscreen": false
       }

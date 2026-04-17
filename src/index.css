@@ -2,8 +2,8 @@
 
 /* ── Tailwind v4 テーマ拡張 ── */
 @theme {
-  --font-sans: "Inter", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: "IBM Plex Sans", "IBM Plex Sans JP", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
   --radius-lg: 0.75rem;
   --radius-md: calc(var(--radius-lg) - 2px);
   --radius-sm: calc(var(--radius-lg) - 4px);
@@ -37,61 +37,65 @@
 }
 
 /* ── ダークモード（デフォルト） ── */
+/* 脱 AI テンプレ: 純黒ではなくわずかに青紫を含むスレート、アクセントはティール */
 :root {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.17 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.17 0 0);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.62 0.14 260);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.22 0 0);
-  --secondary-foreground: oklch(0.9 0 0);
-  --muted: oklch(0.22 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.25 0 0);
-  --accent-foreground: oklch(0.95 0 0);
-  --destructive: oklch(0.55 0.2 25);
+  --background: oklch(0.245 0.008 245);
+  --foreground: oklch(0.95 0.005 245);
+  --card: oklch(0.278 0.009 245);
+  --card-foreground: oklch(0.95 0.005 245);
+  --popover: oklch(0.31 0.010 245);
+  --popover-foreground: oklch(0.96 0.005 245);
+  --primary: oklch(0.72 0.10 195);
+  --primary-foreground: oklch(0.18 0.01 220);
+  --secondary: oklch(0.32 0.010 245);
+  --secondary-foreground: oklch(0.92 0.005 245);
+  --muted: oklch(0.305 0.008 245);
+  --muted-foreground: oklch(0.70 0.010 245);
+  --accent: oklch(0.345 0.011 245);
+  --accent-foreground: oklch(0.96 0.005 245);
+  --destructive: oklch(0.62 0.19 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.28 0 0);
-  --input: oklch(0.28 0 0);
-  --ring: oklch(0.62 0.14 260);
-  --sidebar-background: oklch(0.16 0 0);
-  --sidebar-foreground: oklch(0.9 0 0);
-  --sidebar-border: oklch(0.25 0 0);
-  --sidebar-accent: oklch(0.25 0 0);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-ring: oklch(0.62 0.14 260);
+  --border: oklch(0.355 0.010 245);
+  --input: oklch(0.355 0.010 245);
+  --ring: oklch(0.72 0.10 195);
+  --sidebar-background: oklch(0.265 0.009 245);
+  --sidebar-foreground: oklch(0.92 0.005 245);
+  --sidebar-border: oklch(0.34 0.010 245);
+  --sidebar-accent: oklch(0.34 0.011 245);
+  --sidebar-accent-foreground: oklch(0.96 0.005 245);
+  --sidebar-ring: oklch(0.72 0.10 195);
+  --shadow-modal: 0 18px 50px -14px oklch(0 0 0 / 0.6), 0 0 0 1px oklch(1 0 0 / 0.05);
 }
 
 /* ── ライトモード ── */
+/* ほんのり温色寄りのオフホワイト、アクセントはダークと揃えて深めティール */
 .light {
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.12 0 0);
+  --background: oklch(0.985 0.003 85);
+  --foreground: oklch(0.18 0.01 250);
   --card: oklch(1.0 0 0);
-  --card-foreground: oklch(0.12 0 0);
+  --card-foreground: oklch(0.18 0.01 250);
   --popover: oklch(1.0 0 0);
-  --popover-foreground: oklch(0.12 0 0);
-  --primary: oklch(0.55 0.16 260);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.2 0 0);
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  --accent: oklch(0.93 0 0);
-  --accent-foreground: oklch(0.15 0 0);
-  --destructive: oklch(0.5 0.2 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.90 0 0);
-  --input: oklch(0.90 0 0);
-  --ring: oklch(0.55 0.16 260);
-  --sidebar-background: oklch(0.97 0 0);
-  --sidebar-foreground: oklch(0.2 0 0);
-  --sidebar-border: oklch(0.90 0 0);
-  --sidebar-accent: oklch(0.93 0 0);
-  --sidebar-accent-foreground: oklch(0.15 0 0);
-  --sidebar-ring: oklch(0.55 0.16 260);
+  --popover-foreground: oklch(0.18 0.01 250);
+  --primary: oklch(0.55 0.11 195);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.955 0.004 85);
+  --secondary-foreground: oklch(0.22 0.01 250);
+  --muted: oklch(0.955 0.004 85);
+  --muted-foreground: oklch(0.46 0.01 250);
+  --accent: oklch(0.925 0.006 85);
+  --accent-foreground: oklch(0.18 0.01 250);
+  --destructive: oklch(0.52 0.20 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.895 0.005 85);
+  --input: oklch(0.895 0.005 85);
+  --ring: oklch(0.55 0.11 195);
+  --sidebar-background: oklch(0.97 0.004 85);
+  --sidebar-foreground: oklch(0.22 0.01 250);
+  --sidebar-border: oklch(0.895 0.005 85);
+  --sidebar-accent: oklch(0.925 0.006 85);
+  --sidebar-accent-foreground: oklch(0.18 0.01 250);
+  --sidebar-ring: oklch(0.55 0.11 195);
+  --shadow-modal: 0 10px 40px -10px oklch(0 0 0 / 0.18), 0 0 0 1px oklch(0 0 0 / 0.04);
 }
 
 /* ── ベーススタイル ── */
@@ -105,6 +109,23 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
+  /* 数値は桁ブレ防止に tabular */
+  .tabular, [data-tabular], input[type="number"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* editorial 系セクション見出し */
+  .section-heading {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+  }
+
+  /* Input/Textarea: focus で primary 発光 */
+  input:focus-visible,
+  textarea:focus-visible,
+  [contenteditable="true"]:focus-visible {
+    box-shadow: 0 0 0 3px oklch(from var(--primary) l c h / 0.22);
+  }
+
   /* Tauri デスクトップ: テキスト以外のドラッグ選択を無効化 */
   body {
     -webkit-user-select: none;
@@ -115,26 +136,32 @@
     user-select: text;
   }
 
-  /* macOS 風スクロールバー */
+  /* macOS 風オートハイドスクロールバー */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: oklch(0.4 0 0);
-    border-radius: 3px;
+    background: transparent;
+    border-radius: 4px;
+    transition: background 200ms ease;
+  }
+  :hover::-webkit-scrollbar-thumb,
+  *:hover > ::-webkit-scrollbar-thumb {
+    background: oklch(0.45 0.008 245 / 0.55);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.5 0 0);
+    background: oklch(0.55 0.008 245 / 0.75) !important;
   }
-  .light ::-webkit-scrollbar-thumb {
-    background: oklch(0.75 0 0);
+  .light :hover::-webkit-scrollbar-thumb,
+  .light *:hover > ::-webkit-scrollbar-thumb {
+    background: oklch(0.75 0 0 / 0.55);
   }
   .light ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.65 0 0);
+    background: oklch(0.65 0 0 / 0.75) !important;
   }
 
   /* インタラクティブ要素のトランジション */
@@ -142,3 +169,4 @@
     transition: background-color 150ms ease, color 150ms ease, opacity 150ms ease;
   }
 }
+

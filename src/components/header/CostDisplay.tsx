@@ -31,15 +31,20 @@ export default function CostDisplay() {
   });
 
   return (
-    <div className="flex items-center gap-1">
-      <span className="text-xs text-muted-foreground">
-        {t("generation.cost")}:{" "}
-        {cost.isOpusFree ? (
-          <span className="font-medium text-green-500">Free</span>
-        ) : (
-          <span className="font-medium">{cost.totalCost} {t("generation.anlas")}</span>
-        )}
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {t("generation.cost")}
       </span>
+      {cost.isOpusFree ? (
+        <span className="text-sm font-medium text-primary">Free</span>
+      ) : (
+        <span className="text-sm font-medium tabular">
+          {cost.totalCost}
+          <span className="ml-1 text-[10px] font-normal text-muted-foreground">
+            {t("generation.anlas")}
+          </span>
+        </span>
+      )}
     </div>
   );
 }
