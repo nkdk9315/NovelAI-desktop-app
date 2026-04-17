@@ -90,6 +90,7 @@
       "square": "Square"
     },
     "sizeCustom": "Custom",
+    "sizeCustomAction": "Enter size…",
     "sizeErrorTotal": "Total pixels exceed the limit ({{max}})",
     "sizeHint": "64–2048 (multiple of 64)"
   },

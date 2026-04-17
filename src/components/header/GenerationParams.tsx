@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Select,
@@ -40,18 +41,20 @@ function clampDimension(v: number): number {
 export default function GenerationParams() {
   const { t } = useTranslation();
   const { model, width, height, steps, scale, sampler, setParam } = useGenerationParamsStore();
+  const [customMode, setCustomMode] = useState(false);
 
   const matchedPreset = SIZE_PRESET_GROUPS.flatMap((g) =>
     g.items.map((item) => ({ ...item, group: g.group })),
   ).find((p) => p.w === width && p.h === height);
 
-  const selectValue = matchedPreset
-    ? `${matchedPreset.group}:${matchedPreset.w}x${matchedPreset.h}`
-    : CUSTOM_SIZE_VALUE;
+  const isCustom = customMode || !matchedPreset;
+
+  const selectValue = isCustom
+    ? CUSTOM_SIZE_VALUE
+    : `${matchedPreset!.group}:${matchedPreset!.w}x${matchedPreset!.h}`;
 
   const totalPixels = width * height;
   const totalPixelError = totalPixels > MAX_TOTAL_PIXELS;
-  const isCustom = !matchedPreset;
 
   return (
     <div className="flex items-center gap-2">
@@ -59,7 +62,7 @@ export default function GenerationParams() {
         <SelectTrigger className="h-8 w-44 text-xs">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper" sideOffset={4}>
           {MODELS.map((m) => (
             <SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>
           ))}
@@ -69,7 +72,11 @@ export default function GenerationParams() {
       <Select
         value={selectValue}
         onValueChange={(v) => {
-          if (v === CUSTOM_SIZE_VALUE) return;
+          if (v === CUSTOM_SIZE_VALUE) {
+            setCustomMode(true);
+            return;
+          }
+          setCustomMode(false);
           const [, dims] = v.split(":");
           const [wStr, hStr] = dims.split("x");
           const w = Number(wStr);
@@ -84,10 +91,10 @@ export default function GenerationParams() {
           <SelectValue>
             {isCustom
               ? `${t("generation.sizeCustom")} (${width}x${height})`
-              : `${t(`generation.sizeOrient.${matchedPreset.orient}`)} (${matchedPreset.w}x${matchedPreset.h})`}
+              : `${t(`generation.sizeOrient.${matchedPreset!.orient}`)} (${matchedPreset!.w}x${matchedPreset!.h})`}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper" sideOffset={4}>
           {SIZE_PRESET_GROUPS.map((group) => (
             <SelectGroup key={group.group}>
               <SelectLabel>{t(`generation.sizeGroup.${group.group}`)}</SelectLabel>
@@ -104,7 +111,7 @@ export default function GenerationParams() {
           <SelectGroup>
             <SelectLabel>{t("generation.sizeGroup.custom")}</SelectLabel>
             <SelectItem value={CUSTOM_SIZE_VALUE} className="text-xs">
-              {t("generation.sizeCustom")}
+              {t("generation.sizeCustomAction")}
             </SelectItem>
           </SelectGroup>
         </SelectContent>
@@ -166,7 +173,7 @@ export default function GenerationParams() {
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" sideOffset={4}>
                 {SAMPLERS.map((s) => (
                   <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
                 ))}

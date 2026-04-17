@@ -90,6 +90,7 @@
       "square": "正方形"
     },
     "sizeCustom": "カスタム",
+    "sizeCustomAction": "サイズを指定…",
     "sizeErrorTotal": "総ピクセル数が上限 ({{max}}) を超えています",
     "sizeHint": "64〜2048 (64 の倍数)"
   },
