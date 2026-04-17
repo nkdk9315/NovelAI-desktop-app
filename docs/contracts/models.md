@@ -357,6 +357,19 @@ pub struct CostEstimateRequest {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CountTokensRequest {
+    pub texts: Vec<String>,  // batch of prompts (main + all characters, both positive and negative)
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CountTokensResponse {
+    pub counts: Vec<usize>,   // one T5 token count per input text (0 for empty strings)
+    pub max_tokens: usize,    // novelai-api MAX_TOKENS (= 512)
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TagInput { pub name: Option<String>, pub tag: String, pub negative_prompt: Option<String>, pub default_strength: Option<i32>, pub thumbnail_path: Option<String> }
 
 pub struct CreatePromptGroupRequest {

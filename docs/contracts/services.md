@@ -376,3 +376,23 @@ pub fn remove_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, App
 ```
 
 ディスパッチ方針: 3 文字未満は `repo::search_like`、3 文字以上は `repo::search`（FTS5 trigram）。
+
+## 3.12 tokens_service
+
+```rust
+// --- services/tokens.rs ---
+
+/// 任意の文字列配列の T5 トークン数を返す。
+/// novelai-api の `get_t5_tokenizer` を初回呼び出しで非同期にロードし
+/// （ディスクキャッシュ + メモリシングルトン）、以降は即時返却。
+/// 空文字列は 0 を返し、非空は `count_tokens()` の結果（EOS 込み）を返す。
+pub async fn count_tokens(req: CountTokensRequest) -> Result<CountTokensResponse, AppError>;
+
+/// novelai-api の MAX_TOKENS (= 512) を返す純粋関数。
+pub fn max_tokens() -> usize;
+```
+
+呼び出し側（フロントエンド）は、ポジティブ側（メインプロンプト + 全キャラクタープロンプト）の
+トークン数合計と、ネガティブ側の合計がそれぞれ `max_tokens` 以下であることを検証する。
+トークナイザー取得に失敗した場合は `AppError::ApiClient` を返し、フロントエンドはバリデーションを
+スキップしてユーザー操作を阻害しない。
