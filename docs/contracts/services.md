@@ -377,7 +377,60 @@ pub fn remove_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, App
 
 ディスパッチ方針: 3 文字未満は `repo::search_like`、3 文字以上は `repo::search`（FTS5 trigram）。
 
-## 3.12 tokens_service
+## 3.12 prompt_preset_service
+
+```rust
+// --- services/prompt_preset.rs ---
+
+pub fn list_prompt_presets(conn: &Connection, search: Option<&str>) -> Result<Vec<PromptPresetDto>, AppError>;
+pub fn get_prompt_preset(conn: &Connection, id: &str) -> Result<PromptPresetDto, AppError>;
+pub fn create_prompt_preset(conn: &Connection, req: CreatePromptPresetRequest) -> Result<PromptPresetDto, AppError>;
+pub fn update_prompt_preset(conn: &Connection, req: UpdatePromptPresetRequest) -> Result<(), AppError>;
+pub fn delete_prompt_preset(conn: &Connection, id: &str) -> Result<(), AppError>;
+```
+
+バリデーション:
+- プリセット名 trim 後の空禁止 / 最大 255 文字
+- slot 数は最低 2 必須（create および update で slots を更新する場合）
+- UUID は Service 層で `uuid::Uuid::new_v4()` 生成
+
+## 3.13 preset_folder_service
+
+```rust
+// --- services/preset_folder.rs ---
+
+pub fn list_preset_folders(conn: &Connection) -> Result<Vec<PresetFolderDto>, AppError>;
+pub fn create_preset_folder(conn: &Connection, title: &str, parent_id: Option<i64>) -> Result<PresetFolderDto, AppError>;
+pub fn rename_preset_folder(conn: &Connection, id: i64, title: &str) -> Result<(), AppError>;
+pub fn move_preset_folder(conn: &Connection, id: i64, new_parent_id: Option<i64>) -> Result<(), AppError>;
+pub fn delete_preset_folder(conn: &Connection, id: i64) -> Result<(), AppError>;
+pub fn count_presets_in_folder(conn: &Connection, folder_id: i64) -> Result<i64, AppError>;
+pub fn delete_presets_in_folder(conn: &Connection, folder_id: i64) -> Result<usize, AppError>;
+pub fn set_preset_folder(conn: &Connection, preset_id: &str, folder_id: Option<i64>) -> Result<(), AppError>;
+```
+
+## 3.14 sidebar_preset_group_service
+
+```rust
+// --- services/sidebar_preset_group.rs ---
+
+pub fn list_by_project(conn: &Connection, project_id: &str) -> Result<Vec<SidebarPresetGroupInstanceDto>, AppError>;
+pub fn create(conn: &Connection, req: CreateSidebarPresetGroupInstanceRequest) -> Result<SidebarPresetGroupInstanceDto, AppError>;
+pub fn update_pair(conn: &Connection, req: UpdateSidebarPresetGroupPairRequest) -> Result<(), AppError>;
+pub fn set_active_presets(conn: &Connection, req: SetSidebarPresetGroupActivePresetsRequest) -> Result<(), AppError>;
+pub fn update_default_strength(conn: &Connection, req: UpdateSidebarPresetGroupDefaultStrengthRequest) -> Result<(), AppError>;
+pub fn set_preset_strength(conn: &Connection, req: SetSidebarPresetGroupPresetStrengthRequest) -> Result<(), AppError>;
+pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError>;
+// reorder は全 ID の project 所属を検証した後、単一トランザクションで position を書き換え
+pub fn reorder(conn: &mut Connection, req: ReorderSidebarPresetGroupInstancesRequest) -> Result<(), AppError>;
+```
+
+バリデーション:
+- `source_character_id != target_character_id`
+- 強度は `is_finite()` かつ `1.0..=10.0`
+- reorder は各 `ordered_ids[i]` が `project_id` に属することを確認してから適用
+
+## 3.15 tokens_service
 
 ```rust
 // --- services/tokens.rs ---

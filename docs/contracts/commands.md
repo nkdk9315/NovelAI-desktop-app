@@ -272,7 +272,43 @@ pub fn list_default_system_groups_for_genre(state, genre_id: String) -> Result<V
 | `count_tag_members_per_group` | — | `Vec<CountByIdDto>` |
 | `count_favorite_descendants_per_group` | — | `Vec<CountByIdDto>` |
 
-## 4.Y commands/tokens.rs
+## 4.10 commands/prompt_presets.rs
+
+| コマンド | 引数 | 戻り値 |
+|---|---|---|
+| `list_prompt_presets` | search? | `Vec<PromptPresetDto>` |
+| `get_prompt_preset` | id | `PromptPresetDto` |
+| `create_prompt_preset` | req: `CreatePromptPresetRequest` | `PromptPresetDto` |
+| `update_prompt_preset` | req: `UpdatePromptPresetRequest` | `()` |
+| `delete_prompt_preset` | id | `()` |
+
+## 4.11 commands/preset_folders.rs
+
+| コマンド | 引数 | 戻り値 |
+|---|---|---|
+| `list_preset_folders` | — | `Vec<PresetFolderDto>` |
+| `create_preset_folder` | title, parentId? | `PresetFolderDto` |
+| `rename_preset_folder` | folderId, title | `()` |
+| `move_preset_folder` | folderId, newParentId? | `()` |
+| `delete_preset_folder` | folderId | `()` |
+| `count_presets_in_folder` | folderId | `i64` |
+| `delete_presets_in_folder` | folderId | `usize`（削除件数） |
+| `set_preset_folder` | presetId, folderId? | `()` |
+
+## 4.12 commands/sidebar_preset_groups.rs
+
+| コマンド | 引数 | 戻り値 |
+|---|---|---|
+| `list_sidebar_preset_group_instances` | projectId | `Vec<SidebarPresetGroupInstanceDto>` |
+| `create_sidebar_preset_group_instance` | req | `SidebarPresetGroupInstanceDto` |
+| `update_sidebar_preset_group_pair` | req | `()` |
+| `set_sidebar_preset_group_active_presets` | req | `()` |
+| `delete_sidebar_preset_group_instance` | id | `()` |
+| `reorder_sidebar_preset_group_instances` | req | `()` |
+| `update_sidebar_preset_group_default_strength` | req | `()` |
+| `set_sidebar_preset_group_preset_strength` | req | `()` |
+
+## 4.13 commands/tokens.rs
 
 ```rust
 #[tauri::command]

@@ -544,3 +544,139 @@ pub struct TagWithGroupsDto {
 #[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
 pub struct CountByIdDto { pub id: i64, pub count: i64 }
 ```
+
+## Prompt Presets & Sidebar Preset Groups
+
+マルチキャラクター対話プリセット機能（migrations 022–025）。
+
+### Row Structs
+
+```rust
+pub struct PromptPresetRow {
+    pub id: String,              // UUID
+    pub name: String,
+    pub folder_id: Option<i64>,  // FK → preset_folders(id), ON DELETE SET NULL
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+pub struct PresetCharacterSlotRow {
+    pub id: String,                       // UUID
+    pub preset_id: String,                // FK → prompt_presets(id), CASCADE
+    pub slot_index: i32,                  // 0-based
+    pub slot_label: String,
+    pub genre_id: Option<String>,         // FK → genres(id), ON DELETE SET NULL
+    pub positive_prompt: String,
+    pub negative_prompt: String,
+    pub role: String,                     // "target" | "source" | "none"
+    pub position_x: f64,                  // migration 025, 0.0..=1.0
+    pub position_y: f64,                  // migration 025, 0.0..=1.0
+}
+
+pub struct PresetFolderRow {
+    pub id: i64,                          // AUTOINCREMENT
+    pub title: String,
+    pub parent_id: Option<i64>,           // self-ref, CASCADE
+    pub sort_key: i64,
+}
+
+pub struct SidebarPresetGroupInstanceRow {
+    pub id: String,                       // UUID
+    pub project_id: String,               // FK → projects(id), CASCADE
+    pub folder_id: i64,                   // FK → preset_folders(id), CASCADE
+    pub source_character_id: String,      // front-end UUID, not FK-enforced
+    pub target_character_id: String,      // front-end UUID, not FK-enforced
+    pub position: i32,
+    pub default_positive_strength: f64,   // migration 024
+    pub default_negative_strength: f64,   // migration 024
+    pub created_at: String,
+    pub updated_at: String,
+}
+```
+
+### IPC DTOs
+
+```rust
+#[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
+pub struct PromptPresetDto {
+    pub id: String,
+    pub name: String,
+    pub folder_id: Option<i64>,
+    pub slots: Vec<PresetCharacterSlotDto>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
+pub struct PresetCharacterSlotDto { /* row と同形、preset_id は除外 */ }
+
+#[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
+pub struct PresetFolderDto { /* row と同形、sortKey 含む */ }
+
+#[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
+pub struct SidebarPresetGroupInstanceDto {
+    /* row 相当 + activePresets: Vec<SidebarPresetGroupActivePresetDto> */
+}
+
+#[derive(Debug, Clone, Serialize)] #[serde(rename_all = "camelCase")]
+pub struct SidebarPresetGroupActivePresetDto {
+    pub preset_id: String,
+    pub positive_strength: Option<f64>,   // migration 024, NULL = instance default 継承
+    pub negative_strength: Option<f64>,   // migration 024
+    pub activated_at: String,             // migration 025, 競合解決の last-wins キー
+}
+```
+
+### Request DTOs
+
+```rust
+#[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
+pub struct CreatePromptPresetRequest {
+    pub name: String,
+    #[serde(default)] pub folder_id: Option<i64>,
+    pub slots: Vec<PresetSlotInput>,      // 最低 2 slot 必須
+}
+
+#[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
+pub struct UpdatePromptPresetRequest {
+    pub id: String,
+    pub name: Option<String>,
+    pub folder_id: Option<Option<i64>>,   // double-option: None = 無変更、Some(None) = クリア
+    pub slots: Option<Vec<PresetSlotInput>>,
+}
+
+#[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
+pub struct PresetSlotInput { /* slot_label, genre_id?, positive_prompt, negative_prompt?, role, position_x, position_y */ }
+
+#[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
+pub struct CreateSidebarPresetGroupInstanceRequest {
+    pub project_id: String,
+    pub folder_id: i64,
+    pub source_character_id: String,      // source != target バリデーション
+    pub target_character_id: String,
+}
+
+#[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
+pub struct UpdateSidebarPresetGroupPairRequest { pub id: String, pub source_character_id: String, pub target_character_id: String }
+
+#[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
+pub struct SetSidebarPresetGroupActivePresetsRequest { pub id: String, pub preset_ids: Vec<String> }
+
+#[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
+pub struct ReorderSidebarPresetGroupInstancesRequest { pub project_id: String, pub ordered_ids: Vec<String> }
+
+#[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
+pub struct UpdateSidebarPresetGroupDefaultStrengthRequest {
+    pub id: String,
+    pub default_positive_strength: f64,   // 1.0..=10.0 バリデーション
+    pub default_negative_strength: f64,
+}
+
+#[derive(Debug, Deserialize)] #[serde(rename_all = "camelCase")]
+pub struct SetSidebarPresetGroupPresetStrengthRequest {
+    pub instance_id: String,
+    pub preset_id: String,
+    pub positive_strength: Option<f64>,   // None = instance default に戻す
+    pub negative_strength: Option<f64>,
+}
+```

@@ -4,6 +4,7 @@ import CharacterAddButtons from "./CharacterAddButtons";
 import CharacterSection from "./CharacterSection";
 import ArtistStyleSection from "./ArtistStyleSection";
 import VibeSection from "./VibeSection";
+import SidebarPresetGroups from "./sidebar-preset-groups/SidebarPresetGroups";
 
 export default function LeftPanel() {
   const characters = useGenerationParamsStore((s) => s.characters);
@@ -16,6 +17,8 @@ export default function LeftPanel() {
       {characters.map((char, index) => (
         <CharacterSection key={char.id} index={index} />
       ))}
+      <hr className="border-border" />
+      <SidebarPresetGroups />
       <hr className="border-border" />
       <ArtistStyleSection />
       <hr className="border-border" />

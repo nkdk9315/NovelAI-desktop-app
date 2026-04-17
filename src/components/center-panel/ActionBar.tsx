@@ -26,6 +26,9 @@ import { normalizeStrengths } from "@/lib/normalize-strength";
 import { rollPromptForGeneration, substituteWildcards, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 import { usePromptTokenCounts } from "@/hooks/use-prompt-token-counts";
 import TokenCounter from "@/components/shared/TokenCounter";
+import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
+import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store";
+import { usePresetStore } from "@/stores/preset-store";
 import type { GenerateImageRequest } from "@/types";
 
 export default function ActionBar() {
@@ -113,11 +116,15 @@ export default function ActionBar() {
     // Assemble main prompt: artist prefix + main target override (or assembled groups)
     const sidebarState = useSidebarPromptStore.getState();
     const mainTarget = sidebarState.targets["main"];
-    const assembledMain = mainTarget
+    const presetInstances = useSidebarPresetGroupStore.getState().instances;
+    const allPresets = usePresetStore.getState().presets;
+    const mainContrib = getPresetContributionsForCharacter("main", presetInstances, allPresets);
+    const assembledMainBase = mainTarget
       ? (mainTarget.promptOverride != null
           ? substituteWildcards(mainTarget.promptOverride, mainTarget.groups)
           : rollPromptForGeneration("", mainTarget.groups))
       : "";
+    const assembledMain = appendContributions(assembledMainBase, mainContrib.positive);
     const qualitySuffix = params.qualityTagsEnabled
       ? (assembledMain ? `, ${QUALITY_TAGS}` : QUALITY_TAGS)
       : "";
@@ -132,9 +139,10 @@ export default function ActionBar() {
       enabledVibes = enabledVibes.map((v, i) => ({ ...v, strength: normalized[i] }));
     }
 
-    const mainNegBase = mainTarget != null
+    const mainNegRaw = mainTarget != null
       ? (mainTarget.negativeOverride ?? assembleNegativeFromGroups(mainTarget.groups, { mode: "generate" }))
       : "";
+    const mainNegBase = appendContributions(mainNegRaw, mainContrib.negative);
     const negPresetText = NEGATIVE_PRESETS[params.negativePreset];
     const combinedNeg = negPresetText
       ? (mainNegBase ? `${negPresetText}, ${mainNegBase}` : negPresetText)
@@ -148,14 +156,17 @@ export default function ActionBar() {
         params.characters.length > 0
           ? params.characters.map((c) => {
               const charTarget = sidebarState.targets[c.id];
-              const charPrompt = charTarget
+              const charContrib = getPresetContributionsForCharacter(c.id, presetInstances, allPresets);
+              const charPromptBase = charTarget
                 ? (charTarget.promptOverride != null
                     ? substituteWildcards(charTarget.promptOverride, charTarget.groups)
                     : rollPromptForGeneration("", charTarget.groups))
                 : c.prompt;
-              const charNeg = charTarget
+              const charPrompt = appendContributions(charPromptBase, charContrib.positive);
+              const charNegBase = charTarget
                 ? (charTarget.negativeOverride ?? assembleNegativeFromGroups(charTarget.groups, { mode: "generate" }))
                 : c.negativePrompt;
+              const charNeg = appendContributions(charNegBase, charContrib.negative);
               return {
                 prompt: charPrompt,
                 centerX: c.centerX,
