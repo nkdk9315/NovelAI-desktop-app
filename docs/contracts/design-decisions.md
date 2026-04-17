@@ -110,3 +110,22 @@ allArtistTags = [...sidebarArtistTags, ...activePresets.flatMap(p => p.artistTag
 ## 7.9 キャラクター ID が FK でない設計
 
 `sidebar_preset_group_instances.source_character_id` / `target_character_id` は UUID 文字列だが FK 制約を持たない。キャラクター情報が `GenerateParams` の JSON ブロブに格納されており、独立テーブルが存在しないため。フロントエンド/サービス層で整合性を担保する必要がある。
+
+## 7.10 画像複数選択保存の設計
+
+**課題**: 生成履歴から複数枚を一括保存したい（1枚ずつ or 全保存しかなかった）。
+
+**選択**: `useHistoryStore` に `selectedImageIds: string[]` を追加し、ThumbnailGrid の各サムネイルにチェックボックスを重ねる方式。
+
+**設計の判断点**:
+
+| 検討事項 | 採用案 | 理由 |
+|----------|--------|------|
+| 選択 UI | ホバー時チェックボックス表示 | 常時表示はサムネイルの視認性を損なう |
+| 選択状態の置き場 | `useHistoryStore` | 履歴と選択は同じドメイン; GenerationStore の `lastResult` とは分離 |
+| 一括保存の実装 | フロントから `Promise.all(ids.map(ipc.saveImage))` | 新規 Rust コマンド不要。画像数は数十〜百程度なので並列 IPC で十分 |
+| 表示選択との分離 | `lastResult`（primary 枠）と `selectedImageIds`（青枠）を別管理 | 「見ている画像」と「保存したい画像」は独立した操作 |
+
+**エラーハンドリング**:
+- ActionBar の `handleSave` / `handleSaveAll` を try/catch で包み、成功・失敗をトーストで通知
+- `saveSelectedImages` の失敗も HistoryHeader 側で catch してトースト表示

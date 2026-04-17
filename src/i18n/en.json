@@ -73,7 +73,10 @@
     "tokensPositive": "Pos",
     "tokensNegative": "Neg",
     "tokenLimitExceeded": "Prompt exceeds the {{max}} token limit. Shorten it to generate.",
-    "tokenLimitExceededToast": "Prompt token count exceeds the limit ({{max}})."
+    "tokenLimitExceededToast": "Prompt token count exceeds the limit ({{max}}).",
+    "saveSuccess": "Saved",
+    "saveAllSuccess": "All saved",
+    "saveError": "Save failed"
   },
   "prompt": {
     "clearOverride": "Clear override",
@@ -104,7 +107,12 @@
     "title": "History",
     "all": "All",
     "saved": "Saved",
-    "emptyState": "No history"
+    "emptyState": "No history",
+    "selectedCount": "{{count}} selected",
+    "saveSelected": "Save Selected",
+    "clearSelection": "Clear",
+    "saveSelectedSuccess": "Saved {{count}} images",
+    "saveSelectedError": "Save failed"
   },
   "character": {
     "add": "Add Character",

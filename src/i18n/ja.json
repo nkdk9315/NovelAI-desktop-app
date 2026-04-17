@@ -73,7 +73,10 @@
     "tokensPositive": "ポジ",
     "tokensNegative": "ネガ",
     "tokenLimitExceeded": "プロンプトが {{max}} トークンの上限を超えています。短くしてください。",
-    "tokenLimitExceededToast": "プロンプトのトークン数が上限（{{max}}）を超えています。"
+    "tokenLimitExceededToast": "プロンプトのトークン数が上限（{{max}}）を超えています。",
+    "saveSuccess": "保存しました",
+    "saveAllSuccess": "すべて保存しました",
+    "saveError": "保存に失敗しました"
   },
   "prompt": {
     "clearOverride": "オーバーライドを解除",
@@ -104,7 +107,12 @@
     "title": "履歴",
     "all": "すべて",
     "saved": "保存済み",
-    "emptyState": "履歴がありません"
+    "emptyState": "履歴がありません",
+    "selectedCount": "{{count}}枚を選択中",
+    "saveSelected": "選択を保存",
+    "clearSelection": "選択解除",
+    "saveSelectedSuccess": "{{count}}枚を保存しました",
+    "saveSelectedError": "保存に失敗しました"
   },
   "character": {
     "add": "キャラクター追加",

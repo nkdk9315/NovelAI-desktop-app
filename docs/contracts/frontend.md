@@ -663,7 +663,7 @@ function useArtistTagInput(onAdd: (name: string) => void): {
 
 ---
 
-## 6.6 usePromptTokenCounts (`src/hooks/use-prompt-token-counts.ts`)
+## 6.7 usePromptTokenCounts (`src/hooks/use-prompt-token-counts.ts`)
 
 生成直前のプロンプト組立結果に対して T5 トークン数を計算し、API の 512 トークン上限
 （ポジティブ / ネガティブそれぞれ）に対するオーバーフロー状態を返すフック。
@@ -693,7 +693,7 @@ function usePromptTokenCounts(): PromptTokenCounts;
 - **フェイルセーフ**: バックエンドエラー時は loading=false に戻し、
   直前の集計値を維持する（ユーザー操作をブロックしない）。
 
-## 6.7 TokenCounter (`src/components/shared/TokenCounter.tsx`)
+## 6.8 TokenCounter (`src/components/shared/TokenCounter.tsx`)
 
 `usePromptTokenCounts()` の結果を受け取って Pos / Neg カウントを表示するプレゼンテーション
 コンポーネント。オーバーフロー時は `text-destructive` + 警告メッセージを表示する。
@@ -708,6 +708,38 @@ interface TokenCounterProps {
 `ActionBar` の生成ボタン直上に配置し、`tokenCounts.overflow` 時は `Generate` ボタンを
 disabled にした上で、クリック時にも `toast.error(t("generation.tokenLimitExceededToast"))`
 でユーザーに通知する。
+
+## 6.6 useHistoryStore (`src/stores/history-store.ts`)
+
+生成履歴の管理と複数選択保存を担うストア。
+
+```typescript
+interface HistoryState {
+  images: GeneratedImageDto[];
+  isLoading: boolean;
+  selectedImageIds: string[];       // 一括保存対象として選択中の画像 ID
+
+  loadImages(projectId: string, savedOnly?: boolean): Promise<void>;
+  saveImage(imageId: string): Promise<void>;
+  saveAllImages(projectId: string): Promise<void>;
+  deleteImage(imageId: string): Promise<void>;
+
+  toggleImageSelection(imageId: string): void;  // チェックボックスで ON/OFF
+  clearSelection(): void;                        // 全選択解除
+  saveSelectedImages(): Promise<void>;           // 選択中の画像を一括保存して選択解除
+}
+```
+
+**saveSelectedImages の挙動**:
+1. `selectedImageIds` のコピーを取得
+2. 全 ID に対して `ipc.saveImage(id)` を並列実行（`Promise.all`）
+3. 成功時: 対象画像の `isSaved = true` に更新し `selectedImageIds = []` にリセット
+4. 失敗時: エラーを呼び出し元（HistoryHeader）に throw して toast 表示
+
+**選択状態と表示状態の分離**:
+- `selectedImageIds` — 一括保存対象（青枠 + チェックマーク）
+- `lastResult` (GenerationStore) — 中央パネルに表示中の画像（primary 枠）
+- 両方が重なった場合は `selectedImageIds` の青枠を優先表示
 
 ---
 
