@@ -1,6 +1,23 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, X } from "lucide-react";
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +36,56 @@ interface TagEditorProps {
   onTagsChange: (tags: TagInput[]) => void;
 }
 
+interface SortableTagBadgeProps {
+  id: string;
+  label: string;
+  onOpenEdit: () => void;
+  onRemove: (e: React.MouseEvent) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => void;
+}
+
+function SortableTagBadge({ id, label, onOpenEdit, onRemove, onKeyDown }: SortableTagBadgeProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    touchAction: "none",
+  };
+  return (
+    <Badge
+      ref={setNodeRef}
+      style={style}
+      variant="secondary"
+      className="cursor-grab active:cursor-grabbing text-xs hover:bg-accent gap-1 pr-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+      onClick={onOpenEdit}
+      {...attributes}
+      {...listeners}
+      onKeyDown={(e) => {
+        listeners?.onKeyDown?.(e);
+        if (!e.defaultPrevented) onKeyDown(e);
+      }}
+    >
+      {label}
+      <button
+        type="button"
+        tabIndex={-1}
+        className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={onRemove}
+      >
+        <X className="h-2.5 w-2.5 text-muted-foreground" />
+      </button>
+    </Badge>
+  );
+}
+
+function makeId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `id-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+}
+
 export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
   const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
@@ -31,6 +98,22 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
   const addBtnRef = useRef<HTMLButtonElement>(null);
   const nameEnterCountRef = useRef(0);
   const shouldFocusAddBtnRef = useRef(false);
+
+  const [ids, setIds] = useState<string[]>(() => tags.map(() => makeId()));
+  useEffect(() => {
+    setIds((prev) => {
+      if (prev.length === tags.length) return prev;
+      if (prev.length < tags.length) {
+        return [...prev, ...Array.from({ length: tags.length - prev.length }, makeId)];
+      }
+      return prev.slice(0, tags.length);
+    });
+  }, [tags.length]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const canSave = modalName.trim().length > 0 && modalContent.trim().length > 0;
 
@@ -62,6 +145,7 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
       ));
     } else {
       onTagsChange([...tags, { name: modalName.trim(), tag: modalContent.trim(), negativePrompt: modalNegative.trim() }]);
+      setIds((prev) => [...prev, makeId()]);
     }
     shouldFocusAddBtnRef.current = true;
     setShowModal(false);
@@ -70,6 +154,7 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
   const handleSaveAndAddAnother = () => {
     if (!canSave) return;
     onTagsChange([...tags, { name: modalName.trim(), tag: modalContent.trim(), negativePrompt: modalNegative.trim() }]);
+    setIds((prev) => [...prev, makeId()]);
     setModalName("");
     setModalContent("");
     setModalNegative("");
@@ -101,6 +186,7 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
   const handleRemove = (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
     onTagsChange(tags.filter((_, i) => i !== index));
+    setIds((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleEntryKeyDown = (index: number, e: React.KeyboardEvent<HTMLElement>) => {
@@ -110,7 +196,18 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
     } else if (e.key === "Delete" || e.key === "Backspace") {
       e.preventDefault();
       onTagsChange(tags.filter((_, i) => i !== index));
+      setIds((prev) => prev.filter((_, i) => i !== index));
     }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setIds(arrayMove(ids, oldIndex, newIndex));
+    onTagsChange(arrayMove(tags, oldIndex, newIndex));
   };
 
   return (
@@ -118,27 +215,20 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
       <Label className="text-xs">{t("promptGroup.prompts")}</Label>
 
       <div className="flex flex-wrap gap-1 max-h-60 overflow-y-auto rounded border border-border/50 p-1">
-        {tags.map((entry, i) => (
-          <Badge
-            key={i}
-            variant="secondary"
-            tabIndex={0}
-            role="button"
-            className="cursor-pointer text-xs hover:bg-accent gap-1 pr-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
-            onClick={() => openEdit(i)}
-            onKeyDown={(e) => handleEntryKeyDown(i, e)}
-          >
-            {entry.name || entry.tag}
-            <button
-              type="button"
-              tabIndex={-1}
-              className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
-              onClick={(e) => handleRemove(i, e)}
-            >
-              <X className="h-2.5 w-2.5 text-muted-foreground" />
-            </button>
-          </Badge>
-        ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={ids} strategy={rectSortingStrategy}>
+            {tags.map((entry, i) => (
+              <SortableTagBadge
+                key={ids[i] ?? i}
+                id={ids[i] ?? String(i)}
+                label={entry.name || entry.tag}
+                onOpenEdit={() => openEdit(i)}
+                onRemove={(e) => handleRemove(i, e)}
+                onKeyDown={(e) => handleEntryKeyDown(i, e)}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
 
         <button
           type="button"
