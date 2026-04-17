@@ -4,8 +4,10 @@ import Header from "@/components/header/Header";
 import LeftPanel from "@/components/left-panel/LeftPanel";
 import CenterPanel from "@/components/center-panel/CenterPanel";
 import RightPanel from "@/components/right-panel/RightPanel";
+import ResizeHandle from "@/components/shared/ResizeHandle";
 import VibeImportDialog from "@/components/modals/VibeImportDialog";
 import VibeEncodeDialog from "@/components/modals/VibeEncodeDialog";
+import { useLayoutStore } from "@/stores/layout-store";
 
 const VIBE_EXTENSIONS = [".naiv4vibe"];
 const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
@@ -19,6 +21,10 @@ export default function GenerationPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [importFilePath, setImportFilePath] = useState<string | null>(null);
   const [encodeImagePath, setEncodeImagePath] = useState<string | null>(null);
+  const leftSidebarWidth = useLayoutStore((s) => s.leftSidebarWidth);
+  const rightSidebarWidth = useLayoutStore((s) => s.rightSidebarWidth);
+  const setLeftSidebarWidth = useLayoutStore((s) => s.setLeftSidebarWidth);
+  const setRightSidebarWidth = useLayoutStore((s) => s.setRightSidebarWidth);
 
   // Listen for Tauri file drop events
   useEffect(() => {
@@ -56,14 +62,29 @@ export default function GenerationPage() {
     <div className="flex h-screen flex-col relative">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        <aside id="left-sidebar" className="w-80 min-w-[280px] shrink-0 overflow-y-auto border-r border-border">
+        <aside
+          id="left-sidebar"
+          style={{ width: `${leftSidebarWidth}px` }}
+          className="relative shrink-0 overflow-y-auto border-r border-border"
+        >
           <LeftPanel />
+          <ResizeHandle
+            side="left"
+            onResize={(delta) => setLeftSidebarWidth(leftSidebarWidth + delta)}
+          />
         </aside>
         <main className="flex-1 min-w-0 overflow-hidden">
           <CenterPanel />
         </main>
-        <aside className="w-64 min-w-[220px] shrink-0 overflow-y-auto border-l border-border">
+        <aside
+          style={{ width: `${rightSidebarWidth}px` }}
+          className="relative shrink-0 overflow-y-auto border-l border-border"
+        >
           <RightPanel />
+          <ResizeHandle
+            side="right"
+            onResize={(delta) => setRightSidebarWidth(rightSidebarWidth + delta)}
+          />
         </aside>
       </div>
 

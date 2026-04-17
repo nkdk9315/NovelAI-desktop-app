@@ -55,7 +55,7 @@ export function GroupItem({
 
   return (
     <div className="rounded-md border border-border p-2">
-      <div className="flex items-center justify-between gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-1">
         <button type="button" className="flex items-center gap-1 text-xs font-medium flex-1 min-w-0" onClick={onToggleExpanded}>
           {group.expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
           {group.groupId.startsWith("tagdb-") && <Database className="h-3 w-3 shrink-0 text-muted-foreground/60" aria-label="Tag DB" />}

@@ -70,7 +70,7 @@ export default function CharacterAddButtons() {
       <label className="text-xs font-medium text-foreground">
         {t("character.add")}
       </label>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {/* Male / Female direct buttons */}
         {systemGenres.map((genre) => {
           const Icon = getGenreIcon(genre.icon);
