@@ -280,3 +280,77 @@ pub fn remove_members(conn, group_id: i64, tag_ids: &[i64]) -> Result<usize, App
 ```
 
 FTS5 エスケープ (`to_fts_match`) は repo 層に閉じている。サービス層は raw 文字列を渡すだけ。
+
+## 2.9 prompt_preset_repo
+
+```rust
+// --- repositories/prompt_preset.rs ---
+
+pub fn list(conn: &Connection, search: Option<&str>) -> Result<Vec<PromptPresetRow>, AppError>;
+pub fn find_by_id(conn: &Connection, id: &str) -> Result<PromptPresetRow, AppError>;
+pub fn insert(conn: &Connection, row: &PromptPresetRow) -> Result<(), AppError>;
+pub fn update(conn: &Connection, row: &PromptPresetRow) -> Result<(), AppError>;
+pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError>;
+
+pub fn list_slots(conn: &Connection, preset_id: &str) -> Result<Vec<PresetCharacterSlotRow>, AppError>;
+// tuple: (id, slot_index, slot_label, genre_id, positive_prompt, negative_prompt, role, position_x, position_y)
+pub fn replace_slots(
+    conn: &Connection,
+    preset_id: &str,
+    slots: &[(String, i32, String, Option<String>, String, String, String, f64, f64)],
+) -> Result<(), AppError>;
+```
+
+## 2.10 preset_folder_repo
+
+```rust
+// --- repositories/preset_folder.rs ---
+
+pub fn list_all(conn: &Connection) -> Result<Vec<PresetFolderRow>, AppError>;
+pub fn find_by_id(conn: &Connection, id: i64) -> Result<PresetFolderRow, AppError>;
+pub fn insert(conn: &Connection, title: &str, parent_id: Option<i64>) -> Result<i64, AppError>;
+pub fn rename(conn: &Connection, id: i64, title: &str) -> Result<(), AppError>;
+pub fn move_folder(conn: &Connection, id: i64, new_parent_id: Option<i64>) -> Result<(), AppError>;
+pub fn delete(conn: &Connection, id: i64) -> Result<(), AppError>;
+pub fn update_sort_keys(conn: &Connection, ids: &[i64]) -> Result<(), AppError>;
+```
+
+`move_folder` は親方向への循環参照を検出して拒否する。
+
+## 2.11 sidebar_preset_group_repo
+
+```rust
+// --- repositories/sidebar_preset_group.rs ---
+
+pub fn list_by_project(conn: &Connection, project_id: &str) -> Result<Vec<SidebarPresetGroupInstanceRow>, AppError>;
+pub fn find_by_id(conn: &Connection, id: &str) -> Result<SidebarPresetGroupInstanceRow, AppError>;
+pub fn insert(conn: &Connection, row: &SidebarPresetGroupInstanceRow) -> Result<(), AppError>;
+pub fn update_pair(
+    conn: &Connection,
+    id: &str,
+    source_character_id: &str,
+    target_character_id: &str,
+    updated_at: &str,
+) -> Result<(), AppError>;
+pub fn update_default_strength(
+    conn: &Connection,
+    id: &str,
+    positive: f64,
+    negative: f64,
+    updated_at: &str,
+) -> Result<(), AppError>;
+pub fn delete(conn: &Connection, id: &str) -> Result<(), AppError>;
+pub fn next_position(conn: &Connection, project_id: &str) -> Result<i32, AppError>;
+pub fn set_position(conn: &Connection, id: &str, position: i32) -> Result<(), AppError>;
+
+pub fn list_active_presets(conn: &Connection, instance_id: &str) -> Result<Vec<SidebarPresetGroupActivePresetDto>, AppError>;
+// 既存レコードの強度/activated_at を保持したまま、追加分を INSERT、削除分を DELETE する差分適用
+pub fn diff_active_presets(conn: &Connection, instance_id: &str, desired_preset_ids: &[String]) -> Result<(), AppError>;
+pub fn update_preset_strength(
+    conn: &Connection,
+    instance_id: &str,
+    preset_id: &str,
+    positive_strength: Option<f64>,
+    negative_strength: Option<f64>,
+) -> Result<(), AppError>;
+```
