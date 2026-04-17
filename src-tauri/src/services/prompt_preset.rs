@@ -7,7 +7,22 @@ use crate::models::dto::{
 };
 use crate::repositories::prompt_preset as repo;
 
-type SlotTuple = (String, i32, String, Option<String>, String, String, String);
+type SlotTuple = (String, i32, String, Option<String>, String, String, String, f64, f64);
+
+const MAX_PRESET_NAME_LEN: usize = 255;
+
+fn validate_name(name: &str) -> Result<(), AppError> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::Validation("preset name cannot be empty".to_string()));
+    }
+    if trimmed.chars().count() > MAX_PRESET_NAME_LEN {
+        return Err(AppError::Validation(format!(
+            "preset name must be at most {MAX_PRESET_NAME_LEN} characters"
+        )));
+    }
+    Ok(())
+}
 
 fn row_into_dto(conn: &Connection, row: PromptPresetRow) -> Result<PromptPresetDto, AppError> {
     let slot_rows = repo::list_slots(conn, &row.id)?;
@@ -45,6 +60,8 @@ fn build_slot_tuples(slots: &[crate::models::dto::PresetSlotInput]) -> Vec<SlotT
                 s.positive_prompt.clone(),
                 s.negative_prompt.clone().unwrap_or_default(),
                 s.role.clone(),
+                s.position_x,
+                s.position_y,
             )
         })
         .collect()
@@ -59,13 +76,14 @@ pub fn create_prompt_preset(
             "preset must have at least 2 character slots".to_string(),
         ));
     }
+    validate_name(&req.name)?;
 
     let now = chrono::Utc::now().to_rfc3339();
     let id = uuid::Uuid::new_v4().to_string();
 
     let row = PromptPresetRow {
         id: id.clone(),
-        name: req.name,
+        name: req.name.trim().to_string(),
         folder_id: req.folder_id,
         created_at: now.clone(),
         updated_at: now,
@@ -85,7 +103,8 @@ pub fn update_prompt_preset(
     let mut existing = repo::find_by_id(conn, &req.id)?;
 
     if let Some(name) = req.name {
-        existing.name = name;
+        validate_name(&name)?;
+        existing.name = name.trim().to_string();
     }
     if let Some(folder_id) = req.folder_id {
         existing.folder_id = folder_id;
