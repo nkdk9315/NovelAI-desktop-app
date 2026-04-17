@@ -8,6 +8,9 @@ import { usePromptStore } from "@/stores/prompt-store";
 import type { SidebarPromptGroup } from "@/stores/sidebar-prompt-store";
 import type { PromptGroupDto, TagInput } from "@/types";
 import { assembleFullPrompt } from "@/lib/prompt-assembly";
+import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
+import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store";
+import { usePresetStore } from "@/stores/preset-store";
 import { toastError } from "@/lib/toast-error";
 import * as ipc from "@/lib/ipc";
 import PromptGroupEditModal from "@/components/modals/prompt-group/PromptGroupEditModal";
@@ -80,7 +83,13 @@ export default function CharacterPromptGroups({
     } catch (e) { toastError(String(e)); }
   };
 
-  const assembled = useMemo(() => assembleFullPrompt("", groups), [groups]);
+  const presetInstances = useSidebarPresetGroupStore((s) => s.instances);
+  const allPresets = usePresetStore((s) => s.presets);
+  const assembled = useMemo(() => {
+    const base = assembleFullPrompt("", groups);
+    const contrib = getPresetContributionsForCharacter(targetId, presetInstances, allPresets);
+    return appendContributions(base, contrib.positive);
+  }, [groups, targetId, presetInstances, allPresets]);
   const highlightTokens = useMemo(() => groups.map((g) => g.wildcardToken).filter((tok): tok is string => !!tok && tok.length > 0), [groups]);
 
   if (!hasTarget) return null;

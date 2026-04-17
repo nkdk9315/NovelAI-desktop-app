@@ -7,6 +7,9 @@ import type { TagGroupDto } from "@/types";
 import type { SystemTreeNode } from "./prompt-group/PromptGroupGrid";
 import * as ipc from "@/lib/ipc";
 import PromptGroupModalContent from "./PromptGroupModalContent";
+import PresetModalContent from "./preset/PresetModalContent";
+
+type TabId = "groups" | "presets";
 
 interface PromptGroupModalProps {
   open: boolean;
@@ -20,7 +23,9 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
   const loadPromptGroups = usePromptStore((s) => s.loadPromptGroups);
   const loadPromptGroupFolders = usePromptStore((s) => s.loadPromptGroupFolders);
 
+  const [activeTab, setActiveTab] = useState<TabId>("groups");
   const [searchQuery, setSearchQuery] = useState("");
+  const [presetSearchQuery, setPresetSearchQuery] = useState("");
   const [showSystem, setShowSystem] = useState(false);
   const [systemTree, setSystemTree] = useState<SystemTreeNode[] | null>(null);
   const [tagDbGenresLoading, setTagDbGenresLoading] = useState(false);
@@ -47,19 +52,36 @@ export default function PromptGroupModal({ open, onOpenChange, targetId }: Promp
       <DialogContent className="max-w-lg left-[8.5rem]! translate-x-0! max-h-[calc(100vh-4rem)] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-1.5">
-            <DialogTitle>{t("promptGroup.title")}</DialogTitle>
+            <DialogTitle className="flex items-center gap-0">
+              <button type="button" onClick={() => setActiveTab("groups")}
+                className={`px-2 py-0.5 text-sm rounded-l-md transition-colors ${activeTab === "groups" ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
+                {t("preset.tabGroups")}
+              </button>
+              <button type="button" onClick={() => setActiveTab("presets")}
+                className={`px-2 py-0.5 text-sm rounded-r-md transition-colors ${activeTab === "presets" ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:text-foreground"}`}>
+                {t("preset.tabPresets")}
+              </button>
+            </DialogTitle>
           </div>
         </DialogHeader>
-        <PromptGroupModalContent
-          targetId={targetId}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          showSystem={showSystem}
-          onShowSystemChange={setShowSystem}
-          systemTree={systemTree}
-          setSystemTree={setSystemTree}
-          tagDbGenresLoading={tagDbGenresLoading}
-        />
+        {activeTab === "groups" ? (
+          <PromptGroupModalContent
+            targetId={targetId}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            showSystem={showSystem}
+            onShowSystemChange={setShowSystem}
+            systemTree={systemTree}
+            setSystemTree={setSystemTree}
+            tagDbGenresLoading={tagDbGenresLoading}
+          />
+        ) : (
+          <PresetModalContent
+            targetId={targetId}
+            searchQuery={presetSearchQuery}
+            onSearchChange={setPresetSearchQuery}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

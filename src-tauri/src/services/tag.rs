@@ -21,7 +21,7 @@ pub fn search(
     }
     let mut terms: Vec<&str> = trimmed.split_whitespace().collect();
     // Search by the longest term for best DB filtering, then narrow in Rust.
-    terms.sort_by_key(|b| std::cmp::Reverse(b.len()));
+    terms.sort_by_key(|t| std::cmp::Reverse(t.len()));
     let primary = terms[0];
     let rest: Vec<String> = terms[1..].iter().map(|t| t.to_lowercase()).collect();
 

@@ -82,7 +82,36 @@ allArtistTags = [...sidebarArtistTags, ...activePresets.flatMap(p => p.artistTag
 重複除去は行わない（同名タグが複数エントリあっても API 側で許容）。
 コスト計算（`artistTagCount`）は `allArtistTags.length` をそのまま使用。
 
-## 7.7 画像複数選択保存の設計
+## 7.7 Sidebar Preset Group Instance の三層構造
+
+サイドバープリセットグループ機能は以下の 3 層で構成される:
+
+| 層 | テーブル | 責務 |
+|---|---|---|
+| Folder | `preset_folders` | プリセットの静的分類（階層構造） |
+| Instance | `sidebar_preset_group_instances` | `(project_id, folder_id, source_char, target_char)` を単位としたサイドバー配置 |
+| Active Presets | `sidebar_preset_group_active_presets` | インスタンス内で有効化されたプリセット。強度上書きとアクティベーション時刻を持つ |
+
+**強度の適用順**: per-preset 上書き値（NULL でなければ）→ インスタンスの `default_*_strength`。
+**位置情報の競合解決**: 複数プリセットが同一キャラに異なる `position_x/y` を指定した場合、`activated_at` が最新のプリセットが wins（last-activated-wins）。
+
+## 7.8 Strength Wrapping
+
+強度 `s` が `1.0` でない場合、テキストは `"{s}::{text}::"` 形式でラップされる（NovelAI の重み記法）。
+
+| strength | "red hair" |
+|---|---|
+| 1.0 | `red hair` |
+| 0.5 | `0.5::red hair::` |
+| 2.0 | `2.0::red hair::` |
+
+有限性チェック（`is_finite()`）と範囲チェック（`1.0..=10.0`）は Service 層で実施。
+
+## 7.9 キャラクター ID が FK でない設計
+
+`sidebar_preset_group_instances.source_character_id` / `target_character_id` は UUID 文字列だが FK 制約を持たない。キャラクター情報が `GenerateParams` の JSON ブロブに格納されており、独立テーブルが存在しないため。フロントエンド/サービス層で整合性を担保する必要がある。
+
+## 7.10 画像複数選択保存の設計
 
 **課題**: 生成履歴から複数枚を一括保存したい（1枚ずつ or 全保存しかなかった）。
 
