@@ -231,6 +231,71 @@ export interface AppError {
   kind: "NotFound" | "Validation" | "Database" | "ApiClient" | "Io" | "NotInitialized";
   message: string;
 }
+
+// ---- Prompt Presets & Sidebar Preset Groups (migrations 022–025) ----
+
+export interface PromptPresetDto {
+  id: string;
+  name: string;
+  folderId: number | null;
+  slots: PresetCharacterSlotDto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PresetCharacterSlotDto {
+  id: string;
+  slotIndex: number;
+  slotLabel: string;
+  genreId: string | null;
+  positivePrompt: string;
+  negativePrompt: string;
+  role: "target" | "source" | "none";
+  positionX: number;                    // migration 025, 0.0..=1.0
+  positionY: number;                    // migration 025
+}
+
+export interface PresetFolderDto {
+  id: number;
+  title: string;
+  parentId: number | null;
+  sortKey: number;
+}
+
+export interface SidebarPresetGroupActivePreset {
+  presetId: string;
+  positiveStrength: number | null;      // migration 024, null = インスタンス default 継承
+  negativeStrength: number | null;
+  activatedAt: string;                  // migration 025, last-activated-wins 用
+}
+
+export interface SidebarPresetGroupInstanceDto {
+  id: string;
+  projectId: string;
+  folderId: number;
+  sourceCharacterId: string;
+  targetCharacterId: string;
+  position: number;
+  defaultPositiveStrength: number;      // migration 024
+  defaultNegativeStrength: number;
+  activePresets: SidebarPresetGroupActivePreset[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Requests
+export interface CreatePromptPresetRequest { name: string; folderId?: number | null; slots: PresetSlotInput[]; }
+export interface UpdatePromptPresetRequest { id: string; name?: string; folderId?: number | null; slots?: PresetSlotInput[]; }
+export interface PresetSlotInput {
+  slotLabel: string; genreId?: string | null; positivePrompt: string; negativePrompt?: string;
+  role: "target" | "source" | "none"; positionX: number; positionY: number;
+}
+export interface CreateSidebarPresetGroupInstanceRequest { projectId: string; folderId: number; sourceCharacterId: string; targetCharacterId: string; }
+export interface UpdateSidebarPresetGroupPairRequest { id: string; sourceCharacterId: string; targetCharacterId: string; }
+export interface SetSidebarPresetGroupActivePresetsRequest { id: string; presetIds: string[]; }
+export interface ReorderSidebarPresetGroupInstancesRequest { projectId: string; orderedIds: string[]; }
+export interface UpdateSidebarPresetGroupDefaultStrengthRequest { id: string; defaultPositiveStrength: number; defaultNegativeStrength: number; }
+export interface SetSidebarPresetGroupPresetStrengthRequest { instanceId: string; presetId: string; positiveStrength: number | null; negativeStrength: number | null; }
 ```
 
 ## 5.2 IPC Wrapper
@@ -445,6 +510,34 @@ export function searchSystemPrompts(
 | `countTagMembersPerGroup` | — | `CountByIdDto[]` | グループ別メンバータグ数 |
 | `countFavoriteDescendantsPerGroup` | — | `CountByIdDto[]` | グループ別お気に入り子孫数 |
 
+## 5.4 IPC ラッパー — Preset (`src/lib/ipc-preset.ts`)
+
+`src/lib/ipc.ts` から re-export される。
+
+| 関数 | 引数 | 戻り値 | 説明 |
+|---|---|---|---|
+| `listPromptPresets` | search? | `PromptPresetDto[]` | プリセット一覧 |
+| `getPromptPreset` | id | `PromptPresetDto` | 単一取得 |
+| `createPromptPreset` | req | `PromptPresetDto` | 作成（slot 最低 2） |
+| `updatePromptPreset` | req | `void` | 更新 |
+| `deletePromptPreset` | id | `void` | 削除 |
+| `listPresetFolders` | — | `PresetFolderDto[]` | フォルダ一覧 |
+| `createPresetFolder` | title, parentId? | `PresetFolderDto` | フォルダ作成 |
+| `renamePresetFolder` | id, title | `void` | フォルダ名変更 |
+| `movePresetFolder` | id, newParentId? | `void` | フォルダ移動（循環防止あり） |
+| `deletePresetFolder` | id | `void` | フォルダ削除 |
+| `countPresetsInFolder` | folderId | `number` | フォルダ内プリセット数 |
+| `deletePresetsInFolder` | folderId | `number` | フォルダ内プリセットを一括削除 |
+| `setPresetFolder` | presetId, folderId? | `void` | プリセットの所属フォルダ更新 |
+| `listSidebarPresetGroupInstances` | projectId | `SidebarPresetGroupInstanceDto[]` | インスタンス一覧 |
+| `createSidebarPresetGroupInstance` | req | `SidebarPresetGroupInstanceDto` | インスタンス作成 |
+| `updateSidebarPresetGroupPair` | req | `void` | source/target ペア更新 |
+| `setSidebarPresetGroupActivePresets` | req | `void` | アクティブプリセット ID セット更新（差分適用） |
+| `deleteSidebarPresetGroupInstance` | id | `void` | インスタンス削除 |
+| `reorderSidebarPresetGroupInstances` | req | `void` | 並び替え（トランザクション内） |
+| `updateSidebarPresetGroupDefaultStrength` | req | `void` | デフォルト強度更新 |
+| `setSidebarPresetGroupPresetStrength` | req | `void` | 個別プリセットの強度上書き |
+
 ---
 
 ## 6.1 Sidebar Prompt Store (`src/stores/sidebar-prompt-store.ts`)
@@ -577,3 +670,67 @@ function useArtistTagInput(onAdd: (name: string) => void): {
 - `category` 未指定時: `ipc-tags.searchTags` → Tag DB FTS5 trigram 検索（全カテゴリ横断）
 - `category` 指定時: 従来の `ipc.searchSystemPrompts` にフォールバック（csv_category フィルタ対応）
 - 結果は統一的に `TagDto[]` 形状で返す
+
+## 6.6 Preset Store (`src/stores/preset-store.ts`)
+
+```typescript
+interface PresetState {
+  presets: PromptPresetDto[];
+  folders: PresetFolderDto[];
+  isLoading: boolean;
+  loadPresets: (search?: string) => Promise<void>;
+  loadPresetFolders: () => Promise<void>;
+  createPreset: (req: CreatePromptPresetRequest) => Promise<PromptPresetDto>;
+  updatePreset: (req: UpdatePromptPresetRequest) => Promise<void>;
+  deletePreset: (id: string) => Promise<void>;
+  // folder mutations ...
+}
+```
+
+## 6.7 Sidebar Preset Group Store (`src/stores/sidebar-preset-group-store.ts`)
+
+```typescript
+interface SidebarPresetGroupState {
+  projectId: string | null;
+  instances: SidebarPresetGroupInstanceDto[];
+  isLoading: boolean;
+  loadInstances: (projectId: string) => Promise<void>;
+  clear: () => void;
+  addInstance: (folderId: number, source: string, target: string) => Promise<SidebarPresetGroupInstanceDto | null>;
+  updatePair: (id: string, source: string, target: string) => Promise<void>;
+  togglePreset: (instanceId: string, presetId: string) => Promise<void>;
+  setDefaultStrength: (instanceId: string, positive: number, negative: number) => Promise<void>;
+  setPresetStrength: (instanceId: string, presetId: string, positive: number | null, negative: number | null) => Promise<void>;
+  removeInstance: (id: string) => Promise<void>;
+  reorder: (orderedIds: string[]) => Promise<void>;
+}
+```
+
+state はプロジェクト切替時に `clear()`。mutation は IPC 成功後に楽観更新。
+
+## 6.8 Preset Contributions (`src/lib/preset-contributions.ts`)
+
+アクティブプリセット群からキャラクターごとの positive/negative プロンプト寄与と強度を算出。
+
+```typescript
+export function wrapWithStrength(text: string, strength: number): string;      // strength ≠ 1.0 なら "s::text::" にラップ
+export function getPresetContributionsForCharacter(
+  characterId: string,
+  instances: SidebarPresetGroupInstanceDto[],
+  presets: PromptPresetDto[],
+): { positive: string[]; negative: string[] };
+export function appendContributions(base: string, contributions: string[]): string;
+```
+
+強度の優先順: per-preset 上書き値 > インスタンス default。`activePreset.positiveStrength` が `null` の場合、インスタンスの `defaultPositiveStrength` を採用。
+
+## 6.9 Preset Positions (`src/lib/preset-positions.ts`)
+
+複数プリセットが同一キャラクターに異なる position を指定する場合、`activated_at` 降順で最後にアクティベートされたものが採用される（last-activated-wins）。
+
+```typescript
+export function computeDesiredCharacterPositions(
+  instances: SidebarPresetGroupInstanceDto[],
+  presets: PromptPresetDto[],
+): Map<string, { x: number; y: number }>;
+```

@@ -14,7 +14,8 @@
     "edit": "編集",
     "copy": "コピー",
     "copied": "コピーしました！",
-    "search": "検索..."
+    "search": "検索...",
+    "select": "選択"
   },
   "project": {
     "title": "プロジェクト",
@@ -317,5 +318,87 @@
     "noGenres": "ジャンルがありません",
     "noMatches": "該当するジャンルがありません",
     "selectedCount": "{{count}} 件選択中"
+  },
+  "preset": {
+    "title": "プリセット",
+    "tabGroups": "グループ",
+    "tabPresets": "プリセット",
+    "create": "新規プリセット",
+    "edit": "プリセット編集",
+    "deleteConfirm": "このプリセットを削除しますか？",
+    "noPresets": "プリセットがありません",
+    "name": "プリセット名",
+    "namePlaceholder": "プリセット名を入力",
+    "slot": "キャラクタースロット",
+    "slotLabel": "ラベル",
+    "slotLabelPlaceholder": "例: 攻撃側、防御側",
+    "addSlot": "スロット追加",
+    "removeSlot": "スロット削除",
+    "positivePrompt": "ポジティブプロンプト",
+    "negativePrompt": "ネガティブプロンプト",
+    "role": "ロール",
+    "roleTarget": "行動主体 (target)",
+    "roleSource": "受け手 (source)",
+    "roleTargetHint": "このキャラのプロンプトには target#タグ が入ります",
+    "roleSourceHint": "このキャラのプロンプトには source#タグ が入ります",
+    "roleNone": "なし",
+    "interactionHelper": "インタラクションタグ",
+    "interactionTag": "タグ",
+    "interactionTagPlaceholder": "例: punch, hug",
+    "interactionHelperDescription": "入力したタグを「target#タグ」は行動主体側に、「source#タグ」は受け手側に自動追加します。",
+    "position": "キャラクター位置",
+    "actor": "行動主体",
+    "receiver": "受け手",
+    "addInteraction": "追加",
+    "genre": "ジャンル",
+    "genreUnset": "未設定（適用時に選択）",
+    "apply": "適用",
+    "applyTitle": "プリセット適用",
+    "addToExisting": "既存キャラクターに追加",
+    "replaceExisting": "既存キャラクターを置換",
+    "maxCharactersWarning": "キャラクター数上限（{{max}}）を超えるため追加できません",
+    "selectGenre": "ジャンルを選択",
+    "slotsCount": "{{count}} キャラ",
+    "folder": {
+      "uncategorized": "未分類",
+      "newFolder": "新規フォルダ",
+      "newSubfolder": "新規サブフォルダ",
+      "rename": "名前変更",
+      "delete": "フォルダを削除（中身ごと）",
+      "deleteConfirm": "このフォルダを中身ごと削除しますか？（{{count}} 個のプリセットが削除されます）",
+      "createPresetHere": "このフォルダに新規プリセット作成"
+    }
+  },
+  "sidebarPresetGroups": {
+    "title": "プリセットグループ",
+    "addInstance": "プリセットグループを追加",
+    "folder": "グループ（フォルダ）",
+    "folderPlaceholder": "フォルダを選択",
+    "noFolders": "プリセットが登録されたフォルダがありません",
+    "emptyFolder": "このフォルダにプリセットはありません",
+    "unknownFolder": "（不明なフォルダ）",
+    "pair": {
+      "source": "受け手 (source)",
+      "target": "行動主体 (target)",
+      "edit": "ペアを編集",
+      "pickerPlaceholder": "キャラクターを選択",
+      "sameError": "受け手 と 行動主体 は異なるキャラを指定してください"
+    },
+    "folderPicker": {
+      "title": "プリセットフォルダを選択"
+    },
+    "defaultStrength": {
+      "title": "デフォルト強度",
+      "positive": "ポジティブ強度",
+      "negative": "ネガティブ強度",
+      "description": "このインスタンスの全アクティブプリセットに既定で適用される強度（個別の強度設定が優先されます）。"
+    },
+    "presetStrength": {
+      "title": "個別強度設定",
+      "overridePositive": "ポジティブを上書き",
+      "overrideNegative": "ネガティブを上書き",
+      "resetToDefault": "デフォルトに戻す",
+      "customBadge": "個別強度あり"
+    }
   }
 }

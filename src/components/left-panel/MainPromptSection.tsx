@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import CharacterPromptGroups from "./CharacterPromptGroups";
 import PromptGroupModal from "@/components/modals/PromptGroupModal";
 import { assembleFullPrompt, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
+import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
+import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store";
+import { usePresetStore } from "@/stores/preset-store";
 import { NEGATIVE_PRESETS, type NegativePresetId } from "@/lib/constants";
 import * as ipc from "@/lib/ipc";
 
@@ -62,10 +65,15 @@ export default function MainPromptSection() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainTargetReady]);
 
+  const presetInstances = useSidebarPresetGroupStore((s) => s.instances);
+  const allPresets = usePresetStore((s) => s.presets);
   const lineFor = (targetId: string): string => {
     const target = targets[targetId];
-    if (!target) return "";
-    return target.promptOverride ?? assembleFullPrompt("", target.groups);
+    const base = target
+      ? (target.promptOverride ?? assembleFullPrompt("", target.groups))
+      : "";
+    const contrib = getPresetContributionsForCharacter(targetId, presetInstances, allPresets);
+    return appendContributions(base, contrib.positive);
   };
   const mainLine = lineFor(MAIN_TARGET_ID);
   const charLines = characters.map((c) => ({

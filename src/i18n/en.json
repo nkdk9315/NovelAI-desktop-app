@@ -14,7 +14,8 @@
     "edit": "Edit",
     "copy": "Copy",
     "copied": "Copied!",
-    "search": "Search..."
+    "search": "Search...",
+    "select": "Select"
   },
   "project": {
     "title": "Projects",
@@ -317,5 +318,87 @@
     "noGenres": "No genres available.",
     "noMatches": "No matching genres.",
     "selectedCount": "{{count}} selected"
+  },
+  "preset": {
+    "title": "Presets",
+    "tabGroups": "Groups",
+    "tabPresets": "Presets",
+    "create": "New Preset",
+    "edit": "Edit Preset",
+    "deleteConfirm": "Delete this preset?",
+    "noPresets": "No presets",
+    "name": "Preset Name",
+    "namePlaceholder": "Enter preset name",
+    "slot": "Character Slot",
+    "slotLabel": "Label",
+    "slotLabelPlaceholder": "e.g. Attacker, Defender",
+    "addSlot": "Add Slot",
+    "removeSlot": "Remove Slot",
+    "positivePrompt": "Positive Prompt",
+    "negativePrompt": "Negative Prompt",
+    "role": "Role",
+    "roleTarget": "Actor (target)",
+    "roleSource": "Receiver (source)",
+    "roleNone": "None",
+    "interactionHelper": "Interaction Tags",
+    "interactionTag": "Tag",
+    "interactionTagPlaceholder": "e.g. punch, hug",
+    "actor": "Actor",
+    "receiver": "Receiver",
+    "addInteraction": "Add",
+    "genre": "Genre",
+    "genreUnset": "Unset (select on apply)",
+    "apply": "Apply",
+    "applyTitle": "Apply Preset",
+    "addToExisting": "Add to existing characters",
+    "replaceExisting": "Replace existing characters",
+    "maxCharactersWarning": "Cannot add: exceeds max characters ({{max}})",
+    "selectGenre": "Select genre",
+    "slotsCount": "{{count}} chars",
+    "folder": {
+      "uncategorized": "Uncategorized",
+      "newFolder": "New Folder",
+      "newSubfolder": "New Subfolder",
+      "rename": "Rename",
+      "delete": "Delete folder (with contents)",
+      "deleteConfirm": "Delete this folder and everything inside? ({{count}} preset(s) will be removed)",
+      "createPresetHere": "Create preset in this folder"
+    },
+    "roleTargetHint": "Adds target#tags to this character's prompt",
+    "roleSourceHint": "Adds source#tags to this character's prompt",
+    "interactionHelperDescription": "Typed tag is auto-added as target#tag to the actor and source#tag to the receiver.",
+    "position": "Character position"
+  },
+  "sidebarPresetGroups": {
+    "title": "Preset Groups",
+    "addInstance": "Add preset group",
+    "folder": "Group (folder)",
+    "folderPlaceholder": "Select a folder",
+    "noFolders": "No folders contain any presets",
+    "emptyFolder": "This folder has no presets",
+    "unknownFolder": "(unknown folder)",
+    "pair": {
+      "source": "Receiver (source)",
+      "target": "Actor (target)",
+      "edit": "Edit pair",
+      "pickerPlaceholder": "Select a character",
+      "sameError": "Receiver and actor must be different characters"
+    },
+    "folderPicker": {
+      "title": "Select a preset folder"
+    },
+    "defaultStrength": {
+      "title": "Default strength",
+      "positive": "Positive strength",
+      "negative": "Negative strength",
+      "description": "Applied by default to all active presets in this instance (per-preset overrides win)."
+    },
+    "presetStrength": {
+      "title": "Per-preset strength",
+      "overridePositive": "Override positive",
+      "overrideNegative": "Override negative",
+      "resetToDefault": "Reset to default",
+      "customBadge": "custom strength"
+    }
   }
 }

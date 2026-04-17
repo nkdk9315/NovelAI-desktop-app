@@ -20,13 +20,18 @@ pub enum AppError {
 
 impl From<rusqlite::Error> for AppError {
     fn from(e: rusqlite::Error) -> Self {
-        AppError::Database(e.to_string())
+        if matches!(e, rusqlite::Error::QueryReturnedNoRows) {
+            return AppError::NotFound("resource not found".to_string());
+        }
+        eprintln!("[AppError::Database] {e}");
+        AppError::Database("database operation failed".to_string())
     }
 }
 
 impl From<std::io::Error> for AppError {
     fn from(e: std::io::Error) -> Self {
-        AppError::Io(e.to_string())
+        eprintln!("[AppError::Io] {e}");
+        AppError::Io("io operation failed".to_string())
     }
 }
 

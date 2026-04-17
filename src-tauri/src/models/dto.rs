@@ -642,6 +642,42 @@ pub struct UpdatePresetThumbnailRequest {
     pub thumbnail_path: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetSlotInput {
+    pub slot_label: String,
+    pub genre_id: Option<String>,
+    pub positive_prompt: String,
+    #[serde(default)]
+    pub negative_prompt: Option<String>,
+    pub role: String,
+    #[serde(default = "default_half")]
+    pub position_x: f64,
+    #[serde(default = "default_half")]
+    pub position_y: f64,
+}
+
+fn default_half() -> f64 { 0.5 }
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePromptPresetRequest {
+    pub name: String,
+    #[serde(default)]
+    pub folder_id: Option<i64>,
+    pub slots: Vec<PresetSlotInput>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdatePromptPresetRequest {
+    pub id: String,
+    pub name: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_double_option_i64")]
+    pub folder_id: Option<Option<i64>>,
+    pub slots: Option<Vec<PresetSlotInput>>,
+}
+
 // ---- Row → DTO 変換 ----
 
 impl From<ProjectRow> for ProjectDto {
@@ -773,6 +809,221 @@ impl StylePresetRow {
             folder_id: self.folder_id,
         }
     }
+}
+
+// ---- Prompt presets ----
+
+pub struct PromptPresetRow {
+    pub id: String,
+    pub name: String,
+    pub folder_id: Option<i64>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+pub struct PresetCharacterSlotRow {
+    pub id: String,
+    #[allow(dead_code)]
+    pub preset_id: String,
+    pub slot_index: i32,
+    pub slot_label: String,
+    pub genre_id: Option<String>,
+    pub positive_prompt: String,
+    pub negative_prompt: String,
+    pub role: String,
+    pub position_x: f64,
+    pub position_y: f64,
+}
+
+#[derive(Debug, Clone)]
+pub struct PresetFolderRow {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PromptPresetDto {
+    pub id: String,
+    pub name: String,
+    pub folder_id: Option<i64>,
+    pub slots: Vec<PresetCharacterSlotDto>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetCharacterSlotDto {
+    pub id: String,
+    pub slot_index: i32,
+    pub slot_label: String,
+    pub genre_id: Option<String>,
+    pub positive_prompt: String,
+    pub negative_prompt: String,
+    pub role: String,
+    pub position_x: f64,
+    pub position_y: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetFolderDto {
+    pub id: i64,
+    pub title: String,
+    pub parent_id: Option<i64>,
+    pub sort_key: i32,
+}
+
+impl From<PresetFolderRow> for PresetFolderDto {
+    fn from(row: PresetFolderRow) -> Self {
+        Self {
+            id: row.id,
+            title: row.title,
+            parent_id: row.parent_id,
+            sort_key: row.sort_key as i32,
+        }
+    }
+}
+
+impl From<PresetCharacterSlotRow> for PresetCharacterSlotDto {
+    fn from(row: PresetCharacterSlotRow) -> Self {
+        Self {
+            id: row.id,
+            slot_index: row.slot_index,
+            slot_label: row.slot_label,
+            genre_id: row.genre_id,
+            positive_prompt: row.positive_prompt,
+            negative_prompt: row.negative_prompt,
+            role: row.role,
+            position_x: row.position_x,
+            position_y: row.position_y,
+        }
+    }
+}
+
+impl PromptPresetRow {
+    pub fn into_dto(self, slots: Vec<PresetCharacterSlotDto>) -> PromptPresetDto {
+        PromptPresetDto {
+            id: self.id,
+            name: self.name,
+            folder_id: self.folder_id,
+            slots,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
+    }
+}
+
+// ---- Sidebar preset group instances ----
+
+pub struct SidebarPresetGroupInstanceRow {
+    pub id: String,
+    pub project_id: String,
+    pub folder_id: i64,
+    pub source_character_id: String,
+    pub target_character_id: String,
+    pub position: i32,
+    pub default_positive_strength: f64,
+    pub default_negative_strength: f64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SidebarPresetGroupActivePresetDto {
+    pub preset_id: String,
+    pub positive_strength: Option<f64>,
+    pub negative_strength: Option<f64>,
+    pub activated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SidebarPresetGroupInstanceDto {
+    pub id: String,
+    pub project_id: String,
+    pub folder_id: i64,
+    pub source_character_id: String,
+    pub target_character_id: String,
+    pub position: i32,
+    pub default_positive_strength: f64,
+    pub default_negative_strength: f64,
+    pub active_presets: Vec<SidebarPresetGroupActivePresetDto>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+impl SidebarPresetGroupInstanceRow {
+    pub fn into_dto(
+        self,
+        active_presets: Vec<SidebarPresetGroupActivePresetDto>,
+    ) -> SidebarPresetGroupInstanceDto {
+        SidebarPresetGroupInstanceDto {
+            id: self.id,
+            project_id: self.project_id,
+            folder_id: self.folder_id,
+            source_character_id: self.source_character_id,
+            target_character_id: self.target_character_id,
+            position: self.position,
+            default_positive_strength: self.default_positive_strength,
+            default_negative_strength: self.default_negative_strength,
+            active_presets,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateSidebarPresetGroupInstanceRequest {
+    pub project_id: String,
+    pub folder_id: i64,
+    pub source_character_id: String,
+    pub target_character_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateSidebarPresetGroupPairRequest {
+    pub id: String,
+    pub source_character_id: String,
+    pub target_character_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetSidebarPresetGroupActivePresetsRequest {
+    pub id: String,
+    pub preset_ids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReorderSidebarPresetGroupInstancesRequest {
+    pub project_id: String,
+    pub ordered_ids: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateSidebarPresetGroupDefaultStrengthRequest {
+    pub id: String,
+    pub default_positive_strength: f64,
+    pub default_negative_strength: f64,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetSidebarPresetGroupPresetStrengthRequest {
+    pub instance_id: String,
+    pub preset_id: String,
+    pub positive_strength: Option<f64>,
+    pub negative_strength: Option<f64>,
 }
 
 // ---- System group genre defaults ----
