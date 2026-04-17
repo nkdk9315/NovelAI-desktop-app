@@ -21,9 +21,12 @@ export default function AnlasDisplay() {
   const tierName = anlas ? TIER_NAMES[anlas.tier] ?? `Tier ${anlas.tier}` : null;
 
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-xs text-muted-foreground">
-        {t("generation.anlas")}: {anlas ? anlas.anlas.toLocaleString() : "--"}
+    <div className="flex items-baseline gap-1.5">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {t("generation.anlas")}
+      </span>
+      <span className="text-sm font-medium tabular">
+        {anlas ? anlas.anlas.toLocaleString() : "--"}
       </span>
       {tierName && (
         <Badge

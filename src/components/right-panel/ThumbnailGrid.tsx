@@ -45,12 +45,12 @@ export default function ThumbnailGrid() {
           <div key={img.id} className="group relative aspect-square">
             <button
               type="button"
-              className={`h-full w-full overflow-hidden rounded-md border ${
+              className={`h-full w-full overflow-hidden rounded-md border transition-all duration-150 ${
                 isViewing
-                  ? "border-primary ring-1 ring-primary"
+                  ? "border-primary ring-2 ring-primary/70"
                   : isChecked
-                    ? "border-blue-500 ring-1 ring-blue-500"
-                    : "border-border hover:border-muted-foreground"
+                    ? "border-primary ring-2 ring-primary/50"
+                    : "border-border hover:border-primary/40 hover:ring-2 hover:ring-primary/20"
               }`}
               onClick={() => {
                 selectImage({
@@ -63,7 +63,7 @@ export default function ThumbnailGrid() {
               <img
                 src={convertFileSrc(fullPath)}
                 alt={`Seed: ${img.seed}`}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
                 loading="lazy"
               />
             </button>
@@ -80,7 +80,7 @@ export default function ThumbnailGrid() {
               aria-label={isChecked ? "deselect" : "select"}
               className={`absolute left-1 top-1 flex h-4 w-4 items-center justify-center rounded border transition-opacity ${
                 isChecked
-                  ? "border-blue-500 bg-blue-500 opacity-100"
+                  ? "border-primary bg-primary opacity-100"
                   : "border-white/70 bg-black/40 opacity-0 group-hover:opacity-100"
               }`}
               onClick={(e) => {
@@ -88,7 +88,7 @@ export default function ThumbnailGrid() {
                 toggleImageSelection(img.id);
               }}
             >
-              {isChecked && <Check className="h-2.5 w-2.5 text-white" />}
+              {isChecked && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
             </button>
           </div>
         );

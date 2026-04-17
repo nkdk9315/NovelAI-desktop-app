@@ -173,10 +173,10 @@ export default function SidebarPresetGroupInstanceCard({ instance }: Props) {
                         type="button"
                         onClick={() => togglePreset(instance.id, p.id)}
                         title={p.name}
-                        className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] transition-colors max-w-[9rem] ${
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] tracking-wide transition-all max-w-[9rem] ${
                           isActive
-                            ? "border-primary/60 bg-primary/10 text-primary hover:bg-primary/20"
-                            : "border-border/60 bg-muted/40 text-muted-foreground hover:bg-accent/50"
+                            ? "border-primary/60 bg-primary/15 text-primary shadow-[inset_0_0_0_1px_oklch(from_var(--primary)_l_c_h_/_0.2)] hover:bg-primary/25"
+                            : "border-border/60 bg-muted/40 text-muted-foreground hover:border-primary/40 hover:bg-accent hover:text-foreground"
                         }`}
                       >
                         <Power className="h-2.5 w-2.5 shrink-0" />

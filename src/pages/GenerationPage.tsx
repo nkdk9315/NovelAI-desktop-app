@@ -56,13 +56,13 @@ export default function GenerationPage() {
     <div className="flex h-screen flex-col relative">
       <Header />
       <div className="flex flex-1 overflow-hidden">
-        <aside id="left-sidebar" className="w-80 shrink-0 overflow-y-auto border-r border-border">
+        <aside id="left-sidebar" className="w-80 min-w-[280px] shrink-0 overflow-y-auto border-r border-border">
           <LeftPanel />
         </aside>
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 min-w-0 overflow-hidden">
           <CenterPanel />
         </main>
-        <aside className="w-64 shrink-0 overflow-y-auto border-l border-border">
+        <aside className="w-64 min-w-[220px] shrink-0 overflow-y-auto border-l border-border">
           <RightPanel />
         </aside>
       </div>
