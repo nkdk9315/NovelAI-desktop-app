@@ -76,7 +76,23 @@
     "tokenLimitExceededToast": "プロンプトのトークン数が上限（{{max}}）を超えています。",
     "saveSuccess": "保存しました",
     "saveAllSuccess": "すべて保存しました",
-    "saveError": "保存に失敗しました"
+    "saveError": "保存に失敗しました",
+    "sizeGroup": {
+      "normal": "普通サイズ",
+      "large": "大サイズ",
+      "wallpaper": "壁紙",
+      "small": "小サイズ",
+      "custom": "カスタム"
+    },
+    "sizeOrient": {
+      "portrait": "縦型",
+      "landscape": "横型",
+      "square": "正方形"
+    },
+    "sizeCustom": "カスタム",
+    "sizeCustomAction": "サイズを指定…",
+    "sizeErrorTotal": "総ピクセル数が上限 ({{max}}) を超えています",
+    "sizeHint": "64〜2048 (64 の倍数)"
   },
   "prompt": {
     "clearOverride": "オーバーライドを解除",
