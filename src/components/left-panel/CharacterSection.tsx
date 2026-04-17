@@ -31,16 +31,16 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
   const [showGroupBrowser, setShowGroupBrowser] = useState(false);
 
   const charTarget = character ? targets[character.id] : undefined;
-  const charGroups = charTarget?.groups ?? [];
+  const charGroupsRaw = charTarget?.groups;
   const negativeOverride = charTarget?.negativeOverride ?? null;
   const presetInstances = useSidebarPresetGroupStore((s) => s.instances);
   const allPresets = usePresetStore((s) => s.presets);
   const assembledNegative = useMemo(() => {
-    const base = assembleNegativeFromGroups(charGroups);
+    const base = assembleNegativeFromGroups(charGroupsRaw ?? []);
     if (!character) return base;
     const contrib = getPresetContributionsForCharacter(character.id, presetInstances, allPresets);
     return appendContributions(base, contrib.negative);
-  }, [charGroups, character, presetInstances, allPresets]);
+  }, [charGroupsRaw, character, presetInstances, allPresets]);
 
   // Migrate legacy character.negativePrompt → negativeOverride (once, when target becomes available)
   const charTargetReady = charTarget != null;

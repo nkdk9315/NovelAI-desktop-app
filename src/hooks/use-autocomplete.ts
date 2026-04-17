@@ -18,6 +18,7 @@ export function useAutocomplete(delay = 300, category?: number, excludeCategorie
   const [results, setResults] = useState<TagDto[]>([]);
   const debouncedQuery = useDebounce(query, delay);
 
+  const excludeKey = excludeCategories?.join(",") ?? "";
   useEffect(() => {
     const q = debouncedQuery.trim();
     if (!q) {
@@ -35,14 +36,15 @@ export function useAutocomplete(delay = 300, category?: number, excludeCategorie
         ),
       );
     } else {
+      const excluded = excludeKey ? excludeKey.split(",").map(Number) : [];
       tagIpc.searchTags(q).then((tags) => {
-        const filtered = excludeCategories?.length
-          ? tags.filter((t) => t.csvCategory == null || !excludeCategories.includes(t.csvCategory))
+        const filtered = excluded.length
+          ? tags.filter((t) => t.csvCategory == null || !excluded.includes(t.csvCategory))
           : tags;
         setResults(filtered);
       });
     }
-  }, [debouncedQuery, category]);
+  }, [debouncedQuery, category, excludeKey]);
 
   return { results, search: setQuery };
 }

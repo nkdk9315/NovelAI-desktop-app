@@ -30,9 +30,12 @@ export default function MainPromptSection() {
   const clearNegativeOverride = useSidebarPromptStore((s) => s.clearNegativeOverride);
 
   const mainTarget = targets[MAIN_TARGET_ID];
-  const mainGroups = mainTarget?.groups ?? [];
+  const mainGroupsRaw = mainTarget?.groups;
   const negativeOverride = mainTarget?.negativeOverride ?? null;
-  const assembledNegative = useMemo(() => assembleNegativeFromGroups(mainGroups), [mainGroups]);
+  const assembledNegative = useMemo(
+    () => assembleNegativeFromGroups(mainGroupsRaw ?? []),
+    [mainGroupsRaw],
+  );
   const [showNegative, setShowNegative] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
