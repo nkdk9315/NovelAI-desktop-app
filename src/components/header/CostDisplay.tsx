@@ -35,7 +35,7 @@ export default function CostDisplay() {
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
         {t("generation.cost")}
       </span>
-      {cost.isOpusFree ? (
+      {cost.totalCost === 0 ? (
         <span className="text-sm font-medium text-primary">Free</span>
       ) : (
         <span className="text-sm font-medium tabular">
