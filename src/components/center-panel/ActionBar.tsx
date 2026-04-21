@@ -65,8 +65,6 @@ export default function ActionBar() {
     height: params.height,
     steps: params.steps,
     vibeCount: totalVibeCount,
-    // V4 multi-character prompts are free and do not affect Opus eligibility.
-    // Only image-based Character Reference (not implemented here) adds cost.
     hasCharacterReference: false,
     tier: anlas?.tier ?? 0,
   });
