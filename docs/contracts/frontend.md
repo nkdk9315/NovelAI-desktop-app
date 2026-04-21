@@ -143,6 +143,23 @@ export interface GenerateImageRequest {
   noiseSchedule: string;
   model: string;
   action: GenerateActionRequest;
+  uiSnapshot?: UiSnapshotV1; // 履歴 Ctrl/Cmd+クリック復元用スナップショット
+}
+
+// 履歴画像から UI 状態を戻すためのスナップショット。Rust 側は不透明 JSON として
+// prompt_snapshot 内に保持する。version フィールドで将来のマイグレーションを判別。
+export interface UiSnapshotV1 {
+  version: 1;
+  negativePrompt: string;
+  negativePreset: string;
+  qualityTagsEnabled: boolean;
+  normalizeVibeStrength: boolean;
+  normalizeArtistStrength: boolean;
+  characters: Character[];
+  selectedVibes: SelectedVibe[];
+  sidebarPresets: SidebarPreset[];
+  sidebarArtistTags: ArtistTag[];
+  sidebarPromptTargets: Record<string, unknown>; // sidebar-prompt-store の targets
 }
 
 export interface CharacterRequest {
@@ -630,6 +647,35 @@ export function assembleNegativeFromGroups(
 - `mode: "generate"` かつ `randomMode: true` のグループはランダム選択ロジックを適用
 
 ---
+
+## 6.2a restoreFromSnapshot (`src/lib/restore-generation.ts`)
+
+```typescript
+export type RestoreResult = "full" | "partial" | "none";
+export function restoreFromSnapshot(
+  snapshot: Record<string, unknown> | null | undefined,
+): RestoreResult;
+```
+
+履歴画像の `promptSnapshot` から生成時の UI 状態を復元するユーティリティ。
+`ThumbnailGrid` の Ctrl/Cmd+クリック（macOS は contextmenu 経由の Ctrl+クリックも）で呼ばれる。
+
+- スナップショット直下の legacy 数値フィールド（`width` / `height` / `steps` / `scale` / `cfg_rescale` / `sampler` / `noise_schedule` / `model` / `negative_prompt`）を `useGenerationParamsStore.setParam` で戻す
+- `ui_snapshot.version === 1` を確認後、`setCharacters` / `setSelectedVibes` / `setSidebarPresets`（`useGenerationParamsStore`）、`setSidebarArtistTags`（`useSidebarArtistTagsStore`）、`setTargets`（`useSidebarPromptStore`）で全画面のストアを書き戻す
+- 戻り値 `"full"` / `"partial"`（旧スナップショットで `ui_snapshot` なし）/ `"none"`（無効な入力）。UI 側でトーストを出し分ける
+
+## 6.2b buildUiSnapshot (`src/lib/build-ui-snapshot.ts`)
+
+```typescript
+export function buildUiSnapshot(
+  src: SnapshotSource,
+  sidebarArtistTags: ArtistTag[],
+  sidebarPromptTargets: Record<string, unknown>,
+): UiSnapshotV1;
+```
+
+`ActionBar` が `generateImage` を呼ぶ直前に、各 Zustand ストアの現在値から
+`UiSnapshotV1` を組み立てる純粋関数。`version: 1` を付けて `GenerateImageRequest.uiSnapshot` に載せ、Rust 側 `prompt_snapshot` 内の `ui_snapshot` キーに素通しで保存される。
 
 ## 6.3 toastError (`src/lib/toast-error.ts`)
 

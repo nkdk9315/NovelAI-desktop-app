@@ -128,6 +128,36 @@ pub async fn generate_image(
 pub fn estimate_cost(req: CostEstimateRequest) -> Result<CostResultDto, AppError>;
 ```
 
+### 3.3a generation_snapshot
+
+```rust
+// --- services/generation_snapshot.rs ---
+
+/// generate_image のリクエストから prompt_snapshot 用 JSON を組み立てる。
+/// ui_snapshot は Rust 側では不透明な JSON として保持するだけで、フロント側
+/// restore-generation.ts がバージョン判定して各ストアにばら撒く。
+pub struct PromptSnapshotInput {
+    pub prompt: String,
+    pub negative_prompt: Option<String>,
+    pub width: u32,
+    pub height: u32,
+    pub steps: u32,
+    pub scale: f64,
+    pub cfg_rescale: f64,
+    pub sampler: String,
+    pub noise_schedule: String,
+    pub model: String,
+    pub characters: Option<serde_json::Value>,
+    pub vibes: Option<serde_json::Value>,
+    pub ui_snapshot: Option<serde_json::Value>,
+}
+
+impl PromptSnapshotInput {
+    pub fn from_request(req: &GenerateImageRequest) -> Self;
+    pub fn build(self, seed: u64) -> serde_json::Value;
+}
+```
+
 ## 3.4 image_service
 
 ```rust

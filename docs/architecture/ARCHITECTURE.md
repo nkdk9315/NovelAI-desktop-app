@@ -117,7 +117,8 @@ domain-model.md の境界コンテキストに準拠。モジュール数は `sr
 | モジュール | 境界コンテキスト | 責務 | 許容する依存先 |
 |-----------|----------------|------|--------------|
 | project | プロジェクト管理 | Project CRUD, GeneratedImage管理, 未保存クリーンアップ | settings（デフォルト取得） |
-| generation | 画像生成 | パラメータ組立, API呼び出し, ファイル書込, コスト計算 | project, vibe, vibe_encode, settings |
+| generation | 画像生成 | パラメータ組立, API呼び出し, ファイル書込, コスト計算 | project, vibe, vibe_encode, settings, generation_snapshot |
+| generation_snapshot | 生成スナップショット組立 | `PromptSnapshotInput` 構築（UI 復元用 `ui_snapshot` を不透明 JSON で保持） | なし |
 | prompt_group | プロンプトグループ | PromptGroup/PromptGroupTag CRUD, デフォルト制御 | なし |
 | genre | ジャンル管理 | Genre CRUD, Genre↔PromptGroup デフォルト紐付け | なし |
 | system_prompt | システムプロンプト | CSV由来の内蔵プロンプト検索・カテゴリ管理 | なし |
