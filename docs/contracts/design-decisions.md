@@ -129,3 +129,19 @@ allArtistTags = [...sidebarArtistTags, ...activePresets.flatMap(p => p.artistTag
 **エラーハンドリング**:
 - ActionBar の `handleSave` / `handleSaveAll` を try/catch で包み、成功・失敗をトーストで通知
 - `saveSelectedImages` の失敗も HistoryHeader 側で catch してトースト表示
+
+## 7.11 V4 マルチキャラクタープロンプトを Character Reference として課金しない
+
+**課題**: `CostDisplay` / `ActionBar` で `params.characters.length > 0` を `hasCharacterReference` として渡しており、キャラを 1 体でも追加すると `isOpusFree` が false になり `+5 Anlas` が加算されていた。Opus ユーザーが本来 0 Anlas で生成できるケースでも有料表示になっていた。
+
+**選択**: `hasCharacterReference` を常に `false` に固定する。
+
+**理由**: 本アプリの `characters` は V4 マルチキャラクタープロンプト（`CharacterConfig` — テキスト + `center_x/y`）であって、NovelAI の画像アップロード型 Character Reference とは別機能。NovelAI のコスト仕様（`novelai_api_client/docs/anlas-cost-calculation.md` §3.2）では Character Reference コストは画像 CharRef にのみ適用される。本アプリは画像 CharRef 機能を実装していないので、将来導入するまでは常に `false` で正しい。
+
+## 7.12 Opus 無料判定から vibeCount を外す
+
+**課題**: `src/lib/cost.ts` と サブモジュール `novelai_api::anlas` の `is_opus_free_generation` に `vibe_count == 0` 条件が入っており、サイドバープリセット経由で Vibe を 1 つでも有効化すると Opus プランでも有料価格を表示していた。NovelAI 実機では Vibe を使っていても生成本体は無料で、Vibe 5 個以上のときだけバッチ代が発生する。
+
+**選択**: `src/lib/cost.ts` の `isOpusFree` 判定から `vibeCount === 0` を削除。`vibeBatchCost = max(0, vibeCount - 4) * 2` は `isOpusFree` と独立に加算されるので、`totalCost = 0`（Vibe ≤4）または `2 * (vibeCount - 4)`（Vibe ≥5）となり NovelAI の挙動と一致する。
+
+`CostDisplay` の「Free」表示は `isOpusFree` ではなく `totalCost === 0` を基準にするよう変更（Opus + Vibe 5 個でバッチ代 2 Anlas のケースで誤って "Free" と表示しないため）。サブモジュール `novelai_api::anlas` 側も同じ修正が必要だが、フロントは `cost.ts` を直接使うため UI 上の表示は本アプリの修正だけで正しくなる。
