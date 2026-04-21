@@ -43,6 +43,17 @@ export default function ThumbnailGrid() {
         const isViewing = lastResult?.id === img.id;
         const isChecked = selectedImageIds.includes(img.id);
 
+        const runRestore = () => {
+          const result = restoreFromSnapshot(img.promptSnapshot);
+          if (result === "full") {
+            toast.success(t("history.restored"));
+          } else if (result === "partial") {
+            toast.message(t("history.restoredPartial"));
+          } else {
+            toast.error(t("history.restoreFailed"));
+          }
+        };
+
         return (
           <div key={img.id} className="group relative aspect-square">
             <button
@@ -57,14 +68,7 @@ export default function ThumbnailGrid() {
               }`}
               onClick={(e) => {
                 if (e.ctrlKey || e.metaKey) {
-                  const result = restoreFromSnapshot(img.promptSnapshot);
-                  if (result === "full") {
-                    toast.success(t("history.restored"));
-                  } else if (result === "partial") {
-                    toast.message(t("history.restoredPartial"));
-                  } else {
-                    toast.error(t("history.restoreFailed"));
-                  }
+                  runRestore();
                   return;
                 }
                 selectImage({
@@ -72,6 +76,14 @@ export default function ThumbnailGrid() {
                   seed: img.seed,
                   filePath: img.filePath,
                 });
+              }}
+              onContextMenu={(e) => {
+                // macOS: Ctrl+click fires contextmenu, not click — intercept it
+                // so the restore shortcut works with Ctrl the user pressed.
+                if (e.ctrlKey) {
+                  e.preventDefault();
+                  runRestore();
+                }
               }}
             >
               <img
