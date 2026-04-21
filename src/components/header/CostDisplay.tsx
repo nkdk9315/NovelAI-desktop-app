@@ -7,7 +7,6 @@ export default function CostDisplay() {
   const { t } = useTranslation();
   const selectedVibes = useGenerationParamsStore((s) => s.selectedVibes);
   const sidebarPresets = useGenerationParamsStore((s) => s.sidebarPresets);
-  const characters = useGenerationParamsStore((s) => s.characters);
   const width = useGenerationParamsStore((s) => s.width);
   const height = useGenerationParamsStore((s) => s.height);
   const steps = useGenerationParamsStore((s) => s.steps);
@@ -26,7 +25,8 @@ export default function CostDisplay() {
     height,
     steps,
     vibeCount: totalVibeCount,
-    hasCharacterReference: characters.length > 0,
+    // V4 multi-character prompts are free; only image Character References cost.
+    hasCharacterReference: false,
     tier,
   });
 
