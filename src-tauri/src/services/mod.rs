@@ -2,6 +2,7 @@ pub mod settings;
 pub mod project;
 pub mod image;
 pub mod generation;
+pub mod generation_snapshot;
 pub mod prompt_group;
 pub mod prompt_group_folder;
 pub mod genre;

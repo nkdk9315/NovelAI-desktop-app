@@ -283,7 +283,6 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
 
   setCharacters: (characters) => set({ characters }),
   setSelectedVibes: (vibes) => set({ selectedVibes: vibes }),
-
   loadSidebarPresets: async (projectId) => {
     try {
       const settings = await ipc.getSettings();
@@ -298,5 +297,4 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
       set({ sidebarPresets: [] });
     }
   },
-
 }));
