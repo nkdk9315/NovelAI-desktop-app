@@ -51,9 +51,43 @@ describe("calculateCost", () => {
     expect(result.totalCost).toBeGreaterThanOrEqual(2);
   });
 
-  it("opus free with vibes is not free", () => {
-    const result = calculateCost(
+  it("opus free generation applies even with vibes (batch cost only beyond 4)", () => {
+    const resultWithOneVibe = calculateCost(
       req({ width: 1024, height: 1024, steps: 28, tier: 3, vibeCount: 1 }),
+    );
+    expect(resultWithOneVibe).toEqual({ totalCost: 0, isOpusFree: true });
+
+    const resultWithFiveVibes = calculateCost(
+      req({ width: 1024, height: 1024, steps: 28, tier: 3, vibeCount: 5 }),
+    );
+    // Generation is free, but 1 vibe beyond the free-4 threshold costs 2 Anlas
+    expect(resultWithFiveVibes).toEqual({ totalCost: 2, isOpusFree: true });
+  });
+
+  it("opus free does not apply with character reference", () => {
+    const result = calculateCost(
+      req({
+        width: 1024,
+        height: 1024,
+        steps: 28,
+        tier: 3,
+        hasCharacterReference: true,
+      }),
+    );
+    expect(result.isOpusFree).toBe(false);
+  });
+
+  it("opus free does not apply above pixel limit", () => {
+    const result = calculateCost(
+      req({ width: 1280, height: 1280, steps: 28, tier: 3 }),
+    );
+    expect(result.isOpusFree).toBe(false);
+    expect(result.totalCost).toBeGreaterThan(0);
+  });
+
+  it("non-opus tier never qualifies for free", () => {
+    const result = calculateCost(
+      req({ width: 1024, height: 1024, steps: 28, tier: 2 }),
     );
     expect(result.isOpusFree).toBe(false);
   });

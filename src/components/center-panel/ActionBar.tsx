@@ -59,14 +59,13 @@ export default function ActionBar() {
     ...params.selectedVibes.filter((v) => v.enabled).map((v) => v.vibeId),
   ]);
   const totalVibeCount = uniqueVibeIds.size;
-  const hasCharacterReference = params.characters.length > 0;
 
   const cost = calculateCost({
     width: params.width,
     height: params.height,
     steps: params.steps,
     vibeCount: totalVibeCount,
-    hasCharacterReference,
+    hasCharacterReference: false,
     tier: anlas?.tier ?? 0,
   });
 

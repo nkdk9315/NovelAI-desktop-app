@@ -21,7 +21,6 @@ export function calculateCost(params: CostEstimateRequest): CostResultDto {
 
   const isOpusFree =
     !params.hasCharacterReference &&
-    params.vibeCount === 0 &&
     pixels <= OPUS_FREE_PIXELS &&
     params.steps <= OPUS_FREE_MAX_STEPS &&
     params.tier >= OPUS_MIN_TIER;
