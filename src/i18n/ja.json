@@ -49,6 +49,7 @@
     "height": "高さ",
     "count": "枚数",
     "sampler": "サンプラー",
+    "noiseSchedule": "ノイズスケジュール",
     "steps": "ステップ",
     "scale": "スケール",
     "seed": "シード",

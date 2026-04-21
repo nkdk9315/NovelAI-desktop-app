@@ -49,6 +49,7 @@
     "height": "Height",
     "count": "Count",
     "sampler": "Sampler",
+    "noiseSchedule": "Noise Schedule",
     "steps": "Steps",
     "scale": "Scale",
     "seed": "Seed",

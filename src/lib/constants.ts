@@ -29,8 +29,8 @@ export const MODEL_TO_VIBE_KEY: Record<string, string> = {
 };
 
 export const DEFAULT_MODEL = "nai-diffusion-4-5-full";
-export const DEFAULT_SAMPLER = "k_euler";
-export const DEFAULT_NOISE_SCHEDULE = "native";
+export const DEFAULT_SAMPLER = "k_euler_ancestral";
+export const DEFAULT_NOISE_SCHEDULE = "karras";
 export const DEFAULT_STEPS = 28;
 export const DEFAULT_SCALE = 5.0;
 export const DEFAULT_CFG_RESCALE = 0.0;

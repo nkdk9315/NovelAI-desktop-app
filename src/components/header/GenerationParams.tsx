@@ -23,6 +23,7 @@ import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import {
   MODELS,
   SAMPLERS,
+  NOISE_SCHEDULES,
   SIZE_PRESET_GROUPS,
   MIN_DIMENSION,
   MAX_DIMENSION,
@@ -40,7 +41,7 @@ function clampDimension(v: number): number {
 
 export default function GenerationParams() {
   const { t } = useTranslation();
-  const { model, width, height, steps, scale, sampler, setParam } = useGenerationParamsStore();
+  const { model, width, height, steps, scale, sampler, noiseSchedule, setParam } = useGenerationParamsStore();
   const [customMode, setCustomMode] = useState(false);
 
   const matchedPreset = SIZE_PRESET_GROUPS.flatMap((g) =>
@@ -175,6 +176,20 @@ export default function GenerationParams() {
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={4}>
                 {SAMPLERS.map((s) => (
+                  <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs">{t("generation.noiseSchedule")}</Label>
+            <Select value={noiseSchedule} onValueChange={(v) => setParam("noiseSchedule", v)}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4}>
+                {NOISE_SCHEDULES.map((s) => (
                   <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
                 ))}
               </SelectContent>
