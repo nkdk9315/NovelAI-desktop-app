@@ -398,6 +398,7 @@ pub struct GenerateImageRequest {
     pub noise_schedule: String,
     pub model: String,
     pub action: GenerateActionRequest,
+    pub ui_snapshot: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -409,7 +410,7 @@ pub struct CharacterRequest {
     pub negative_prompt: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VibeReference {
     pub vibe_id: String,

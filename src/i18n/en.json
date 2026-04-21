@@ -129,7 +129,11 @@
     "saveSelected": "Save Selected",
     "clearSelection": "Clear",
     "saveSelectedSuccess": "Saved {{count}} images",
-    "saveSelectedError": "Save failed"
+    "saveSelectedError": "Save failed",
+    "ctrlClickToRestore": "Ctrl/Cmd + click to restore prompts and vibes",
+    "restored": "Restored prompts and vibes from this image",
+    "restoredPartial": "Only basic parameters restored (older image)",
+    "restoreFailed": "Could not restore from this image"
   },
   "character": {
     "add": "Add Character",

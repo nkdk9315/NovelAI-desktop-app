@@ -147,6 +147,20 @@ export default function ActionBar() {
       ? (mainNegBase ? `${negPresetText}, ${mainNegBase}` : negPresetText)
       : mainNegBase;
 
+    const uiSnapshot = {
+      version: 1 as const,
+      negativePrompt: params.negativePrompt,
+      negativePreset: params.negativePreset,
+      qualityTagsEnabled: params.qualityTagsEnabled,
+      normalizeVibeStrength: params.normalizeVibeStrength,
+      normalizeArtistStrength: params.normalizeArtistStrength,
+      characters: params.characters,
+      selectedVibes: params.selectedVibes,
+      sidebarPresets: params.sidebarPresets,
+      sidebarArtistTags,
+      sidebarPromptTargets: sidebarState.targets,
+    };
+
     const req: GenerateImageRequest = {
       projectId,
       prompt: fullPrompt,
@@ -184,6 +198,7 @@ export default function ActionBar() {
       noiseSchedule: params.noiseSchedule,
       model: params.model,
       action: { type: "generate" },
+      uiSnapshot,
     };
     await generate(req);
     await Promise.all([loadImages(projectId), refreshAnlas()]);

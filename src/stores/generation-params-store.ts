@@ -92,6 +92,9 @@ interface GenerationParamsState extends GenerationParamsData {
   // Persistence helpers
   saveSidebarPresets: (projectId: string) => void;
   loadSidebarPresets: (projectId: string) => Promise<void>;
+  // Bulk setters (used by history restore)
+  setCharacters: (characters: Character[]) => void;
+  setSelectedVibes: (vibes: SelectedVibe[]) => void;
 }
 
 export const useGenerationParamsStore = create<GenerationParamsState>()((set, get) => ({
@@ -277,6 +280,9 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
     const persistable = sidebarPresets.filter((p) => !p.isRandom);
     ipc.setSetting(`sidebar_presets_${projectId}`, JSON.stringify(persistable)).catch(() => {});
   },
+
+  setCharacters: (characters) => set({ characters }),
+  setSelectedVibes: (vibes) => set({ selectedVibes: vibes }),
 
   loadSidebarPresets: async (projectId) => {
     try {

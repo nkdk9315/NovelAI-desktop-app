@@ -40,6 +40,7 @@ interface SidebarPromptActions {
   clearNegativeOverride: (targetId: string) => void;
   saveSidebarPromptState: (projectId: string) => void;
   loadSidebarPromptState: (projectId: string) => Promise<void>;
+  setTargets: (targets: Record<string, TargetPromptState>) => void;
 }
 
 export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptActions>()((set) => ({
@@ -210,6 +211,8 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
     const { targets } = useSidebarPromptStore.getState();
     ipc.setSetting(`sidebar_prompts_${projectId}`, JSON.stringify(targets)).catch(() => {});
   },
+
+  setTargets: (targets) => set({ targets: migrateTargets(targets) }),
 
   loadSidebarPromptState: async (projectId) => {
     try {

@@ -31,6 +31,7 @@ fn make_generate_req(char_count: usize) -> GenerateImageRequest {
         noise_schedule: "native".to_string(),
         model: "nai-diffusion-4-5-full".to_string(),
         action: GenerateActionRequest::Generate,
+        ui_snapshot: None,
     }
 }
 
@@ -72,6 +73,22 @@ fn test_prompt_snapshot_no_characters() {
     let input = PromptSnapshotInput::from_request(&req);
     let snapshot = input.build(42);
     assert!(snapshot.get("characters").unwrap().is_null());
+}
+
+#[test]
+fn test_prompt_snapshot_preserves_ui_snapshot() {
+    let mut req = make_generate_req(0);
+    req.negative_prompt = Some("low quality".to_string());
+    req.ui_snapshot = Some(serde_json::json!({
+        "version": 1,
+        "selectedVibes": [{"vibeId": "v1", "strength": 0.7, "enabled": true}],
+        "sidebarPresets": [],
+    }));
+    let input = PromptSnapshotInput::from_request(&req);
+    let snapshot = input.build(42);
+    assert_eq!(snapshot["negative_prompt"], "low quality");
+    assert_eq!(snapshot["ui_snapshot"]["version"], 1);
+    assert_eq!(snapshot["ui_snapshot"]["selectedVibes"][0]["vibeId"], "v1");
 }
 
 fn make_req(

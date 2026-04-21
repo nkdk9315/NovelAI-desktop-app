@@ -9,6 +9,7 @@ interface SidebarArtistTagsState {
   updateSidebarArtistTagStrength: (name: string, strength: number) => void;
   saveSidebarArtistTags: (projectId: string) => void;
   loadSidebarArtistTags: (projectId: string) => Promise<void>;
+  setSidebarArtistTags: (tags: ArtistTag[]) => void;
 }
 
 export const useSidebarArtistTagsStore = create<SidebarArtistTagsState>()((set, get) => ({
@@ -36,6 +37,8 @@ export const useSidebarArtistTagsStore = create<SidebarArtistTagsState>()((set, 
     const { sidebarArtistTags } = get();
     ipc.setSetting(`sidebar_artist_tags_${projectId}`, JSON.stringify(sidebarArtistTags)).catch(() => {});
   },
+
+  setSidebarArtistTags: (tags) => set({ sidebarArtistTags: tags }),
 
   loadSidebarArtistTags: async (projectId) => {
     try {
