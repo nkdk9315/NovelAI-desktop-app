@@ -145,3 +145,19 @@ allArtistTags = [...sidebarArtistTags, ...activePresets.flatMap(p => p.artistTag
 **選択**: `src/lib/cost.ts` の `isOpusFree` 判定から `vibeCount === 0` を削除。`vibeBatchCost = max(0, vibeCount - 4) * 2` は `isOpusFree` と独立に加算されるので、`totalCost = 0`（Vibe ≤4）または `2 * (vibeCount - 4)`（Vibe ≥5）となり NovelAI の挙動と一致する。
 
 `CostDisplay` の「Free」表示は `isOpusFree` ではなく `totalCost === 0` を基準にするよう変更（Opus + Vibe 5 個でバッチ代 2 Anlas のケースで誤って "Free" と表示しないため）。サブモジュール `novelai_api::anlas` 側も同じ修正が必要だが、フロントは `cost.ts` を直接使うため UI 上の表示は本アプリの修正だけで正しくなる。
+
+## 7.13 履歴画像からの UI 状態復元（prompt_snapshot 内 ui_snapshot）
+
+**課題**: 履歴サムネイルを Ctrl/Cmd+クリックで選び、そのとき使ったプロンプト・Vibe・サイドバープリセットを現在のセッションに戻したい。
+
+**選択**: `GenerateImageRequest.uiSnapshot`（`Option<serde_json::Value>`）を追加し、Rust 側は中身を不透明 JSON として `prompt_snapshot` の `ui_snapshot` キーにそのまま保存する。フロント側 `restoreFromSnapshot` が `version` で分岐し、各 Zustand ストアの bulk setter（`setCharacters` / `setSelectedVibes` / `setSidebarPresets` / `setSidebarArtistTags` / `setTargets`）に書き戻す。
+
+**設計の判断点**:
+
+| 検討事項 | 採用案 | 理由 |
+|----------|--------|------|
+| DB スキーマ | `prompt_snapshot` 既存カラムに内包 | 新カラム追加はマイグレーション影響大。JSON ブロブ内なら前方互換で増やせる |
+| Rust 側の型付け | `serde_json::Value` のまま通す | UI 状態の構造変更ごとに Rust の型定義を追いかけたくない。復元は完全にフロント責務 |
+| バージョニング | `version: 1` フィールド + `restoreFromSnapshot` で分岐 | 将来の `v2` 追加時も `v1` データを壊さず移行できる |
+| 旧画像の扱い | `ui_snapshot` 無し → "partial" を返して `width/height/steps/sampler/...` のみ復元 | Vibe/preset は再現不能でも、寸法・モデル情報は手繰れる価値があるため |
+| macOS の Ctrl+クリック | `onClick` + `onContextMenu` 両方で復元をトリガ | macOS は Ctrl+クリック = 右クリック扱いで `click` が発火しないため、`contextmenu` 側で `preventDefault` + 復元を行う |

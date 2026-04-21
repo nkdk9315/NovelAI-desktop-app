@@ -3,16 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Play, Save, SaveAll, Trash2 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
@@ -29,6 +20,7 @@ import TokenCounter from "@/components/shared/TokenCounter";
 import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
 import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store";
 import { usePresetStore } from "@/stores/preset-store";
+import { buildUiSnapshot } from "@/lib/build-ui-snapshot";
 import type { GenerateImageRequest } from "@/types";
 
 export default function ActionBar() {
@@ -147,6 +139,8 @@ export default function ActionBar() {
       ? (mainNegBase ? `${negPresetText}, ${mainNegBase}` : negPresetText)
       : mainNegBase;
 
+    const uiSnapshot = buildUiSnapshot(params, sidebarArtistTags, sidebarState.targets);
+
     const req: GenerateImageRequest = {
       projectId,
       prompt: fullPrompt,
@@ -184,6 +178,7 @@ export default function ActionBar() {
       noiseSchedule: params.noiseSchedule,
       model: params.model,
       action: { type: "generate" },
+      uiSnapshot,
     };
     await generate(req);
     await Promise.all([loadImages(projectId), refreshAnlas()]);

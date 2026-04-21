@@ -3,9 +3,11 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Bookmark, Check } from "lucide-react";
+import { toast } from "sonner";
 import { useHistoryStore } from "@/stores/history-store";
 import { useProjectStore } from "@/stores/project-store";
 import { useGenerationStore } from "@/stores/generation-store";
+import { restoreFromSnapshot } from "@/lib/restore-generation";
 
 export default function ThumbnailGrid() {
   const { t } = useTranslation();
@@ -41,10 +43,22 @@ export default function ThumbnailGrid() {
         const isViewing = lastResult?.id === img.id;
         const isChecked = selectedImageIds.includes(img.id);
 
+        const runRestore = () => {
+          const result = restoreFromSnapshot(img.promptSnapshot);
+          if (result === "full") {
+            toast.success(t("history.restored"));
+          } else if (result === "partial") {
+            toast.message(t("history.restoredPartial"));
+          } else {
+            toast.error(t("history.restoreFailed"));
+          }
+        };
+
         return (
           <div key={img.id} className="group relative aspect-square">
             <button
               type="button"
+              title={t("history.ctrlClickToRestore")}
               className={`h-full w-full overflow-hidden rounded-md border transition-all duration-150 ${
                 isViewing
                   ? "border-primary ring-2 ring-primary/70"
@@ -52,12 +66,24 @@ export default function ThumbnailGrid() {
                     ? "border-primary ring-2 ring-primary/50"
                     : "border-border hover:border-primary/40 hover:ring-2 hover:ring-primary/20"
               }`}
-              onClick={() => {
+              onClick={(e) => {
+                if (e.ctrlKey || e.metaKey) {
+                  runRestore();
+                  return;
+                }
                 selectImage({
                   id: img.id,
                   seed: img.seed,
                   filePath: img.filePath,
                 });
+              }}
+              onContextMenu={(e) => {
+                // macOS: Ctrl+click fires contextmenu, not click — intercept it
+                // so the restore shortcut works with Ctrl the user pressed.
+                if (e.ctrlKey) {
+                  e.preventDefault();
+                  runRestore();
+                }
               }}
             >
               <img

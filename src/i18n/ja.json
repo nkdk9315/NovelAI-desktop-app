@@ -129,7 +129,11 @@
     "saveSelected": "選択を保存",
     "clearSelection": "選択解除",
     "saveSelectedSuccess": "{{count}}枚を保存しました",
-    "saveSelectedError": "保存に失敗しました"
+    "saveSelectedError": "保存に失敗しました",
+    "ctrlClickToRestore": "Ctrl/Cmd+クリックでプロンプトと Vibe を復元",
+    "restored": "この画像のプロンプトと Vibe を復元しました",
+    "restoredPartial": "基本パラメータのみ復元しました（旧形式の画像）",
+    "restoreFailed": "この画像からは復元できませんでした"
   },
   "character": {
     "add": "キャラクター追加",

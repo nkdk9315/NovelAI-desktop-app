@@ -290,6 +290,38 @@ export interface GenerateImageRequest {
   noiseSchedule: string;
   model: string;
   action: GenerateActionRequest;
+  uiSnapshot?: UiSnapshotV1;
+}
+
+export interface UiSnapshotV1 {
+  version: 1;
+  negativePrompt: string;
+  negativePreset: string;
+  qualityTagsEnabled: boolean;
+  normalizeVibeStrength: boolean;
+  normalizeArtistStrength: boolean;
+  characters: Array<{
+    id: string;
+    prompt: string;
+    negativePrompt: string;
+    centerX: number;
+    centerY: number;
+    genreName: string;
+    genreId: string;
+    genreIcon: string;
+    genreColor: string;
+  }>;
+  selectedVibes: Array<{ vibeId: string; strength: number; enabled: boolean }>;
+  sidebarPresets: Array<{
+    id: string;
+    enabled: boolean;
+    artistTags: ArtistTag[];
+    selectedVibes: Array<{ vibeId: string; strength: number; enabled: boolean }>;
+    isRandom?: boolean;
+    name?: string;
+  }>;
+  sidebarArtistTags: ArtistTag[];
+  sidebarPromptTargets: Record<string, unknown>;
 }
 
 export interface CharacterRequest {
