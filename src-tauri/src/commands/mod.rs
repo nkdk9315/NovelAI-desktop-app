@@ -1,6 +1,7 @@
 pub mod settings;
 pub mod projects;
 pub mod images;
+pub mod image_tools;
 pub mod prompt_groups;
 pub mod prompt_group_folders;
 pub mod genres;

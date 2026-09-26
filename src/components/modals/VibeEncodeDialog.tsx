@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MODELS } from "@/lib/constants";
+import { DEFAULT_MODEL, VIBE_MODELS } from "@/lib/constants";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import * as ipc from "@/lib/ipc";
@@ -42,7 +42,10 @@ export default function VibeEncodeDialog({
   const { t } = useTranslation();
 
   const currentModel = useGenerationParamsStore((s) => s.model);
-  const [model, setModel] = useState(currentModel);
+  // V5 does not support Vibe Transfer; fall back to the default V4.5 model
+  const [model, setModel] = useState<string>(
+    (VIBE_MODELS as readonly string[]).includes(currentModel) ? currentModel : DEFAULT_MODEL,
+  );
   const [imagePath, setImagePath] = useState<string | null>(initialImagePath ?? null);
   const [name, setName] = useState(() => {
     if (initialImagePath) {
@@ -189,7 +192,7 @@ export default function VibeEncodeDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {MODELS.map((m) => (
+                {VIBE_MODELS.map((m) => (
                   <SelectItem key={m} value={m} className="text-xs">
                     {m}
                   </SelectItem>

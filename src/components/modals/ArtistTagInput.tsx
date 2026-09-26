@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
+import StrengthField from "@/components/shared/StrengthField";
 import { useAutocomplete } from "@/hooks/use-autocomplete";
 import type { ArtistTag } from "@/types";
 
@@ -42,9 +42,7 @@ export default function ArtistTagInput({ artistTags, onArtistTagsChange }: Props
     onArtistTagsChange(artistTags.filter((_, i) => i !== index));
   };
 
-  const handleTagStrength = (index: number, raw: number) => {
-    const nearest = Math.round(raw * 2) / 2;
-    const strength = Math.abs(raw - nearest) < 0.15 ? nearest : Math.round(raw * 100) / 100;
+  const handleTagStrength = (index: number, strength: number) => {
     onArtistTagsChange(artistTags.map((t, i) => (i === index ? { ...t, strength } : t)));
   };
 
@@ -115,15 +113,7 @@ export default function ArtistTagInput({ artistTags, onArtistTagsChange }: Props
                   <X className="h-2.5 w-2.5" />
                 </button>
               </Badge>
-              <Slider
-                min={0} max={10} step={0.1}
-                value={[tag.strength]}
-                onValueChange={([v]) => handleTagStrength(i, v)}
-                className="flex-1"
-              />
-              <span className="text-[10px] text-muted-foreground w-10 text-right">
-                {tag.strength === 0 ? "—" : tag.strength.toFixed(2)}
-              </span>
+              <StrengthField value={tag.strength} onChange={(v) => handleTagStrength(i, v)} />
             </div>
           ))}
         </div>

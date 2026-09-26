@@ -1,3 +1,4 @@
+import { padTrailingDigit } from "@/lib/prompt-assembly";
 import type { PromptPresetDto, SidebarPresetGroupInstanceDto } from "@/types";
 
 export interface PresetContributions {
@@ -14,7 +15,7 @@ export function wrapWithStrength(text: string, strength: number): string {
   if (strength === 1) return text;
   // Trim trailing zeros from decimals (e.g. 2.0 → 2)
   const s = Number.isInteger(strength) ? strength.toString() : strength.toString();
-  return `${s}::${text}::`;
+  return `${s}::${padTrailingDigit(text)}::`;
 }
 
 /**

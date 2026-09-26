@@ -4,7 +4,9 @@ import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
+import DeleteConfirmDialog from "@/components/modals/DeleteConfirmDialog";
 import { useHistoryStore } from "@/stores/history-store";
+import { useDeleteImages } from "@/hooks/use-delete-images";
 
 export default function HistoryHeader() {
   const { t } = useTranslation();
@@ -14,6 +16,8 @@ export default function HistoryHeader() {
   const saveSelectedImages = useHistoryStore((s) => s.saveSelectedImages);
   const clearSelection = useHistoryStore((s) => s.clearSelection);
   const [filter, setFilter] = useState<string>("all");
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const deleteImages = useDeleteImages();
 
   const handleFilterChange = (value: string) => {
     if (!value || !projectId) return;
@@ -58,11 +62,26 @@ export default function HistoryHeader() {
           <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={handleSaveSelected}>
             {t("history.saveSelected")}
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+            onClick={() => setConfirmDeleteOpen(true)}
+          >
+            {t("history.deleteSelected")}
+          </Button>
           <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={clearSelection}>
             {t("history.clearSelection")}
           </Button>
         </div>
       )}
+      <DeleteConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        onConfirm={() => deleteImages([...selectedImageIds])}
+        title={t("history.deleteConfirmTitle")}
+        description={t("history.deleteConfirm", { count: selectedImageIds.length })}
+      />
     </div>
   );
 }

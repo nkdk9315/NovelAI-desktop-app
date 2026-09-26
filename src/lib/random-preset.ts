@@ -90,15 +90,21 @@ export async function generateRandomPreset(
   currentModel: string,
   allFolders: AssetFolderDto[] = [],
 ): Promise<SidebarPreset> {
-  const compatibleVibes = filterVibePool(allVibes, settings, currentModel, allFolders);
+  // A fixed count of 0 means "artist tags only" — no vibe pool needed.
+  const wantsVibes = settings.vibeCount !== 0;
+  const compatibleVibes = wantsVibes
+    ? filterVibePool(allVibes, settings, currentModel, allFolders)
+    : [];
 
-  if (compatibleVibes.length === 0) {
+  if (wantsVibes && compatibleVibes.length === 0) {
     throw new Error("no_compatible_vibes");
   }
 
   // Determine vibe count
   const maxVibes = Math.min(4, compatibleVibes.length);
-  const vibeCount = settings.vibeCount === "random" ? randomInt(1, maxVibes) : Math.min(settings.vibeCount, maxVibes);
+  const vibeCount = settings.vibeCount === "random"
+    ? randomInt(1, maxVibes)
+    : Math.min(settings.vibeCount, maxVibes);
 
   // Select random vibes
   const shuffled = shuffle(compatibleVibes);

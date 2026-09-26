@@ -1,5 +1,6 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
 import { useAutocomplete } from "@/hooks/use-autocomplete";
+import { useTokenDrag } from "@/hooks/use-token-drag";
 
 function csvCategoryLabel(id: number): string {
   switch (id) {
@@ -26,7 +27,18 @@ interface PromptTextareaProps {
   onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   highlightTokens?: string[];
+  /** Grow the textarea while focused (to fit content, at least `expandedRows`). */
+  expandOnFocus?: boolean;
+  expandedRows?: number;
 }
+
+/** Upper bound for the focused height so the panel never becomes all textarea. */
+const MAX_EXPANDED_VH = 0.6;
+/**
+ * Collapse is delayed on blur so a click on an element below the textarea
+ * lands before the layout shifts upward.
+ */
+const COLLAPSE_DELAY_MS = 150;
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -65,6 +77,8 @@ export default function PromptTextarea({
   onKeyDown: onKeyDownProp,
   textareaRef: externalRef,
   highlightTokens,
+  expandOnFocus = false,
+  expandedRows,
 }: PromptTextareaProps) {
   const tokens = highlightTokens ?? [];
   const hasHighlights = tokens.length > 0 && tokens.some((t) => t.length > 0);
@@ -74,6 +88,39 @@ export default function PromptTextarea({
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const textareaRef = externalRef ?? internalRef;
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const activeTokens = hasHighlights ? tokens.filter((t) => t.length > 0) : [];
+  const tokenDrag = useTokenDrag({ textareaRef, overlayRef, value, tokens: activeTokens, onChange });
+  const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isExpanded = expandOnFocus && expanded;
+
+  useEffect(() => () => {
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+  }, []);
+
+  // While expanded, grow to fit the content (bounded by MAX_EXPANDED_VH).
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (!el || !expandOnFocus) return;
+    el.style.height = "";
+    if (!isExpanded) return;
+    const border = el.offsetHeight - el.clientHeight;
+    const target = Math.min(el.scrollHeight + border, window.innerHeight * MAX_EXPANDED_VH);
+    if (target > el.offsetHeight) el.style.height = `${target}px`;
+  }, [isExpanded, value, expandOnFocus, textareaRef]);
+
+  const handleFocus = () => {
+    if (!expandOnFocus) return;
+    if (collapseTimer.current) clearTimeout(collapseTimer.current);
+    setExpanded(true);
+  };
+
+  const handleBlur = () => {
+    setTimeout(() => setShowDropdown(false), 200);
+    if (!expandOnFocus) return;
+    collapseTimer.current = setTimeout(() => setExpanded(false), COLLAPSE_DELAY_MS);
+  };
 
   const getCurrentToken = useCallback(() => {
     const textarea = textareaRef.current;
@@ -170,6 +217,7 @@ export default function PromptTextarea({
     <div className={`relative ${hasHighlights ? "rounded-md bg-background" : ""}`}>
       {hasHighlights && (
         <div
+          ref={overlayRef}
           aria-hidden
           className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words rounded-md border border-transparent px-3 py-2 text-sm text-transparent"
         >
@@ -180,13 +228,21 @@ export default function PromptTextarea({
         ref={textareaRef}
         className={`relative w-full resize-none rounded-md border border-input px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
           hasHighlights ? "bg-transparent" : "bg-background"
-        }`}
+        } ${tokenDrag.dragging ? "cursor-grabbing" : ""}`}
         value={value}
         onChange={(e) => handleChange(e.target.value)}
-        onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+        onScroll={(e) => {
+          if (overlayRef.current) overlayRef.current.scrollTop = e.currentTarget.scrollTop;
+        }}
+        onPointerDown={tokenDrag.onPointerDown}
+        onPointerMove={tokenDrag.onPointerMove}
+        onPointerUp={tokenDrag.onPointerUp}
+        onPointerCancel={tokenDrag.onPointerCancel}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        rows={rows}
+        rows={isExpanded ? Math.max(expandedRows ?? rows * 2, rows) : rows}
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck={false}

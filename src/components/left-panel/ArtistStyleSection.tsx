@@ -17,6 +17,7 @@ import StylePresetModal from "@/components/modals/StylePresetModal";
 import RandomPresetSettingsDialog from "@/components/modals/RandomPresetSettingsDialog";
 import PresetTweakPanel from "./PresetTweakPanel";
 import SidebarArtistTagInput from "./SidebarArtistTagInput";
+import { useSidebarStylePersistence } from "@/hooks/use-sidebar-style-persistence";
 
 const GLOBAL_SETTINGS_KEY = "random_preset_settings";
 
@@ -27,8 +28,6 @@ export default function ArtistStyleSection() {
   const sidebarPresets = useGenerationParamsStore((s) => s.sidebarPresets);
   const toggleSidebarPreset = useGenerationParamsStore((s) => s.toggleSidebarPreset);
   const removeSidebarPreset = useGenerationParamsStore((s) => s.removeSidebarPreset);
-  const saveSidebarPresets = useGenerationParamsStore((s) => s.saveSidebarPresets);
-  const loadSidebarPresets = useGenerationParamsStore((s) => s.loadSidebarPresets);
   const addRandomPreset = useGenerationParamsStore((s) => s.addRandomPreset);
   const rerollRandomPreset = useGenerationParamsStore((s) => s.rerollRandomPreset);
   const updateRandomPresetSettings = useGenerationParamsStore((s) => s.updateRandomPresetSettings);
@@ -36,8 +35,8 @@ export default function ArtistStyleSection() {
   const addSidebarArtistTag = useSidebarArtistTagsStore((s) => s.addSidebarArtistTag);
   const removeSidebarArtistTag = useSidebarArtistTagsStore((s) => s.removeSidebarArtistTag);
   const updateSidebarArtistTagStrength = useSidebarArtistTagsStore((s) => s.updateSidebarArtistTagStrength);
-  const saveSidebarArtistTags = useSidebarArtistTagsStore((s) => s.saveSidebarArtistTags);
-  const loadSidebarArtistTags = useSidebarArtistTagsStore((s) => s.loadSidebarArtistTags);
+  const balanceSidebarArtistTags = useSidebarArtistTagsStore((s) => s.balanceSidebarArtistTags);
+  const toggleSidebarArtistTag = useSidebarArtistTagsStore((s) => s.toggleSidebarArtistTag);
 
   const [presets, setPresets] = useState<StylePresetDto[]>([]);
   const [vibes, setVibes] = useState<VibeDto[]>([]);
@@ -65,27 +64,7 @@ export default function ArtistStyleSection() {
     loadGlobalSettings();
   }, []);
 
-  // Load saved sidebar presets when project opens
-  useEffect(() => {
-    if (currentProject) {
-      loadSidebarPresets(currentProject.id);
-      loadSidebarArtistTags(currentProject.id);
-    }
-  }, [currentProject, loadSidebarPresets, loadSidebarArtistTags]);
-
-  // Auto-save when sidebarPresets change
-  useEffect(() => {
-    if (currentProject) {
-      saveSidebarPresets(currentProject.id);
-    }
-  }, [sidebarPresets, currentProject, saveSidebarPresets]);
-
-  // Auto-save when sidebarArtistTags change
-  useEffect(() => {
-    if (currentProject) {
-      saveSidebarArtistTags(currentProject.id);
-    }
-  }, [sidebarArtistTags, currentProject, saveSidebarArtistTags]);
+  useSidebarStylePersistence(currentProject);
 
   const handleRemovePreset = (presetId: string) => {
     removeSidebarPreset(presetId);
@@ -97,6 +76,7 @@ export default function ArtistStyleSection() {
       const settings = settingsOverride ?? globalSettings;
       const folders = await loadAllVibeFolders();
       const preset = await generateRandomPreset(settings, allVibes, model, folders);
+      useSidebarArtistTagsStore.getState().disableAllSidebarArtistTags();
       addRandomPreset(preset);
     } catch (e) {
       if (String(e).includes("no_compatible_vibes")) {
@@ -166,6 +146,8 @@ export default function ArtistStyleSection() {
         onAdd={addSidebarArtistTag}
         onRemove={removeSidebarArtistTag}
         onStrengthChange={updateSidebarArtistTagStrength}
+        onBalance={balanceSidebarArtistTags}
+        onToggle={toggleSidebarArtistTag}
       />
 
       {/* Sidebar presets with inline tweak panels */}

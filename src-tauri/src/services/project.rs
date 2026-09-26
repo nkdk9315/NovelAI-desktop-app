@@ -120,8 +120,9 @@ pub fn update_project(
     Ok(ProjectDto::from(row))
 }
 
+/// Unsaved images are intentionally kept: history survives closing/reopening
+/// a project. Explicit cleanup remains available via `cleanup_unsaved_images`.
 pub fn open_project(conn: &Connection, id: &str) -> Result<ProjectDto, AppError> {
-    crate::services::image::cleanup_unsaved_images(conn, id)?;
     let row = crate::repositories::project::find_by_id(conn, id)?;
     Ok(ProjectDto::from(row))
 }

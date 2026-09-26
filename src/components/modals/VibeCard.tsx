@@ -58,12 +58,12 @@ export default function VibeCard({
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleSidebar(); } }}
         >
           {/* Thumbnail — card-width square, image not stretched */}
-          <div className="aspect-square rounded bg-muted mb-1 overflow-hidden flex items-center justify-center">
+          <div className="relative aspect-square rounded bg-muted mb-1 overflow-hidden flex items-center justify-center">
             {vibe.thumbnailPath ? (
               <img
                 src={`asset://localhost/${vibe.thumbnailPath}`}
                 alt=""
-                className="h-full w-full object-contain"
+                className="absolute inset-0 h-full w-full object-contain"
               />
             ) : (
               <ImageIcon className="h-8 w-8 text-muted-foreground" />

@@ -8,6 +8,10 @@ import { useHistoryStore } from "@/stores/history-store";
 import { useProjectStore } from "@/stores/project-store";
 import { useGenerationStore } from "@/stores/generation-store";
 import { restoreFromSnapshot } from "@/lib/restore-generation";
+import { historyActionOf } from "@/lib/history-action";
+import { toolKey } from "@/components/modals/director-tools/tool-defs";
+import type { AugmentTool } from "@/types";
+import ThumbnailContextMenu from "./ThumbnailContextMenu";
 
 export default function ThumbnailGrid() {
   const { t } = useTranslation();
@@ -54,8 +58,17 @@ export default function ThumbnailGrid() {
           }
         };
 
+        const action = historyActionOf(img.promptSnapshot);
+        const badge = action.kind === "generate"
+          ? null
+          : action.kind === "augment" && action.tool
+            ? t(`tools.names.${toolKey(action.tool as AugmentTool)}`)
+            : t(`history.badge.${action.kind}`);
+        const canRestore = action.kind !== "augment" && action.kind !== "upscale";
+
         return (
           <div key={img.id} className="group relative aspect-square">
+            <ThumbnailContextMenu imageId={img.id} canRestore={canRestore} onRestore={runRestore}>
             <button
               type="button"
               title={t("history.ctrlClickToRestore")}
@@ -93,6 +106,13 @@ export default function ThumbnailGrid() {
                 loading="lazy"
               />
             </button>
+            </ThumbnailContextMenu>
+
+            {badge && (
+              <span className="pointer-events-none absolute bottom-1 left-1 max-w-[90%] truncate rounded bg-black/65 px-1 py-px text-[9px] leading-tight text-white">
+                {badge}
+              </span>
+            )}
 
             {img.isSaved && (
               <div className="pointer-events-none absolute right-1 top-1">

@@ -1,4 +1,4 @@
-use crate::models::dto::GenerateImageRequest;
+use crate::models::dto::{GenerateActionRequest, GenerateImageRequest};
 
 pub struct PromptSnapshotInput {
     pub prompt: String,
@@ -14,6 +14,25 @@ pub struct PromptSnapshotInput {
     pub characters: Option<serde_json::Value>,
     pub vibes: Option<serde_json::Value>,
     pub ui_snapshot: Option<serde_json::Value>,
+    /// Action parameters without the image data (e.g. `{"type":"img2img","strength":0.7}`)
+    pub action: serde_json::Value,
+    /// Character reference settings without the image data
+    pub character_reference: Option<serde_json::Value>,
+}
+
+/// Summarise the action for the history (source image / mask bytes are not stored).
+pub fn action_summary(action: &GenerateActionRequest) -> serde_json::Value {
+    match action {
+        GenerateActionRequest::Generate => serde_json::json!({ "type": "generate" }),
+        GenerateActionRequest::Img2Img { strength, noise, .. } => {
+            serde_json::json!({ "type": "img2img", "strength": strength, "noise": noise })
+        }
+        GenerateActionRequest::Infill { mask_strength, color_correct, .. } => serde_json::json!({
+            "type": "infill",
+            "strength": mask_strength,
+            "colorCorrect": color_correct,
+        }),
+    }
 }
 
 impl PromptSnapshotInput {
@@ -40,6 +59,10 @@ impl PromptSnapshotInput {
             characters,
             vibes,
             ui_snapshot: req.ui_snapshot.clone(),
+            action: action_summary(&req.action),
+            character_reference: req.character_reference.as_ref().map(|c| {
+                serde_json::json!({ "mode": c.mode, "strength": c.strength, "fidelity": c.fidelity })
+            }),
         }
     }
 
@@ -59,6 +82,8 @@ impl PromptSnapshotInput {
             "characters": self.characters,
             "vibes": self.vibes,
             "ui_snapshot": self.ui_snapshot,
+            "action": self.action,
+            "character_reference": self.character_reference,
         })
     }
 }

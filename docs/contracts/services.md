@@ -80,8 +80,8 @@ pub fn update_project_thumbnail(
 ) -> Result<ProjectDto, AppError>;
 
 /// プロジェクトを開く
-/// 1. image_service::cleanup_unsaved_images(conn, id) で未保存画像削除
-/// 2. project_repo::find_by_id → ProjectDto 返却
+/// project_repo::find_by_id → ProjectDto 返却
+/// （未保存画像は削除しない。履歴はプロジェクトを閉じても保持される）
 pub fn open_project(conn: &Connection, id: &str) -> Result<ProjectDto, AppError>;
 
 /// プロジェクト削除
@@ -112,16 +112,27 @@ pub fn delete_project(conn: &Connection, id: &str) -> Result<(), AppError>;
 ///      - vibes → VibeConfig { item: VibeItem::FilePath, strength, info_extracted }
 ///      - model/sampler/noise_schedule → FromStr parse
 ///      - action → GenerateAction変換 (base64 → ImageInput::Base64)
-///      - save → SaveTarget::Directory { dir: project_dir/images/ }
+///      - character_reference → CharacterReferenceConfig { image: ImageInput::Base64, strength, fidelity, mode }
 ///   4. api_client.generate(&params).await
-///   5. GenerateResult からファイル保存確認
-///   6. GeneratedImageRow 構築 → image_repo::insert (is_saved = 0)
-///   7. GenerateImageResponse 返却 (image_data → base64)
+///   5. image_output::persist_output_image で images/<uuid>.<ext> 書込 + image_repo::insert (is_saved = 0)
+///      （prompt_snapshot = PromptSnapshotInput::build(seed)。拡張子は result.image_format）
+///   6. GenerateImageResponse 返却 (image_data → base64)
 pub async fn generate_image(
     db: &Mutex<Connection>,
     api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     req: GenerateImageRequest,
 ) -> Result<GenerateImageResponse, AppError>;
+
+/// リクエスト検証（generate_image 冒頭で呼ばれる）
+/// - characters 数 ≤ モデル別上限（V5: 32 / V4・V4.5: 6）
+/// - V5 + vibes → Validation / V4・V4.5 + transparent_background → Validation
+/// - character_reference: V5 では Validation（API クライアントが V4.5 以外を拒否）、
+///   vibes との併用は Validation、mode は parse_char_ref_mode、strength / fidelity は 0.0–1.0
+pub fn validate_generate_request(req: &GenerateImageRequest) -> Result<(), AppError>;
+
+/// "character" | "character&style" | "style" → novelai_api::schemas::CharRefMode
+/// それ以外は Validation
+pub fn parse_char_ref_mode(mode: &str) -> Result<CharRefMode, AppError>;
 
 /// コスト見積もり (純粋計算、API呼び出しなし)
 /// → novelai_api::anlas::calculate_generation_cost
@@ -150,13 +161,104 @@ pub struct PromptSnapshotInput {
     pub characters: Option<serde_json::Value>,
     pub vibes: Option<serde_json::Value>,
     pub ui_snapshot: Option<serde_json::Value>,
+    /// action の要約（画像 / マスクのバイト列は保存しない）
+    pub action: serde_json::Value,
+    /// キャラ参照の設定 { mode, strength, fidelity }（画像は保存しない）
+    pub character_reference: Option<serde_json::Value>,
 }
+
+/// GenerateActionRequest → 履歴用の要約 JSON
+/// - Generate → {"type":"generate"}
+/// - Img2Img  → {"type":"img2img","strength","noise"}
+/// - Infill   → {"type":"infill","strength"(=mask_strength),"colorCorrect"}
+pub fn action_summary(action: &GenerateActionRequest) -> serde_json::Value;
 
 impl PromptSnapshotInput {
     pub fn from_request(req: &GenerateImageRequest) -> Self;
     pub fn build(self, seed: u64) -> serde_json::Value;
 }
 ```
+
+### 3.3b image_output
+
+```rust
+// --- services/image_output.rs ---
+// 入力画像の読込と、出力画像（generation / augment / upscale）の履歴保存を共通化する。
+
+pub const MAX_INPUT_IMAGE_BYTES: u64 = 10 * 1024 * 1024;   // 10 MB
+const ALLOWED_INPUT_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp"];
+
+pub struct StoredImage { pub id: String, pub relative_path: String }
+pub struct OutputMeta {
+    pub seed: i64, pub width: u32, pub height: u32,
+    pub model: String, pub prompt_snapshot: serde_json::Value,
+}
+
+/// project_repo::find_by_id → directory_path
+pub fn project_dir(db: &Mutex<Connection>, project_id: &str) -> Result<String, AppError>;
+
+/// <project>/images/<uuid>.<ext> に書込（プロジェクト外パスは Validation）→ image_repo::insert (is_saved = 0)
+pub fn persist_output_image(
+    db: &Mutex<Connection>, project_id: &str, project_dir: &str,
+    bytes: &[u8], ext: &str, meta: OutputMeta,
+) -> Result<StoredImage, AppError>;
+
+/// 履歴画像のバイト列。image_repo / project_repo でパス解決し、
+/// プロジェクトディレクトリ外（`..` を含む等）は Validation
+pub fn read_history_image(db: &Mutex<Connection>, image_id: &str) -> Result<Vec<u8>, AppError>;
+
+/// ユーザーが選んだ画像ファイル（D&D / ファイルダイアログ）を読む。
+/// 拡張子 png/jpg/jpeg/webp のみ（大文字小文字無視）、通常ファイルのみ、10 MB 以下。違反は Validation
+pub fn read_image_file(path: &str) -> Result<Vec<u8>, AppError>;
+
+/// base64 デコード（`data:...;base64,` 接頭辞を除去）。不正は Validation
+pub fn decode_base64(data: &str) -> Result<Vec<u8>, AppError>;
+
+/// ImageSourceRequest::History → read_history_image / Base64 → decode_base64
+pub fn resolve_source(db: &Mutex<Connection>, source: &ImageSourceRequest) -> Result<Vec<u8>, AppError>;
+
+/// マジックバイトから (MIME, 拡張子) を判定。PNG / JPEG / WebP 以外は ("application/octet-stream", "bin")
+pub fn detect_format(bytes: &[u8]) -> (&'static str, &'static str);
+
+/// bytes → ImageDataDto { base64, mime }。未対応形式は Validation
+pub fn to_image_data(bytes: &[u8]) -> Result<ImageDataDto, AppError>;
+```
+
+### 3.3c image_tools
+
+```rust
+// --- services/image_tools.rs ---
+// Director Tools (augment) と Upscale。出力はプロジェクト履歴に追加する。
+
+/// req_type 文字列 → AugmentReqType（未知は Validation）
+pub fn parse_req_type(req_type: &str) -> Result<AugmentReqType, AppError>;
+
+/// ツール別オプション検証: defry ≤ MAX_DEFRY(5)、emotion は prompt（感情キーワード）必須
+pub fn validate_augment_request(req: &AugmentImageRequest) -> Result<AugmentReqType, AppError>;
+
+/// 1. validate_augment_request
+/// 2. image_output::resolve_source → 画像サイズ取得、MAX_PIXELS (3,145,728px) 超は Validation
+/// 3. api_client.augment_image(AugmentParams { req_type, image, prompt, defry, save: None })
+/// 4. 履歴保存: model = "augment:<tool>", seed = 0,
+///    prompt_snapshot = {"action":{"type":"augment","tool","prompt","defry"},"source_image_id"}
+pub async fn augment_image(
+    db: &Mutex<Connection>,
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
+    req: AugmentImageRequest,
+) -> Result<ImageToolResponse, AppError>;
+
+/// 1. image_output::resolve_source → UPSCALE_MAX_PIXELS (1,048,576px) 超は Validation
+/// 2. api_client.upscale_image(UpscaleParams { image, ..Default::default() })（2x）
+/// 3. 履歴保存: model = "upscale", seed = 0,
+///    prompt_snapshot = {"action":{"type":"upscale","scale"},"source_image_id"}
+pub async fn upscale_image(
+    db: &Mutex<Connection>,
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
+    req: UpscaleImageRequest,
+) -> Result<ImageToolResponse, AppError>;
+```
+
+`source_image_id` は `ImageSourceRequest::History` のときのみ値が入り、Base64 入力では `null`。
 
 ## 3.4 image_service
 

@@ -2,6 +2,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import ToastAutoDismiss from "@/components/shared/ToastAutoDismiss";
 import ProjectListPage from "@/pages/ProjectListPage";
 import GenerationPage from "@/pages/GenerationPage";
 
@@ -15,6 +16,7 @@ function App() {
             <Route path="/project/:id" element={<GenerationPage />} />
           </Routes>
           <Toaster position="bottom-right" richColors closeButton />
+          <ToastAutoDismiss />
         </TooltipProvider>
       </MemoryRouter>
     </ErrorBoundary>

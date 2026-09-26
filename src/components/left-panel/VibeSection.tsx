@@ -8,7 +8,8 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useProjectStore } from "@/stores/project-store";
-import { MAX_TOTAL_VIBES, MODEL_TO_VIBE_KEY } from "@/lib/constants";
+import { useCharRefStore } from "@/stores/char-ref-store";
+import { MAX_TOTAL_VIBES, MODEL_TO_VIBE_KEY, isV5Model, supportsCharacterReference } from "@/lib/constants";
 import type { ProjectVibeDto } from "@/types";
 import * as ipc from "@/lib/ipc";
 import VibeModal from "@/components/modals/VibeModal";
@@ -27,6 +28,9 @@ export default function VibeSection() {
   const normalizeArtistStrength = useGenerationParamsStore((s) => s.normalizeArtistStrength);
   const setParam = useGenerationParamsStore((s) => s.setParam);
   const currentVibeKey = MODEL_TO_VIBE_KEY[currentModel];
+  const vibeUnsupported = isV5Model(currentModel);
+  // Character Reference and Vibe Transfer are exclusive; the reference wins
+  const charRefActive = useCharRefStore((s) => !!s.image && s.enabled) && supportsCharacterReference(currentModel);
 
   // Collect vibe IDs used by enabled sidebar presets
   const presetVibeIds = new Set(
@@ -85,7 +89,13 @@ export default function VibeSection() {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      {charRefActive && (
+        <p className="flex items-start gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+          {t("charRef.vibesIgnored")}
+        </p>
+      )}
+      <div className={`flex items-center justify-between ${charRefActive ? "opacity-50" : ""}`}>
         <div className="flex items-center gap-1.5">
           <p className="text-xs font-medium text-muted-foreground">{t("vibe.title")}</p>
           {totalVibeCount > 0 && (
@@ -98,9 +108,11 @@ export default function VibeSection() {
           <Popover>
             <PopoverTrigger asChild>
               <Button
-                variant={(normalizeVibeStrength || normalizeArtistStrength) ? "default" : "ghost"}
+                variant="ghost"
                 size="sm"
-                className="h-6 px-1.5 text-[10px] gap-0.5"
+                className={`h-6 px-1.5 text-[10px] gap-0.5 ${
+                  (normalizeVibeStrength || normalizeArtistStrength) ? "text-primary" : "text-muted-foreground"
+                }`}
                 title={t("normalize.balanceStrength")}
               >
                 <Scale className="h-3 w-3" />
@@ -132,8 +144,15 @@ export default function VibeSection() {
         </div>
       </div>
 
+      {vibeUnsupported && (
+        <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {t("vibe.unsupportedModel")}
+        </p>
+      )}
+
       {projectVibes.length > 0 && (
-        <div className="space-y-1">
+        <div className={`space-y-1 ${vibeUnsupported ? "opacity-50" : ""}`}>
           {projectVibes.map((pv) => {
             const selected = selectedVibes.find((sv) => sv.vibeId === pv.vibeId);
             return (

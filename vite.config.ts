@@ -24,5 +24,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
+    // The API client submodule has its own test suites and dependencies
+    include: ["src/**/*.test.{ts,tsx}"],
   },
 });

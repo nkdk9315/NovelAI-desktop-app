@@ -21,6 +21,10 @@ describe("formatTagWithStrength", () => {
     expect(formatTagWithStrength("smile", -2)).toBe("-2::smile::");
     expect(formatTagWithStrength("blush", -1)).toBe("-1::blush::");
   });
+
+  it("pads tags ending in a digit before the closing ::", () => {
+    expect(formatTagWithStrength("level 5", 1.2)).toBe("1.2::level 5 ::");
+  });
 });
 
 function makeGroup(

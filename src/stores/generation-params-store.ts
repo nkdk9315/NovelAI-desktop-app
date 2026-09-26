@@ -9,12 +9,11 @@ import {
   DEFAULT_WIDTH,
   DEFAULT_HEIGHT,
   DEFAULT_NEGATIVE_PROMPT,
-  MAX_CHARACTERS,
   MAX_VIBES,
+  maxCharactersFor,
 } from "@/lib/constants";
 import type { NegativePresetId } from "@/lib/constants";
 import type { ArtistTag, RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
-import * as ipc from "@/lib/ipc";
 
 export interface Character {
   id: string;
@@ -59,6 +58,8 @@ interface GenerationParamsData {
   height: number;
   normalizeVibeStrength: boolean;
   normalizeArtistStrength: boolean;
+  /** V5 only: request a transparent background */
+  transparentBackground: boolean;
 }
 
 interface GenerationParamsState extends GenerationParamsData {
@@ -90,14 +91,12 @@ interface GenerationParamsState extends GenerationParamsData {
   updateRandomPresetSettings: (presetId: string, settings: RandomPresetSettings) => void;
   replaceWithSavedPreset: (randomPresetId: string, savedPreset: StylePresetDto, vibes: VibeDto[]) => void;
   // Persistence helpers
-  saveSidebarPresets: (projectId: string) => void;
-  loadSidebarPresets: (projectId: string) => Promise<void>;
   // Bulk setters (used by history restore)
   setCharacters: (characters: Character[]) => void;
   setSelectedVibes: (vibes: SelectedVibe[]) => void;
 }
 
-export const useGenerationParamsStore = create<GenerationParamsState>()((set, get) => ({
+export const useGenerationParamsStore = create<GenerationParamsState>()((set) => ({
   negativePrompt: DEFAULT_NEGATIVE_PROMPT,
   negativePreset: "none",
   showNegativePresetInInput: false,
@@ -112,13 +111,14 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
   height: DEFAULT_HEIGHT,
   normalizeVibeStrength: true,
   normalizeArtistStrength: true,
+  transparentBackground: false,
   characters: [],
   selectedVibes: [],
   sidebarPresets: [],
   setParam: (key, value) => set({ [key]: value }),
   addCharacter: (genre) =>
     set((state) => {
-      if (state.characters.length >= MAX_CHARACTERS) return state;
+      if (state.characters.length >= maxCharactersFor(state.model)) return state;
       return {
         characters: [
           ...state.characters,
@@ -275,26 +275,6 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set, ge
       }),
     })),
 
-  saveSidebarPresets: (projectId) => {
-    const { sidebarPresets } = get();
-    const persistable = sidebarPresets.filter((p) => !p.isRandom);
-    ipc.setSetting(`sidebar_presets_${projectId}`, JSON.stringify(persistable)).catch(() => {});
-  },
-
   setCharacters: (characters) => set({ characters }),
   setSelectedVibes: (vibes) => set({ selectedVibes: vibes }),
-  loadSidebarPresets: async (projectId) => {
-    try {
-      const settings = await ipc.getSettings();
-      const raw = settings[`sidebar_presets_${projectId}`];
-      if (raw) {
-        const presets: SidebarPreset[] = JSON.parse(raw);
-        set({ sidebarPresets: presets });
-      } else {
-        set({ sidebarPresets: [] });
-      }
-    } catch {
-      set({ sidebarPresets: [] });
-    }
-  },
 }));

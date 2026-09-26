@@ -261,18 +261,23 @@ App
             │   │   ├── Select (スタイルプリセット)
             │   │   └── Button ("管理") → opens StylePresetModal
             │   ├── Separator
-            │   └── VibeSection
-            │       ├── VibeHeader (カウント + 管理ボタン)
-            │       └── VibeItem × N
-            │           ├── Checkbox (ON/OFF)
-            │           ├── Label (Vibe 名)
-            │           └── Slider × 2 (strength, info_extracted)
+            │   ├── VibeSection
+            │   │   ├── VibeHeader (カウント + 管理ボタン)
+            │   │   └── VibeItem × N
+            │   │       ├── Checkbox (ON/OFF)
+            │   │       ├── Label (Vibe 名)
+            │   │       └── Slider × 2 (strength, info_extracted)
+            │   └── CharacterReferenceSection (キャラ参照: 画像 + mode / strength / fidelity、V4.5 のみ)
             │
             ├── CenterPanel (main, flex-1)
             │   ├── ImageDisplay
             │   │   ├── img (生成画像)
             │   │   ├── LoadingOverlay (生成中)
-            │   │   └── EmptyState (未生成)
+            │   │   ├── EmptyState (未生成)
+            │   │   └── ImageToolbar (Img2Img / 落書き / Inpaint / Enhance / Director Tools / Upscale / キャラ参照)
+            │   │       └── EnhancePopover (×1 / ×1.5, レベル 1–5, コスト表示)
+            │   ├── BaseImagePanel (ベース画像ストリップ: モード切替, strength / noise, mask strength,
+            │   │                   色補正, 出力サイズ (64 刻み), 編集ボタン → CanvasEditorDialog)
             │   ├── ActionBar
             │   │   ├── Button ("Generate")
             │   │   ├── Button ("Save")
@@ -289,7 +294,10 @@ App
             │   │       ├── Button ("選択を保存")
             │   │       └── Button ("選択解除")
             │   └── ThumbnailGrid
-            │       └── ThumbnailItem × N (div wrapper)
+            │       └── ThumbnailItem × N (div wrapper, ThumbnailContextMenu で包む)
+            │           ├── ThumbnailContextMenu (右クリック: 復元 / Img2Img / 落書き / Inpaint /
+            │           │                         キャラ参照 / Director Tools / Upscale)
+            │           ├── アクションバッジ (historyActionOf: img2img / inpaint / ツール出力)
             │           ├── Button (画像クリック → 中央表示)
             │           │   └── img (サムネイル)
             │           ├── SaveIndicator (Bookmark, isSaved 時)
@@ -317,6 +325,16 @@ App
             ├── StylePresetModal (S6)
             │   ├── PresetList
             │   └── PresetEditor
+            ├── ImageDropChoiceDialog (画像ドロップ時: Img2Img / 落書き / Inpaint / キャラ参照 / Vibe)
+            ├── CanvasEditorDialog (全画面キャンバスエディタ, components/canvas-editor/)
+            │   ├── EditorOptionsBar (レイヤー切替, ツール, 色 / 不透明度 / ブラシサイズ, Undo/Redo)
+            │   ├── EditorStage (ベース + ペイント / マスクレイヤー, 8px マスクグリッドプレビュー,
+            │   │                Space パン / ホイールズーム)
+            │   └── use-canvas-layers (レイヤー canvas・履歴管理フック)
+            ├── DirectorToolsDialog (components/modals/director-tools/)
+            │   ├── ツール選択 (tool-defs: 7 augment ツール + upscale。Upscale もこのダイアログで実行)
+            │   ├── ToolOptions (colorize: prompt + defry / emotion: 感情 + defry)
+            │   └── CompareSlider (Before / After 比較, shared/) + 結果にチェーン適用
             └── DeleteConfirmDialog (S9)
 ```
 
@@ -329,7 +347,8 @@ App
 | Left Panel | `src/components/left-panel/` | 左パネルセクション群 |
 | Center Panel | `src/components/center-panel/` | 画像表示・アクション |
 | Right Panel | `src/components/right-panel/` | 履歴パネル |
-| Modals | `src/components/modals/` | S3〜S9 のモーダル/ダイアログ |
+| Modals | `src/components/modals/` | S3〜S9 のモーダル/ダイアログ（`director-tools/` を含む） |
+| Canvas Editor | `src/components/canvas-editor/` | Img2Img 落書き / Inpaint マスク用の全画面キャンバスエディタ |
 | Shared | `src/components/shared/` | 複数箇所で使う共有コンポーネント |
 | UI | `src/components/ui/` | shadcn/ui コンポーネント（CLI 生成） |
 
@@ -351,6 +370,13 @@ App
 | `PromptGroupModal` | グループ CRUD + ジャンル管理 | `usePromptStore` |
 | `VibeModal` | Vibe インポート・エンコード・削除 | `usePromptStore` |
 | `StylePresetModal` | スタイルプリセット CRUD | `usePromptStore` |
+| `ImageToolbar` | 表示中画像に対する Img2Img / 落書き / Inpaint / Enhance / Director Tools / Upscale / キャラ参照の起動 | `useDirectorToolsStore`（+ `useImageSourceActions` 経由で `useImageEditStore` / `useCharRefStore`） |
+| `BaseImagePanel` | ベース画像のモード・strength / noise / mask strength / 色補正・出力サイズ編集 | `useImageEditStore`, `useGenerationStore` |
+| `CanvasEditorDialog` | ペイント / マスクレイヤー編集。確定時に合成画像と 1/8 マスクを `applyLayers` | `useImageEditStore` |
+| `CharacterReferenceSection` | キャラ参照画像と mode / strength / fidelity | `useCharRefStore` |
+| `DirectorToolsDialog` | Director Tools 実行・Before/After 比較・チェーン | `useDirectorToolsStore`, `useHistoryStore`, `useGenerationStore`, `useSettingsStore` |
+| `ImageDropChoiceDialog` | ドロップ画像の用途選択 | `useImageSourceActions` 経由で `useImageEditStore` / `useCharRefStore` |
+| `ThumbnailContextMenu` | 履歴サムネイルの右クリックメニュー | `useDirectorToolsStore`（+ `useImageSourceActions`） |
 
 ---
 
@@ -367,6 +393,9 @@ App
 | `useSidebarPromptStore` | `stores/sidebar-prompt-store.ts` | ターゲット別グループ選択・タグ有効状態・negativeOverride | `persist` |
 | `useHistoryStore` | `stores/history-store.ts` | 生成履歴、フィルタ、複数選択保存 | — |
 | `useThemeStore` | `stores/theme-store.ts` | テーマ状態（dark/light） | `persist` |
+| `useImageEditStore` | `stores/image-edit-store.ts` | Img2Img / Inpaint のベース画像・パラメータ・出力サイズ・ペイント / マスクレイヤー・エディタ開閉 | — |
+| `useCharRefStore` | `stores/char-ref-store.ts` | キャラ参照画像・有効状態・mode / strength / fidelity | — |
+| `useDirectorToolsStore` | `stores/director-tools-store.ts` | Director Tools ダイアログの対象画像 ID・初期ツール | — |
 
 ### 6.2 Store 間の依存関係
 
@@ -387,6 +416,12 @@ usePromptStore (独立)
 useHistoryStore (独立)
 
 useThemeStore (完全独立)
+
+useImageEditStore / useCharRefStore (独立)
+  ← lib/generation-request.ts (buildGenerateRequest で action / characterReference に反映)
+  ← hooks/use-generation-plan.ts (モード・出力サイズ・コスト計算)
+
+useDirectorToolsStore (独立)
 ```
 
 ### 6.3 サーバー状態 vs クライアント状態

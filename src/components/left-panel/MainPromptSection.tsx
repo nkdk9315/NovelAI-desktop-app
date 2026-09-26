@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronRight, Eye, EyeOff, RotateCcw, Sparkles } from "lucide-react";
+import { BadgeCheck, ChevronDown, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import PromptTextarea from "@/components/shared/PromptTextarea";
@@ -12,7 +12,7 @@ import { appendContributions, getPresetContributionsForCharacter } from "@/lib/p
 import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store";
 import { usePresetStore } from "@/stores/preset-store";
 import { NEGATIVE_PRESETS, type NegativePresetId } from "@/lib/constants";
-import * as ipc from "@/lib/ipc";
+import { loadDefaultGroupsForGenre } from "@/lib/default-groups";
 
 const MAIN_TARGET_ID = "main";
 
@@ -27,7 +27,6 @@ export default function MainPromptSection() {
   const targets = useSidebarPromptStore((s) => s.targets);
   const initTarget = useSidebarPromptStore((s) => s.initTarget);
   const setNegativeOverride = useSidebarPromptStore((s) => s.setNegativeOverride);
-  const clearNegativeOverride = useSidebarPromptStore((s) => s.clearNegativeOverride);
 
   const mainTarget = targets[MAIN_TARGET_ID];
   const mainGroupsRaw = mainTarget?.groups;
@@ -44,13 +43,8 @@ export default function MainPromptSection() {
     let cancelled = false;
     (async () => {
       try {
-        const groups = await ipc.listPromptGroups();
-        const defaults = groups.filter(
-          (g) => g.isDefault && g.defaultGenreIds.includes("genre-main"),
-        );
-        if (!cancelled) {
-          initTarget(MAIN_TARGET_ID, defaults.length > 0 ? defaults : undefined);
-        }
+        const defaults = await loadDefaultGroupsForGenre("genre-main");
+        if (!cancelled) initTarget(MAIN_TARGET_ID, defaults);
       } catch {
         if (!cancelled) initTarget(MAIN_TARGET_ID);
       }
@@ -61,7 +55,7 @@ export default function MainPromptSection() {
   // Migrate legacy negativePrompt from generation-params-store → negativeOverride (once)
   const mainTargetReady = mainTarget != null;
   useEffect(() => {
-    if (mainTarget && negativeOverride === null && negativePrompt) {
+    if (mainTarget && !negativeOverride && negativePrompt) {
       setNegativeOverride(MAIN_TARGET_ID, negativePrompt);
       setParam("negativePrompt", "");
     }
@@ -101,7 +95,7 @@ export default function MainPromptSection() {
               : "text-muted-foreground hover:text-foreground hover:bg-accent"
           }`}
         >
-          <Sparkles className="h-2.5 w-2.5" />
+          <BadgeCheck className="h-2.5 w-2.5" />
           {t("generation.qualityTags")}
         </button>
       </div>
@@ -109,7 +103,7 @@ export default function MainPromptSection() {
       <CharacterPromptGroups
         targetId={MAIN_TARGET_ID}
         onOpenGroupBrowser={() => setShowGroupModal(true)}
-        textareaRows={5}
+        textareaRows={8}
         placeholder={t("generation.prompt")}
       />
 
@@ -177,7 +171,6 @@ export default function MainPromptSection() {
 
       {showNegative && (() => {
         const baseValue = negativeOverride ?? assembledNegative;
-        const isDirty = negativeOverride !== null;
         const presetText = NEGATIVE_PRESETS[negativePreset];
         const showMerged = showNegativePresetInInput && presetText.length > 0;
         const prefix = presetText ? `${presetText}, ` : "";
@@ -201,24 +194,13 @@ export default function MainPromptSection() {
           setNegativeOverride(MAIN_TARGET_ID, newValue);
         };
         return (
-          <div className="relative">
-            <PromptTextarea
-              value={displayValue}
-              onChange={handleChange}
-              placeholder={t("generation.negativePrompt")}
-              rows={3}
-            />
-            {isDirty && (
-              <button
-                type="button"
-                title={t("prompt.clearOverride")}
-                onClick={() => clearNegativeOverride(MAIN_TARGET_ID)}
-                className="absolute top-1 right-1 rounded p-0.5 text-primary hover:bg-accent"
-              >
-                <RotateCcw className="h-3 w-3" />
-              </button>
-            )}
-          </div>
+          <PromptTextarea
+            value={displayValue}
+            onChange={handleChange}
+            placeholder={t("generation.negativePrompt")}
+            rows={4}
+            expandOnFocus
+          />
         );
       })()}
 

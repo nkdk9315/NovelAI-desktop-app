@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MAX_CHARACTERS } from "@/lib/constants";
+import { maxCharactersFor } from "@/lib/constants";
+import { loadDefaultGroupsForGenre } from "@/lib/default-groups";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import type { GenreDto, PromptPresetDto } from "@/types";
@@ -22,6 +23,7 @@ interface Props {
 export default function ApplyPresetDialog({ open, onOpenChange, preset, genres }: Props) {
   const { t } = useTranslation();
   const characters = useGenerationParamsStore((s) => s.characters);
+  const maxCharacters = useGenerationParamsStore((s) => maxCharactersFor(s.model));
   const addCharacter = useGenerationParamsStore((s) => s.addCharacter);
   const clearCharacters = useGenerationParamsStore((s) => s.clearCharacters);
   const initTarget = useSidebarPromptStore((s) => s.initTarget);
@@ -45,7 +47,7 @@ export default function ApplyPresetDialog({ open, onOpenChange, preset, genres }
 
   const slotCount = preset.slots.length;
   const existingCount = characters.length;
-  const canAdd = existingCount + slotCount <= MAX_CHARACTERS;
+  const canAdd = existingCount + slotCount <= maxCharacters;
 
   const getGenreForSlot = (slotIdx: number): { name: string; id: string; icon: string; color: string } => {
     const slot = preset.slots[slotIdx];
@@ -55,27 +57,30 @@ export default function ApplyPresetDialog({ open, onOpenChange, preset, genres }
     return { name: "Character", id: "genre-other", icon: "User", color: "#888888" };
   };
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (mode === "replace") clearCharacters();
 
-    for (let i = 0; i < preset.slots.length; i++) {
-      const genre = getGenreForSlot(i);
-      addCharacter(genre);
-    }
+    const slotGenres = preset.slots.map((_, i) => getGenreForSlot(i));
+    for (const genre of slotGenres) addCharacter(genre);
 
     const updatedChars = useGenerationParamsStore.getState().characters;
     const startIdx = mode === "replace" ? 0 : existingCount;
+    onOpenChange(false);
 
+    const defaultsPerSlot = await Promise.all(
+      slotGenres.map((g) => loadDefaultGroupsForGenre(g.id).catch(() => [])),
+    );
     for (let i = 0; i < preset.slots.length; i++) {
       const slot = preset.slots[i];
       const charId = updatedChars[startIdx + i]?.id;
       if (!charId) continue;
-      initTarget(charId);
-      if (slot.positivePrompt) setPromptOverride(charId, slot.positivePrompt);
-      if (slot.negativePrompt) setNegativeOverride(charId, slot.negativePrompt);
+      initTarget(charId, defaultsPerSlot[i]);
+      // Preset text first, then any wildcard tokens the default random groups added.
+      const current = useSidebarPromptStore.getState().targets[charId];
+      const join = (a: string, b: string | null | undefined) => [a, b ?? ""].filter((x) => x.trim()).join(", ");
+      if (slot.positivePrompt) setPromptOverride(charId, join(slot.positivePrompt, current?.promptOverride));
+      if (slot.negativePrompt) setNegativeOverride(charId, join(slot.negativePrompt, current?.negativeOverride));
     }
-
-    onOpenChange(false);
   };
 
   const allGenresSelected = preset.slots.every((slot, idx) => slot.genreId || genreOverrides[idx]);
@@ -130,7 +135,7 @@ export default function ApplyPresetDialog({ open, onOpenChange, preset, genres }
           {mode === "add" && !canAdd && (
             <div className="flex items-center gap-1.5 text-[10px] text-destructive">
               <AlertTriangle className="h-3 w-3 shrink-0" />
-              {t("preset.maxCharactersWarning", { max: MAX_CHARACTERS })}
+              {t("preset.maxCharactersWarning", { max: maxCharacters })}
             </div>
           )}
         </div>

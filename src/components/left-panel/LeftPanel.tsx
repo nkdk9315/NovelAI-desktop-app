@@ -4,16 +4,17 @@ import CharacterAddButtons from "./CharacterAddButtons";
 import CharacterSection from "./CharacterSection";
 import ArtistStyleSection from "./ArtistStyleSection";
 import VibeSection from "./VibeSection";
+import CharacterReferenceSection from "./CharacterReferenceSection";
 import SidebarPresetGroups from "./sidebar-preset-groups/SidebarPresetGroups";
 
 export default function LeftPanel() {
   const characters = useGenerationParamsStore((s) => s.characters);
 
-  const sectionCls =
-    "rounded-lg border border-border/60 bg-card/40 p-4 shadow-[inset_0_1px_0_oklch(1_0_0_/_0.03)]";
+  // Flat sections separated by hairlines — no card-in-panel stacking.
+  const sectionCls = "border-b border-border px-4 py-4 last:border-b-0";
 
   return (
-    <div className="space-y-3 p-3">
+    <div>
       <section className={sectionCls}>
         <MainPromptSection />
       </section>
@@ -35,6 +36,9 @@ export default function LeftPanel() {
       </section>
       <section className={sectionCls}>
         <VibeSection />
+      </section>
+      <section className={sectionCls}>
+        <CharacterReferenceSection />
       </section>
     </div>
   );

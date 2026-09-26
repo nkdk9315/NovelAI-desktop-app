@@ -7,19 +7,77 @@ use crate::models::dto::{
 };
 use crate::services::generation_snapshot::PromptSnapshotInput;
 
-pub const MAX_CHARACTERS: usize = 6;
+pub const MAX_CHARACTERS: usize = novelai_api::constants::MAX_CHARACTERS;
+
+/// Maximum number of characters for the given model (V5: 32, V4 / V4.5: 6).
+fn max_characters_for(model: &str) -> usize {
+    model
+        .parse::<novelai_api::constants::Model>()
+        .map(|m| m.max_characters())
+        .unwrap_or(MAX_CHARACTERS)
+}
+
+fn is_v5_model(model: &str) -> bool {
+    model
+        .parse::<novelai_api::constants::Model>()
+        .is_ok_and(|m| m.is_v5())
+}
 
 pub fn validate_generate_request(req: &GenerateImageRequest) -> Result<(), AppError> {
     if let Some(ref chars) = req.characters {
-        if chars.len() > MAX_CHARACTERS {
+        let max = max_characters_for(&req.model);
+        if chars.len() > max {
             return Err(AppError::Validation(format!(
                 "too many characters: {} (max {})",
                 chars.len(),
-                MAX_CHARACTERS
+                max
             )));
         }
     }
+    let v5 = is_v5_model(&req.model);
+    if v5 && req.vibes.as_ref().is_some_and(|v| !v.is_empty()) {
+        return Err(AppError::Validation(format!(
+            "Vibe Transfer is not supported by {}",
+            req.model
+        )));
+    }
+    if !v5 && req.transparent_background {
+        return Err(AppError::Validation(
+            "transparent background is only supported by V5 models".to_string(),
+        ));
+    }
+    if let Some(ref cr) = req.character_reference {
+        if v5 {
+            return Err(AppError::Validation(format!(
+                "Character Reference is not supported by {}",
+                req.model
+            )));
+        }
+        if req.vibes.as_ref().is_some_and(|v| !v.is_empty()) {
+            return Err(AppError::Validation(
+                "Character Reference cannot be combined with Vibe Transfer".to_string(),
+            ));
+        }
+        parse_char_ref_mode(&cr.mode)?;
+        for (name, v) in [("strength", cr.strength), ("fidelity", cr.fidelity)] {
+            if !(0.0..=1.0).contains(&v) {
+                return Err(AppError::Validation(format!(
+                    "character reference {name} must be between 0 and 1"
+                )));
+            }
+        }
+    }
     Ok(())
+}
+
+pub fn parse_char_ref_mode(mode: &str) -> Result<novelai_api::schemas::CharRefMode, AppError> {
+    use novelai_api::schemas::CharRefMode;
+    match mode {
+        "character" => Ok(CharRefMode::Character),
+        "character&style" => Ok(CharRefMode::CharacterAndStyle),
+        "style" => Ok(CharRefMode::Style),
+        _ => Err(AppError::Validation(format!("invalid character reference mode: {mode}"))),
+    }
 }
 
 pub async fn generate_image(
@@ -31,17 +89,12 @@ pub async fn generate_image(
 
     use base64::Engine;
     use novelai_api::schemas::{
-        CharacterConfig, GenerateAction, GenerateParams, ImageInput, VibeConfig,
-        VibeItem,
+        CharacterConfig, CharacterReferenceConfig, GenerateAction, GenerateParams, ImageInput,
+        VibeConfig, VibeItem,
     };
     use std::path::PathBuf;
 
-    // Get project directory
-    let project_dir = {
-        let conn = db.lock().map_err(|e| AppError::Database(e.to_string()))?;
-        let project = crate::repositories::project::find_by_id(&conn, &req.project_id)?;
-        project.directory_path
-    };
+    let project_dir = crate::services::image_output::project_dir(db, &req.project_id)?;
 
     // Parse enums from strings
     let model: novelai_api::constants::Model = req
@@ -99,6 +152,7 @@ pub async fn generate_image(
         .cfg_rescale(req.cfg_rescale)
         .sampler(sampler)
         .noise_schedule(noise_schedule)
+        .transparent_background(req.transparent_background)
         .action(action);
 
     if let Some(seed) = req.seed {
@@ -118,6 +172,14 @@ pub async fn generate_image(
             })
             .collect();
         builder = builder.characters(configs);
+    }
+    if let Some(cr) = req.character_reference {
+        builder = builder.character_reference(CharacterReferenceConfig {
+            image: ImageInput::Base64(cr.image_base64),
+            strength: cr.strength,
+            fidelity: cr.fidelity,
+            mode: parse_char_ref_mode(&cr.mode)?,
+        });
     }
     if let Some(vibes) = req.vibes {
         // Resolve vibe file paths and info_extracted from vibe files
@@ -168,47 +230,29 @@ pub async fn generate_image(
             .map_err(|e| AppError::ApiClient(e.to_string()))?
     };
 
-    // Save file
-    let image_id = uuid::Uuid::new_v4().to_string();
-    let relative_path = format!("images/{}.png", image_id);
-    let project_path = std::path::Path::new(&project_dir);
-    let full_path = project_path.join(&relative_path);
-    if !full_path.starts_with(project_path) {
-        return Err(AppError::Validation("invalid file path".to_string()));
-    }
-    std::fs::write(&full_path, &result.image_data)?;
-
-    // Base64 encode for frontend
     let base64_image =
         base64::engine::general_purpose::STANDARD.encode(&result.image_data);
-
-    // Build prompt snapshot
-    let prompt_snapshot = snapshot_input.build(result.seed);
-
-    // Insert DB record
-    let now = chrono::Utc::now().to_rfc3339();
-    let row = crate::models::dto::GeneratedImageRow {
-        id: image_id.clone(),
-        project_id: req.project_id,
-        file_path: relative_path.clone(),
+    let meta = crate::services::image_output::OutputMeta {
         seed: result.seed as i64,
-        prompt_snapshot: prompt_snapshot.to_string(),
-        width: req.width as i32,
-        height: req.height as i32,
+        width: req.width,
+        height: req.height,
         model: req.model,
-        is_saved: 0,
-        created_at: now,
+        prompt_snapshot: snapshot_input.build(result.seed),
     };
-    {
-        let conn = db.lock().map_err(|e| AppError::Database(e.to_string()))?;
-        crate::repositories::image::insert(&conn, &row)?;
-    }
+    let stored = crate::services::image_output::persist_output_image(
+        db,
+        &req.project_id,
+        &project_dir,
+        &result.image_data,
+        result.image_format.as_str(),
+        meta,
+    )?;
 
     Ok(GenerateImageResponse {
-        id: image_id,
+        id: stored.id,
         base64_image,
         seed: result.seed as i64,
-        file_path: relative_path,
+        file_path: stored.relative_path,
         anlas_remaining: result.anlas_remaining,
         anlas_consumed: result.anlas_consumed,
     })
@@ -231,6 +275,8 @@ pub fn estimate_cost(req: CostEstimateRequest) -> Result<CostResultDto, AppError
         vibe_unencoded_count: 0,
         mask_width: None,
         mask_height: None,
+        is_v5: req.model.as_deref().is_some_and(is_v5_model),
+        opus_usage_exhausted: req.opus_usage_exhausted,
     };
     let result = novelai_api::anlas::calculate_generation_cost(&params)
         .map_err(|e| AppError::Validation(e.to_string()))?;

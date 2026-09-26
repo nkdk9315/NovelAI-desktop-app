@@ -142,7 +142,7 @@ export default function ProjectListPage() {
               {projects.map((p) => (
                 <Card
                   key={p.id}
-                  className="group cursor-pointer overflow-hidden transition-colors hover:bg-accent/50"
+                  className="group cursor-pointer gap-0 overflow-hidden rounded-md py-0 shadow-none transition-colors hover:border-primary/50"
                   onClick={() => handleOpen(p.id)}
                 >
                   {/* Thumbnail area */}

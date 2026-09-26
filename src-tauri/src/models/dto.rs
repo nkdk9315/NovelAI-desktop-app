@@ -243,6 +243,18 @@ impl From<AssetFolderRow> for AssetFolderDto {
 pub struct AnlasBalanceDto {
     pub anlas: u64,
     pub tier: u32,
+    /// V5 Opus free-generation usage (None for non-Opus accounts)
+    pub opus_usage: Option<OpusUsageDto>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OpusUsageDto {
+    pub remaining_percent: f64,
+    pub refill_percent_per_day: f64,
+    pub estimated_images_remaining: u64,
+    pub is_low: bool,
+    pub is_exhausted: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -399,6 +411,22 @@ pub struct GenerateImageRequest {
     pub model: String,
     pub action: GenerateActionRequest,
     pub ui_snapshot: Option<serde_json::Value>,
+    /// V5 only: request a transparent background
+    #[serde(default)]
+    pub transparent_background: bool,
+    /// V4.5 only: Character Reference (cannot be combined with vibes)
+    #[serde(default)]
+    pub character_reference: Option<CharacterReferenceRequest>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CharacterReferenceRequest {
+    pub image_base64: String,
+    pub strength: f64,
+    pub fidelity: f64,
+    /// "character" | "character&style" | "style"
+    pub mode: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -436,6 +464,62 @@ pub enum GenerateActionRequest {
     },
 }
 
+/// Where a tool (augment / upscale) reads its input image from.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "type")]
+pub enum ImageSourceRequest {
+    /// An image already in the project's history
+    #[serde(rename_all = "camelCase")]
+    History { image_id: String },
+    /// Raw image bytes (PNG / JPEG / WebP) as base64
+    #[serde(rename_all = "camelCase")]
+    Base64 { data: String },
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AugmentImageRequest {
+    pub project_id: String,
+    pub source: ImageSourceRequest,
+    /// colorize | declutter | declutter-keep-bubbles | emotion | sketch | lineart | bg-removal
+    pub req_type: String,
+    /// colorize: optional prompt / emotion: the emotion keyword (+ optional extra prompt)
+    #[serde(default)]
+    pub prompt: Option<String>,
+    /// colorize / emotion: 0 (strongest change) – 5 (weakest)
+    #[serde(default)]
+    pub defry: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpscaleImageRequest {
+    pub project_id: String,
+    pub source: ImageSourceRequest,
+}
+
+/// Result of an augment / upscale run (the output is added to the history).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageToolResponse {
+    pub id: String,
+    pub base64_image: String,
+    pub file_path: String,
+    pub width: u32,
+    pub height: u32,
+    pub anlas_remaining: Option<u64>,
+    pub anlas_consumed: Option<u64>,
+}
+
+/// Image bytes handed to the frontend (canvas editor, character reference, ...).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageDataDto {
+    pub base64: String,
+    /// MIME type detected from the bytes (image/png, image/jpeg, image/webp)
+    pub mime: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateImageResponse {
@@ -456,12 +540,18 @@ pub struct CostEstimateRequest {
     pub vibe_count: u64,
     pub has_character_reference: bool,
     pub tier: u32,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub opus_usage_exhausted: bool,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountTokensRequest {
     pub texts: Vec<String>,
+    #[serde(default)]
+    pub model: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

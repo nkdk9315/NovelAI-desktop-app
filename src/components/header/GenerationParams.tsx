@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SlidersHorizontal } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import {
@@ -29,6 +30,7 @@ import {
   MAX_DIMENSION,
   DIMENSION_STEP,
   MAX_TOTAL_PIXELS,
+  isV5Model,
 } from "@/lib/constants";
 
 const CUSTOM_SIZE_VALUE = "__custom__";
@@ -41,7 +43,9 @@ function clampDimension(v: number): number {
 
 export default function GenerationParams() {
   const { t } = useTranslation();
-  const { model, width, height, steps, scale, sampler, noiseSchedule, setParam } = useGenerationParamsStore();
+  const { model, width, height, steps, scale, sampler, noiseSchedule, transparentBackground, setParam } =
+    useGenerationParamsStore();
+  const isV5 = isV5Model(model);
   const [customMode, setCustomMode] = useState(false);
 
   const matchedPreset = SIZE_PRESET_GROUPS.flatMap((g) =>
@@ -184,7 +188,12 @@ export default function GenerationParams() {
 
           <div className="space-y-2">
             <Label className="text-xs">{t("generation.noiseSchedule")}</Label>
-            <Select value={noiseSchedule} onValueChange={(v) => setParam("noiseSchedule", v)}>
+            {/* V5 always uses karras (fixed by the API client, same as the official site) */}
+            <Select
+              value={isV5 ? "karras" : noiseSchedule}
+              onValueChange={(v) => setParam("noiseSchedule", v)}
+              disabled={isV5}
+            >
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -194,7 +203,23 @@ export default function GenerationParams() {
                 ))}
               </SelectContent>
             </Select>
+            {isV5 && (
+              <p className="text-[10px] text-muted-foreground">{t("generation.noiseScheduleV5Fixed")}</p>
+            )}
           </div>
+
+          {isV5 && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="transparent-background"
+                checked={transparentBackground}
+                onCheckedChange={(v) => setParam("transparentBackground", v === true)}
+              />
+              <Label htmlFor="transparent-background" className="text-xs cursor-pointer">
+                {t("generation.transparentBackground")}
+              </Label>
+            </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

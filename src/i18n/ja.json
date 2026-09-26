@@ -93,14 +93,25 @@
     "sizeCustom": "カスタム",
     "sizeCustomAction": "サイズを指定…",
     "sizeErrorTotal": "総ピクセル数が上限 ({{max}}) を超えています",
-    "sizeHint": "64〜2048 (64 の倍数)"
+    "sizeHint": "64〜2048 (64 の倍数)",
+    "transparentBackground": "透過背景（V5）",
+    "noiseScheduleV5Fixed": "V5 では karras に固定されます",
+    "opusUsage": "V5 無料枠 {{percent}}%",
+    "opusUsageTooltip": "V5 Opus 無料枠: 残り約 {{images}} 枚 / 回復 {{refill}}%/日",
+    "anlasRefresh": "Anlas と Opus 残量を更新",
+    "anlasRefreshError": "Anlas の取得に失敗しました",
+    "previewEmpty": "画像が選択されていません",
+    "previewEmptyHint": "生成するか、右の履歴から画像を選んでください",
+    "generating": "生成中…",
+    "zoomIn": "拡大",
+    "zoomOut": "縮小",
+    "zoomFit": "全体表示（ダブルクリックでも切替）"
   },
   "prompt": {
-    "clearOverride": "オーバーライドを解除",
     "sendPreview": "送信プレビュー"
   },
   "normalize": {
-    "balanceStrength": "強度のバランス調整",
+    "balanceStrength": "自動バランス",
     "vibe": "Vibe",
     "artist": "Artist"
   },
@@ -130,10 +141,22 @@
     "clearSelection": "選択解除",
     "saveSelectedSuccess": "{{count}}枚を保存しました",
     "saveSelectedError": "保存に失敗しました",
-    "ctrlClickToRestore": "Ctrl/Cmd+クリックでプロンプトと Vibe を復元",
+    "ctrlClickToRestore": "Ctrl/Cmd+クリックでプロンプトと Vibe を復元 / 右クリックで Img2Img・Inpaint・ツール",
     "restored": "この画像のプロンプトと Vibe を復元しました",
     "restoredPartial": "基本パラメータのみ復元しました（旧形式の画像）",
-    "restoreFailed": "この画像からは復元できませんでした"
+    "restoreFailed": "この画像からは復元できませんでした",
+    "deleteSelected": "選択を削除",
+    "deleteSelectedCount": "削除 ({{count}})",
+    "deleteConfirmTitle": "画像を削除",
+    "deleteConfirm": "{{count}}枚の画像を削除します。元に戻せません。",
+    "deleteSuccess": "{{count}}枚を削除しました",
+    "deleteError": "{{count}}枚の削除に失敗しました",
+    "badge": {
+      "img2img": "i2i",
+      "infill": "Inpaint",
+      "upscale": "×2"
+    },
+    "restoreMenu": "プロンプト・設定を復元"
   },
   "character": {
     "add": "キャラクター追加",
@@ -197,7 +220,8 @@
     "download": "ダウンロード",
     "selectModel": "モデル",
     "modelMismatch": "モデルが一致しません",
-    "allModels": "すべてのモデル"
+    "allModels": "すべてのモデル",
+    "unsupportedModel": "V5 モデルは Vibe Transfer に対応していません（生成時は無視されます）"
   },
   "style": {
     "title": "アーティスト / スタイル",
@@ -252,7 +276,28 @@
     "randomMin": "最小",
     "randomMax": "最大",
     "directTagPlaceholder": "アーティスト名で検索...",
-    "directTagStrength": "強度"
+    "directTagStrength": "強度",
+    "strengthEditHint": "クリックで強度を入力（0.01〜10）",
+    "strengthTotal": "合計 {{total}}",
+    "balance": "合計を 1 に",
+    "balanceHint": "比率を保ったまま合計が 1.00 になるよう調整",
+    "switchModelTitle": "モデルを変更しますか？",
+    "switchModelDescription": "「{{name}}」は {{model}} 用のプリセットです。現在のモデル（{{current}}）を {{model}} に変更して使用しますか？",
+    "switchModelConfirm": "モデルを変更して使う",
+    "modelSwitched": "モデルを {{model}} に変更しました",
+    "favorites": "お気に入りアーティスト",
+    "favoritesAddAll": "すべて追加",
+    "favoritesEmpty": "まだありません。追加したタグの ☆ を押すと登録できます。",
+    "favoriteRemove": "お気に入りから外す",
+    "favoriteToggle": "お気に入りに登録 / 解除",
+    "artistToggle": "クリックで ON / OFF",
+    "favoriteApply": "クリックで左に追加",
+    "favoriteUnapply": "追加済み（クリックで左から外す。お気に入りには残ります）",
+    "presetAdded": "「{{name}}」を追加しました",
+    "presetRemoved": "「{{name}}」を外しました",
+    "presetAddToggle": "追加",
+    "presetAddedBadge": "追加済み",
+    "thumbnailZoom": "クリックで拡大"
   },
   "tagDb": {
     "title": "タグデータベース",
@@ -341,8 +386,7 @@
     },
     "wildcard": {
       "token": "ワイルドカード",
-      "insert": "挿入",
-      "hint": "「挿入」ボタンでプロンプトに追加後、好きな位置に移動できます。生成時はその位置に抽選結果が入ります"
+      "hint": "ランダムを ON にするとプロンプトにこのワイルドカードが自動で入ります。ドラッグで好きな位置へ移動でき、生成時はその位置に抽選結果が入ります。"
     }
   },
   "systemGroupSettings": {
@@ -433,5 +477,200 @@
       "resetToDefault": "デフォルトに戻す",
       "customBadge": "個別強度あり"
     }
+  },
+  "imageEdit": {
+    "generateImg2Img": "Img2Img 生成",
+    "generateInpaint": "Inpaint 生成",
+    "inpaintNeedsMask": "再生成する範囲をマスクで塗ってください",
+    "baseSetImg2Img": "ベース画像に設定しました（Img2Img）",
+    "baseSetInpaint": "ベース画像に設定しました（Inpaint）",
+    "loadFailed": "画像を読み込めませんでした: {{error}}",
+    "mode": {
+      "img2img": "Img2Img",
+      "inpaint": "Inpaint"
+    },
+    "enabled": "ベース画像を使う",
+    "outputSize": "出力 {{w}}×{{h}}",
+    "outputSizeHint": "ベース画像に合わせたサイズで生成します（64 の倍数・上限内に調整）",
+    "openEditor": "クリックでエディタを開く",
+    "editPaint": "落書き",
+    "editMask": "マスクを編集",
+    "replaceWithCurrent": "表示中の画像に差し替え",
+    "openFile": "ファイルから開く",
+    "clearBase": "ベース画像を外す",
+    "maskCoverage": "画像の {{percent}}% を再生成",
+    "inpaintStrength": "強さ",
+    "strength": "変化の強さ",
+    "noise": "ノイズ",
+    "colorCorrect": "色補正",
+    "colorCorrectHint": "再生成した部分の色味を周囲に合わせます",
+    "level": {
+      "low": "控えめ",
+      "mid": "中",
+      "high": "大きく"
+    },
+    "img2imgHelp": "強さが小さいほど元画像に近く、大きいほどプロンプト寄りに描き直します。落書きで構図や色の指示もできます。",
+    "inpaintHelp": "マスクした部分だけをプロンプトに沿って描き直します。落書きと組み合わせると、描いた形をもとに再生成できます。",
+    "editorTitle": "画像を編集",
+    "layer": {
+      "paint": "落書き",
+      "paintHint": "Img2Img の下描き・色指定",
+      "mask": "マスク",
+      "maskHint": "Inpaint で描き直す範囲"
+    },
+    "sizeInfo": "元 {{w}}×{{h}} → 生成 {{tw}}×{{th}}",
+    "applyImg2Img": "Img2Img に使う",
+    "applyInpaint": "Inpaint に使う",
+    "tools": {
+      "brush": "ブラシ (B)",
+      "maskBrush": "マスクブラシ (B)",
+      "eraser": "消しゴム (E / Alt+ドラッグ)",
+      "eyedropper": "スポイト (I)",
+      "rect": "矩形マスク (R / Alt で削除)"
+    },
+    "brushSize": "サイズ",
+    "opacity": "不透明度",
+    "customColor": "色を選ぶ",
+    "fillMask": "全体をマスク",
+    "invertMask": "マスクを反転",
+    "showGrid": "実際に送るマスク（8px 単位）を表示",
+    "coverage": "再生成範囲 {{percent}}%",
+    "coverageHint": "API には 8px 単位のマスクとして送られます",
+    "undo": "元に戻す (⌘Z)",
+    "redo": "やり直す (⇧⌘Z)",
+    "clearPaint": "落書きを全消去",
+    "clearMask": "マスクを全消去",
+    "shortcutsPaint": "B ブラシ / E 消しゴム / I スポイト / [ ] サイズ / M マスクへ / Space+ドラッグで移動 / ホイールで拡大",
+    "shortcutsMask": "B ブラシ / E 消しゴム / R 矩形 / Alt で削除 / [ ] サイズ / M 落書きへ / Space+ドラッグで移動 / ホイールで拡大",
+    "actions": {
+      "img2img": "Img2Img",
+      "img2imgHint": "この画像をベースに Img2Img",
+      "paint": "落書き",
+      "paintHint": "この画像に落書きして Img2Img",
+      "inpaint": "Inpaint",
+      "inpaintHint": "マスクを塗って一部だけ描き直す"
+    }
+  },
+  "enhance": {
+    "title": "Enhance（高画質化）",
+    "short": "Enhance",
+    "description": "表示中の画像を拡大して Img2Img で描き直し、ディテールを上げます。現在のプロンプトと設定を使います。",
+    "magnitude": "拡大率",
+    "level": "強さ",
+    "levelDetail": "強さ {{strength}} / ノイズ {{noise}}",
+    "subtle": "元画像に忠実",
+    "strong": "大きく描き直す",
+    "size": "{{w}}×{{h}} → {{tw}}×{{th}}",
+    "run": "Enhance"
+  },
+  "tools": {
+    "title": "Director Tools",
+    "short": "ツール",
+    "description": "表示中の画像を加工します。結果は履歴に追加されます。",
+    "run": "{{tool}}を実行",
+    "continue": "結果を続けて加工",
+    "showResult": "プレビューに表示",
+    "failed": "処理に失敗しました: {{error}}",
+    "tooLarge": "サイズ超過",
+    "compare": "比較スライダー",
+    "before": "元画像",
+    "after": "結果",
+    "names": {
+      "bgRemoval": "背景除去",
+      "lineart": "線画抽出",
+      "sketch": "ラフ化",
+      "colorize": "着色",
+      "emotion": "表情変更",
+      "declutter": "文字・効果除去",
+      "declutterKeepBubbles": "文字除去（吹き出し保持）",
+      "upscale": "アップスケール ×2"
+    },
+    "descriptions": {
+      "bgRemoval": "背景を透過にします（Opus でも有料）",
+      "lineart": "線画だけを取り出します",
+      "sketch": "鉛筆ラフ風にします",
+      "colorize": "線画・ラフに色を塗ります",
+      "emotion": "キャラクターの表情を変えます",
+      "declutter": "文字や効果線、吹き出しを消します",
+      "declutterKeepBubbles": "吹き出しを残して文字・効果線を消します",
+      "upscale": "解像度を 2 倍にします（1024×1024 以下）"
+    },
+    "colorizePrompt": "色の指示（任意）",
+    "colorizePlaceholder": "例: blue hair, red dress",
+    "defry": "元画像の維持",
+    "defryLevel": {
+      "0": "0（最も大きく変化）",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5（最も元に近い）"
+    },
+    "defryStrong": "大きく変える",
+    "defryWeak": "元に近い",
+    "emotions": {
+      "neutral": "普通",
+      "happy": "嬉しい",
+      "sad": "悲しい",
+      "angry": "怒り",
+      "scared": "怖い",
+      "surprised": "驚き",
+      "tired": "疲れ",
+      "excited": "興奮",
+      "nervous": "緊張",
+      "thinking": "考え中",
+      "confused": "困惑",
+      "shy": "照れ",
+      "disgusted": "嫌悪",
+      "smug": "ドヤ顔",
+      "bored": "退屈",
+      "laughing": "笑い",
+      "irritated": "イライラ",
+      "aroused": "ドキドキ",
+      "embarrassed": "恥ずかしい",
+      "love": "好き",
+      "worried": "心配",
+      "determined": "決意",
+      "hurt": "痛み",
+      "playful": "おちゃめ"
+    },
+    "upscaleShort": "アップスケール"
+  },
+  "charRef": {
+    "title": "キャラクター参照",
+    "enabled": "キャラクター参照を使う",
+    "unsupported": "キャラクター参照は V4.5 モデル専用です。現在のモデルでは送信されません。",
+    "pickFile": "画像を選ぶ",
+    "useCurrent": "表示中の画像",
+    "useThis": "キャラクター参照に使う",
+    "set": "キャラクター参照に設定しました",
+    "modes": {
+      "characterAndStyle": "キャラ+画風",
+      "characterAndStyleHint": "キャラクターと絵柄の両方を参照します",
+      "character": "キャラのみ",
+      "characterHint": "キャラクターの見た目だけを参照します",
+      "style": "画風のみ",
+      "styleHint": "絵柄だけを参照します"
+    },
+    "strength": "強さ",
+    "strengthHint": "参照画像をどれだけ反映するか",
+    "fidelity": "忠実度",
+    "fidelityHint": "参照画像の細部にどれだけ忠実にするか",
+    "vibesDisabled": "使用中は Vibe は送信されません。",
+    "vibesIgnored": "キャラクター参照を使用中のため、Vibe は送信されません",
+    "short": "キャラ参照"
+  },
+  "imageDrop": {
+    "title": "この画像をどう使いますか？",
+    "img2img": "ベース画像にする（Img2Img）",
+    "img2imgHint": "この画像をもとに描き直します",
+    "paint": "落書きして Img2Img",
+    "paintHint": "エディタで描き込んでから描き直します",
+    "inpaint": "一部を描き直す（Inpaint）",
+    "inpaintHint": "マスクを塗った範囲だけ再生成します",
+    "charRef": "キャラクター参照にする",
+    "charRefHint": "キャラクターや画風を参照します（V4.5）",
+    "vibe": "Vibe としてエンコード",
+    "vibeHint": "雰囲気を Vibe Transfer 用に取り込みます（V4 / V4.5）"
   }
 }

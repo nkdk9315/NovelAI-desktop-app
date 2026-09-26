@@ -3,6 +3,7 @@ import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import { NEGATIVE_PRESETS, QUALITY_TAGS } from "@/lib/constants";
+import { buildArtistPrefix } from "@/lib/artist-tag";
 import { assembleFullPrompt, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 import * as ipc from "@/lib/ipc";
 import { useDebounce } from "./use-debounce";
@@ -37,12 +38,7 @@ function buildPromptTexts(): { positives: string[]; negatives: string[] } {
     ...artistTags,
     ...activePresets.flatMap((p) => p.artistTags),
   ];
-  const artistPrefix = allArtistTags.length > 0
-    ? allArtistTags.map((tag) => {
-        const base = `artist:${tag.name}`;
-        return tag.strength === 0 ? base : `{${tag.strength}::${base}::}`;
-      }).join(", ") + ", "
-    : "";
+  const artistPrefix = buildArtistPrefix(allArtistTags);
 
   const mainTarget = sidebar.targets[MAIN_TARGET_ID];
   const assembledMain = mainTarget
@@ -80,11 +76,12 @@ function buildPromptTexts(): { positives: string[]; negatives: string[] } {
 }
 
 /**
- * Count tokens for every positive/negative prompt via the backend T5
- * tokenizer and return the running totals + overflow flags.
- * The API caps positive and negative prompt totals at 512 tokens each.
+ * Count tokens for every positive/negative prompt via the backend tokenizer
+ * (T5 for V4 / V4.5, Qwen for V5) and return the running totals + overflow flags.
+ * The limit depends on the model (V4.5: 512, V5 curated: 703, V5 full: 1471).
  */
 export function usePromptTokenCounts(): PromptTokenCounts {
+  const model = useGenerationParamsStore((s) => s.model);
   const characters = useGenerationParamsStore((s) => s.characters);
   const qualityTagsEnabled = useGenerationParamsStore((s) => s.qualityTagsEnabled);
   const negativePreset = useGenerationParamsStore((s) => s.negativePreset);
@@ -113,7 +110,7 @@ export function usePromptTokenCounts(): PromptTokenCounts {
     const myId = ++reqIdRef.current;
     setLoading(true);
     ipc
-      .countTokens(debounced)
+      .countTokens(debounced, model)
       .then((res) => {
         if (reqIdRef.current !== myId) return;
         const pos = res.counts.slice(0, posCount).reduce((a, b) => a + b, 0);
@@ -127,7 +124,7 @@ export function usePromptTokenCounts(): PromptTokenCounts {
         if (reqIdRef.current !== myId) return;
         setLoading(false);
       });
-  }, [debounced, positives.length]);
+  }, [debounced, positives.length, model]);
 
   const positiveOverflow = positiveTotal > maxTokens;
   const negativeOverflow = negativeTotal > maxTokens;

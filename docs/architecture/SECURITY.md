@@ -58,7 +58,7 @@ OWASP Top 10に基づき、本アプリケーションへの該当を評価。
 ```json
 {
   "security": {
-    "csp": "default-src 'self'; img-src 'self' asset: https://image.novelai.net; style-src 'self' 'unsafe-inline'; script-src 'self'",
+    "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob: https://image.novelai.net; style-src 'self' 'unsafe-inline'; script-src 'self'",
     "assetProtocol": {
       "enable": true,
       "scope": ["**"]
@@ -68,7 +68,7 @@ OWASP Top 10に基づき、本アプリケーションへの該当を評価。
 ```
 
 - `default-src 'self'`: 自身のオリジンのみ
-- `img-src`: `asset:` プロトコル（Tauri画像配信）+ NovelAI画像サーバー
+- `img-src`: `asset:` / `http://asset.localhost` プロトコル（Tauri画像配信）+ `data:` / `blob:`（キャンバスエディタ・画像プレビュー・Before/After 比較で data URL / Blob URL を `<img>` に表示するため）+ NovelAI画像サーバー
 - `style-src 'unsafe-inline'`: Tailwind CSS用
 - `script-src 'self'`: バンドルされたスクリプトのみ
 - `assetProtocol`: `convertFileSrc()` によるローカル画像表示に必要。Cargo.toml の `protocol-asset` feature と併用
@@ -102,6 +102,8 @@ OWASP Top 10に基づき、本アプリケーションへの該当を評価。
 | DBファイル | `$APPDATA/novelai-desktop/app.db`。OS標準のユーザーディレクトリ保護 |
 | Vibeファイル | `$APPDATA/novelai-desktop/vibes/`。インポート時にファイル内容のパース検証 |
 | 画像パス | DB内は相対パスで保存（ポータビリティ + パストラバーサルリスク低減） |
+| 履歴画像の読込（`get_image_data` / augment・upscale の `History` 入力） | `image_output::read_history_image` が DB の `file_path` をプロジェクトディレクトリと結合し、結果がプロジェクト外になる / `..` を含む場合は Validation エラー。出力保存（`persist_output_image`）も同様にプロジェクト外への書込みを拒否 |
+| 外部画像ファイルの読込（`read_image_file`） | D&D / ファイルダイアログ由来の任意パスを受け取るため、拡張子ホワイトリスト（png / jpg / jpeg / webp、大文字小文字無視）、通常ファイルのみ、10 MB 以下に制限。返却前にマジックバイトで PNG / JPEG / WebP を再判定し、それ以外は拒否 |
 
 ### データ保持ポリシー
 
@@ -120,3 +122,4 @@ OWASP Top 10に基づき、本アプリケーションへの該当を評価。
 | 日付 | 内容 |
 |------|------|
 | 2026-04-07 | 初版作成 |
+| 2026-09-26 | CSP `img-src` に `http://asset.localhost data: blob:` を追加。画像編集・画像ツール（`get_image_data` / `read_image_file`）の読込制限を追記 |

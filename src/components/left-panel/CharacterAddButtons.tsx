@@ -11,21 +11,22 @@ import {
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { usePromptStore } from "@/stores/prompt-store";
-import { MAX_CHARACTERS } from "@/lib/constants";
+import { maxCharactersFor } from "@/lib/constants";
 import { getGenreIcon } from "@/lib/genre-icons";
-import * as ipc from "@/lib/ipc";
+import { loadDefaultGroupsForGenre } from "@/lib/default-groups";
 import GenreEditorPopover from "./GenreEditorPopover";
 import type { GenreDto } from "@/types";
 
 export default function CharacterAddButtons() {
   const { t } = useTranslation();
   const characters = useGenerationParamsStore((s) => s.characters);
+  const model = useGenerationParamsStore((s) => s.model);
   const addCharacter = useGenerationParamsStore((s) => s.addCharacter);
   const genres = usePromptStore((s) => s.genres);
   const loadGenres = usePromptStore((s) => s.loadGenres);
   const createGenre = usePromptStore((s) => s.createGenre);
   const initTarget = useSidebarPromptStore((s) => s.initTarget);
-  const isMaxed = characters.length >= MAX_CHARACTERS;
+  const isMaxed = characters.length >= maxCharactersFor(model);
 
   useEffect(() => {
     loadGenres();
@@ -49,9 +50,7 @@ export default function CharacterAddButtons() {
 
     // Load default groups for this genre and init sidebar state
     try {
-      const groups = await ipc.listPromptGroups(genre.id);
-      const defaults = groups.filter((g) => g.isDefault);
-      initTarget(addedChar.id, defaults.length > 0 ? defaults : undefined);
+      initTarget(addedChar.id, await loadDefaultGroupsForGenre(genre.id));
     } catch {
       initTarget(addedChar.id);
     }

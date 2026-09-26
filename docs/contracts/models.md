@@ -227,6 +227,17 @@ pub struct ProjectVibeDto {
 pub struct AnlasBalanceDto {
     pub anlas: u64,
     pub tier: u32,
+    pub opus_usage: Option<OpusUsageDto>,  // V5 Opus 無料枠（非 Opus は None）
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OpusUsageDto {  // novelai_api::anlas::summarize_opus_usage の結果
+    pub remaining_percent: f64,
+    pub refill_percent_per_day: f64,
+    pub estimated_images_remaining: u64,
+    pub is_low: bool,
+    pub is_exhausted: bool,  // true の間 V5 は Opus 無料にならない
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -300,6 +311,19 @@ pub struct GenerateImageRequest {
     /// Stored inside `prompt_snapshot` so history-item restore can
     /// rehydrate the frontend stores without an extra DB column.
     pub ui_snapshot: Option<serde_json::Value>,
+    #[serde(default)]
+    pub transparent_background: bool,  // V5 のみ（V4/V4.5 で true は Validation エラー）
+    #[serde(default)]
+    pub character_reference: Option<CharacterReferenceRequest>,  // V4.5 のみ。V5 / Vibe 併用時は Validation エラー
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CharacterReferenceRequest {
+    pub image_base64: String,
+    pub strength: f64,   // 0.0–1.0
+    pub fidelity: f64,   // 0.0–1.0
+    pub mode: String,    // "character" | "character&style" | "style"
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -337,6 +361,57 @@ pub enum GenerateActionRequest {
     },
 }
 
+/// Director Tools / Upscale の入力画像。履歴画像 ID か base64（data URL 接頭辞可）
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "type")]
+pub enum ImageSourceRequest {
+    #[serde(rename_all = "camelCase")]
+    History { image_id: String },
+    #[serde(rename_all = "camelCase")]
+    Base64 { data: String },   // PNG / JPEG / WebP
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AugmentImageRequest {
+    pub project_id: String,
+    pub source: ImageSourceRequest,
+    /// colorize | declutter | declutter-keep-bubbles | emotion | sketch | lineart | bg-removal
+    pub req_type: String,
+    #[serde(default)]
+    pub prompt: Option<String>,  // colorize: 任意プロンプト / emotion: 感情キーワード（必須、`;;` は API クライアントが付与）
+    #[serde(default)]
+    pub defry: Option<u32>,      // colorize / emotion: 0（変化最大）– 5（最小）
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpscaleImageRequest {
+    pub project_id: String,
+    pub source: ImageSourceRequest,
+}
+
+/// augment / upscale の結果（出力は履歴に追加済み）
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageToolResponse {
+    pub id: String,
+    pub base64_image: String,
+    pub file_path: String,
+    pub width: u32,
+    pub height: u32,
+    pub anlas_remaining: Option<u64>,
+    pub anlas_consumed: Option<u64>,
+}
+
+/// フロントエンドに渡す画像バイト（キャンバスエディタ・キャラ参照など）
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageDataDto {
+    pub base64: String,
+    pub mime: String,   // マジックバイトから判定（image/png | image/jpeg | image/webp）
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateImageResponse {
@@ -357,19 +432,25 @@ pub struct CostEstimateRequest {
     pub vibe_count: u64,
     pub has_character_reference: bool,
     pub tier: u32,
+    #[serde(default)]
+    pub model: Option<String>,        // V5 は 1.5 倍
+    #[serde(default)]
+    pub opus_usage_exhausted: bool,   // V5 Opus 無料枠切れ
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountTokensRequest {
     pub texts: Vec<String>,  // batch of prompts (main + all characters, both positive and negative)
+    #[serde(default)]
+    pub model: Option<String>,  // None = DEFAULT_MODEL (V4.5 full)
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CountTokensResponse {
-    pub counts: Vec<usize>,   // one T5 token count per input text (0 for empty strings)
-    pub max_tokens: usize,    // novelai-api MAX_TOKENS (= 512)
+    pub counts: Vec<usize>,   // one token count per input text (T5 for V4/V4.5, Qwen for V5; 0 for empty strings)
+    pub max_tokens: usize,    // Model::max_tokens() (V4/V4.5: 512, V5 curated: 703, V5 full: 1471)
 }
 
 #[derive(Debug, Deserialize)]

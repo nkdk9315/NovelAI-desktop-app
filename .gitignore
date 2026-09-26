@@ -23,3 +23,6 @@ Thumbs.db
 
 # Scraper cache
 scripts/.cache/
+
+# Tokenizer cache (downloaded at runtime)
+src-tauri/.cache/

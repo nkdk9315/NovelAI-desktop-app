@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
-import { MODELS } from "@/lib/constants";
+import { MODELS, isV5Model } from "@/lib/constants";
 import type { ArtistTag, PresetVibeRef, StylePresetDto, VibeDto } from "@/types";
 import * as ipc from "@/lib/ipc";
 import VibePickerModal from "./VibePickerModal";
@@ -99,14 +99,17 @@ export default function StylePresetEditorModal({ open, onOpenChange, preset, onS
     }
   };
 
+  const vibesSupported = !isV5Model(model);
+
   const handleSave = async () => {
     if (!name.trim()) return;
+    const savedVibeRefs = vibesSupported ? vibeRefs : [];
     try {
       if (isNew) {
         let created = await ipc.createStylePreset({
           name: name.trim(),
           artistTags,
-          vibeRefs,
+          vibeRefs: savedVibeRefs,
           model,
         });
         if (thumbnailPath) {
@@ -118,7 +121,7 @@ export default function StylePresetEditorModal({ open, onOpenChange, preset, onS
           id: preset.id,
           name: name.trim(),
           artistTags,
-          vibeRefs,
+          vibeRefs: savedVibeRefs,
         });
         if (thumbnailPath && thumbnailPath !== preset.thumbnailPath) {
           await ipc.updatePresetThumbnail({ id: preset.id, thumbnailPath });
@@ -202,55 +205,60 @@ export default function StylePresetEditorModal({ open, onOpenChange, preset, onS
               {/* Artist tags */}
               <ArtistTagInput artistTags={artistTags} onArtistTagsChange={setArtistTags} />
 
-              <Separator />
+              {/* V5 has no Vibe Transfer: no vibe section at all */}
+              {vibesSupported && (
+                <>
+                  <Separator />
 
-              {/* Vibes — display selected + add button */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">{t("style.vibes")}</Label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 text-[10px]"
-                    onClick={() => setVibePickerOpen(true)}
-                    disabled={vibeRefs.length >= MAX_PRESET_VIBES}
-                  >
-                    <Plus className="mr-1 h-3 w-3" />
-                    {t("style.addVibe")} ({vibeRefs.length}/{MAX_PRESET_VIBES})
-                  </Button>
-                </div>
-                {selectedVibes.length === 0 ? (
-                  <p className="text-[10px] text-muted-foreground">{t("vibe.empty")}</p>
-                ) : (
+                  {/* Vibes — display selected + add button */}
                   <div className="space-y-1.5">
-                    {selectedVibes.map((vibe) => {
-                      const ref = vibeRefs.find((vr) => vr.vibeId === vibe.id);
-                      return (
-                        <div key={vibe.id} className="rounded-md border border-border p-1.5 space-y-1">
-                          <div className="flex items-center gap-2">
-                            {vibe.thumbnailPath ? (
-                              <img src={`asset://localhost/${vibe.thumbnailPath}`} alt="" className="h-8 w-8 rounded object-contain shrink-0 bg-muted" />
-                            ) : (
-                              <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
-                                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">{t("style.vibes")}</Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 text-[10px]"
+                        onClick={() => setVibePickerOpen(true)}
+                        disabled={vibeRefs.length >= MAX_PRESET_VIBES}
+                      >
+                        <Plus className="mr-1 h-3 w-3" />
+                        {t("style.addVibe")} ({vibeRefs.length}/{MAX_PRESET_VIBES})
+                      </Button>
+                    </div>
+                    {selectedVibes.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground">{t("vibe.empty")}</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {selectedVibes.map((vibe) => {
+                          const ref = vibeRefs.find((vr) => vr.vibeId === vibe.id);
+                          return (
+                            <div key={vibe.id} className="rounded-md border border-border p-1.5 space-y-1">
+                              <div className="flex items-center gap-2">
+                                {vibe.thumbnailPath ? (
+                                  <img src={`asset://localhost/${vibe.thumbnailPath}`} alt="" className="h-8 w-8 rounded object-contain shrink-0 bg-muted" />
+                                ) : (
+                                  <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                                    <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <span className="text-xs truncate flex-1">{vibe.name}</span>
+                                <Button variant="ghost" size="sm" className="h-5 w-5 p-0 shrink-0" onClick={() => handleRemoveVibe(vibe.id)}>
+                                  <X className="h-3 w-3 text-muted-foreground" />
+                                </Button>
                               </div>
-                            )}
-                            <span className="text-xs truncate flex-1">{vibe.name}</span>
-                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 shrink-0" onClick={() => handleRemoveVibe(vibe.id)}>
-                              <X className="h-3 w-3 text-muted-foreground" />
-                            </Button>
-                          </div>
-                          <div className="flex items-center gap-2 pl-10">
-                            <span className="text-[10px] text-muted-foreground w-8">{t("vibe.strength")}</span>
-                            <Slider min={0} max={1} step={0.01} value={[ref?.strength ?? 0.7]} onValueChange={([v]) => handleVibeStrength(vibe.id, v)} className="flex-1" />
-                            <span className="text-[10px] text-muted-foreground w-8 text-right">{(ref?.strength ?? 0.7).toFixed(2)}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+                              <div className="flex items-center gap-2 pl-10">
+                                <span className="text-[10px] text-muted-foreground w-8">{t("vibe.strength")}</span>
+                                <Slider min={0} max={1} step={0.01} value={[ref?.strength ?? 0.7]} onValueChange={([v]) => handleVibeStrength(vibe.id, v)} className="flex-1" />
+                                <span className="text-[10px] text-muted-foreground w-8 text-right">{(ref?.strength ?? 0.7).toFixed(2)}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </>
+              )}
             </div>
           </div>
 

@@ -23,7 +23,6 @@ interface GroupItemProps {
   onSetRandomCount: (count: number) => void;
   onSetRandomSource: (source: "all" | "enabled") => void;
   onSetWildcardToken: (token: string | null) => void;
-  onInsertWildcard: (token: string) => void;
   onEditGroup: () => void;
   onOpenSystemSettings: () => void;
   onEditEntry: (tag: SidebarPromptTag) => void;
@@ -33,7 +32,7 @@ export function GroupItem({
   group, onToggleExpanded, onRemove, onToggleTag, onSetStrength,
   onToggleGroupEnabled, onSetGroupDefaultStrength,
   onSetRandomMode, onSetRandomCount, onSetRandomSource,
-  onSetWildcardToken, onInsertWildcard, onEditGroup, onOpenSystemSettings, onEditEntry,
+  onSetWildcardToken, onEditGroup, onOpenSystemSettings, onEditEntry,
 }: GroupItemProps) {
   const { t } = useTranslation();
   const isSystemGroup = group.groupId.startsWith("system-group-cat-") || group.groupId.startsWith("tagdb-");
@@ -44,7 +43,6 @@ export function GroupItem({
   const defaultToken = defaultWildcardToken(group.groupName);
   const [wildcardDraft, setWildcardDraft] = useState(group.wildcardToken ?? "");
   useEffect(() => { setWildcardDraft(group.wildcardToken ?? ""); }, [group.wildcardToken]);
-  const effectiveToken = (wildcardDraft.trim() || defaultToken);
   const [tagQuery, setTagQuery] = useState("");
   useEffect(() => { if (!group.expanded) setTagQuery(""); }, [group.expanded]);
   const filteredTags = useMemo(() => {
@@ -99,14 +97,9 @@ export function GroupItem({
           </div>
           <div className="space-y-1">
             <label className="block text-[10px] text-muted-foreground">{t("promptGroup.wildcard.token")}</label>
-            <div className="flex items-center gap-1.5">
-              <input type="text" value={wildcardDraft} placeholder={defaultToken} onChange={(e) => setWildcardDraft(e.target.value)}
-                onBlur={() => { const next = wildcardDraft.trim(); if ((group.wildcardToken ?? "") !== next) onSetWildcardToken(next.length > 0 ? next : null); }}
-                className="h-5 min-w-0 flex-1 rounded border border-border bg-background px-1 text-[10px]" />
-              <button type="button" title={t("promptGroup.wildcard.insert")}
-                onClick={() => { if ((group.wildcardToken ?? "") !== effectiveToken) { onSetWildcardToken(effectiveToken); setWildcardDraft(effectiveToken); } onInsertWildcard(effectiveToken); }}
-                className="h-5 shrink-0 rounded bg-primary px-1.5 text-[10px] font-medium text-primary-foreground hover:bg-primary/90">{t("promptGroup.wildcard.insert")}</button>
-            </div>
+            <input type="text" value={wildcardDraft} placeholder={defaultToken} onChange={(e) => setWildcardDraft(e.target.value)}
+              onBlur={() => { const next = wildcardDraft.trim(); if ((group.wildcardToken ?? "") !== next) onSetWildcardToken(next.length > 0 ? next : null); }}
+              className="h-5 w-full rounded border border-border bg-background px-1 text-[10px]" />
           </div>
           <p className="text-[9px] text-muted-foreground leading-tight">{t("promptGroup.wildcard.hint")}</p>
         </div>

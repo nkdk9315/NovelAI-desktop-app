@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, FolderInput, ImageIcon, Pencil, Star, Trash2 } from "lucide-react";
+import { Check, FolderInput, ImageIcon, Pencil, Plus, Star, Trash2 } from "lucide-react";
+import ImageLightbox from "@/components/shared/ImageLightbox";
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
 } from "@/components/ui/context-menu";
@@ -19,8 +21,11 @@ export default function PresetCard({
   preset, isInSidebar, onToggleSidebar, onToggleFavorite, onEdit, onDelete, onMoveToFolder,
 }: PresetCardProps) {
   const { t } = useTranslation();
+  const [zoomed, setZoomed] = useState(false);
+  const thumbSrc = preset.thumbnailPath ? `asset://localhost/${preset.thumbnailPath}` : null;
 
   return (
+    <>
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
@@ -29,9 +34,17 @@ export default function PresetCard({
           onClick={onToggleSidebar}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggleSidebar(); } }}
         >
-          <div className="aspect-square rounded bg-muted mb-1 overflow-hidden flex items-center justify-center">
-            {preset.thumbnailPath ? (
-              <img src={`asset://localhost/${preset.thumbnailPath}`} alt="" className="h-full w-full object-contain" />
+          {/* Absolute img: percentage heights inside aspect-ratio boxes are unreliable in WebKit. */}
+          <div className="relative aspect-square rounded bg-muted mb-1 overflow-hidden flex items-center justify-center">
+            {thumbSrc ? (
+              <button
+                type="button"
+                title={t("style.thumbnailZoom")}
+                className="absolute inset-0 cursor-zoom-in"
+                onClick={(e) => { e.stopPropagation(); setZoomed(true); }}
+              >
+                <img src={thumbSrc} alt="" className="absolute inset-0 h-full w-full object-contain" />
+              </button>
             ) : (
               <ImageIcon className="h-8 w-8 text-muted-foreground" />
             )}
@@ -41,16 +54,17 @@ export default function PresetCard({
             <p className="text-[9px] leading-4 text-muted-foreground/60 truncate flex-1 min-w-0">
               {preset.artistTags.length}a / {preset.vibeRefs.length}v
             </p>
+            <span className={`shrink-0 flex items-center gap-0.5 rounded px-1 text-[9px] leading-4 ${
+              isInSidebar ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground"
+            }`}>
+              {isInSidebar ? <Check className="h-2.5 w-2.5" /> : <Plus className="h-2.5 w-2.5" />}
+              {isInSidebar ? t("style.presetAddedBadge") : t("style.presetAddToggle")}
+            </span>
             <button className="shrink-0 p-0.5 rounded-full hover:bg-accent transition-colors"
               onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}>
               <Star className={`h-3 w-3 ${preset.isFavorite ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40 hover:text-yellow-400"}`} />
             </button>
           </div>
-          {isInSidebar && (
-            <div className="absolute top-1 right-1 h-4 w-4 rounded-full bg-primary flex items-center justify-center">
-              <Check className="h-2.5 w-2.5 text-primary-foreground" />
-            </div>
-          )}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
@@ -66,5 +80,7 @@ export default function PresetCard({
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
+    <ImageLightbox src={zoomed ? thumbSrc : null} title={preset.name} onClose={() => setZoomed(false)} />
+    </>
   );
 }
