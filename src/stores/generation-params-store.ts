@@ -13,6 +13,7 @@ import {
   maxCharactersFor,
 } from "@/lib/constants";
 import type { NegativePresetId } from "@/lib/constants";
+import type { QualityPresetId } from "@/lib/prompt-decoration";
 import type { ArtistTag, RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
 
 export interface Character {
@@ -47,7 +48,10 @@ interface GenerationParamsData {
   negativePrompt: string;
   negativePreset: NegativePresetId;
   showNegativePresetInInput: boolean;
-  qualityTagsEnabled: boolean;
+  /** Quality tags added after the prompt ("standard" / "light" / "none" / custom) */
+  qualityPreset: QualityPresetId;
+  /** Furry mode: prefix the prompt with "fur dataset" (off = anime mode) */
+  furryMode: boolean;
   model: string;
   sampler: string;
   noiseSchedule: string;
@@ -102,7 +106,8 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set) =>
   negativePrompt: DEFAULT_NEGATIVE_PROMPT,
   negativePreset: "none",
   showNegativePresetInInput: false,
-  qualityTagsEnabled: false,
+  qualityPreset: "none",
+  furryMode: false,
   model: DEFAULT_MODEL,
   sampler: DEFAULT_SAMPLER,
   noiseSchedule: DEFAULT_NOISE_SCHEDULE,

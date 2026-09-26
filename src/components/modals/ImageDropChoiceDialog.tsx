@@ -13,6 +13,7 @@ import {
   DEFAULT_PREFS, loadPrefs, prefsFromSelection, savePrefs, selectionFromPrefs, type MetadataImportPrefs,
 } from "@/lib/metadata-import-prefs";
 import { useSettingsStore } from "@/stores/settings-store";
+import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { toDataUrl } from "@/lib/canvas-image";
 import * as ipc from "@/lib/ipc";
 import MetadataImportPanel from "./metadata-import/MetadataImportPanel";
@@ -22,6 +23,12 @@ interface ImageDropChoiceDialogProps {
   onClose: () => void;
   /** Continue with the Vibe encode dialog */
   onEncodeVibe: () => void;
+}
+
+async function loadCustomQualityTags() {
+  const store = useQualityTagStore.getState();
+  if (!store.loaded) await store.loadCustomQualityTags();
+  return useQualityTagStore.getState().customQualityTags;
 }
 
 /**
@@ -43,9 +50,10 @@ export default function ImageDropChoiceDialog({ path, onClose, onEncodeVibe }: I
       ipc.readImageMetadata(path).catch(() => null),
       ipc.readImageFile(path).then(toDataUrl).catch(() => null),
       loadPrefs(),
-    ]).then(([m, src, p]) => {
+      loadCustomQualityTags(),
+    ]).then(([m, src, p, customs]) => {
       if (cancelled) return;
-      setMeta(m ? parseMetadata(m) : null);
+      setMeta(m ? parseMetadata(m, customs) : null);
       setPrefs(p);
       setThumb(src);
       setLoading(false);

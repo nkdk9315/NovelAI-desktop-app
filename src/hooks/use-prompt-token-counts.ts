@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
-import { NEGATIVE_PRESETS, QUALITY_TAGS } from "@/lib/constants";
+import { NEGATIVE_PRESETS } from "@/lib/constants";
+import { decorateMainPrompt } from "@/lib/prompt-decoration";
+import { currentPromptDecoration } from "@/lib/generation-request";
+import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { buildArtistPrefix } from "@/lib/artist-tag";
 import { assembleFullPrompt, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 import * as ipc from "@/lib/ipc";
@@ -44,10 +47,7 @@ function buildPromptTexts(): { positives: string[]; negatives: string[] } {
   const assembledMain = mainTarget
     ? (mainTarget.promptOverride ?? assembleFullPrompt("", mainTarget.groups))
     : "";
-  const qualitySuffix = params.qualityTagsEnabled
-    ? (assembledMain ? `, ${QUALITY_TAGS}` : QUALITY_TAGS)
-    : "";
-  const mainPrompt = artistPrefix + assembledMain + qualitySuffix;
+  const mainPrompt = decorateMainPrompt(artistPrefix + assembledMain, currentPromptDecoration(params));
 
   const mainNegBase = mainTarget
     ? (mainTarget.negativeOverride ?? assembleNegativeFromGroups(mainTarget.groups))
@@ -83,7 +83,10 @@ function buildPromptTexts(): { positives: string[]; negatives: string[] } {
 export function usePromptTokenCounts(): PromptTokenCounts {
   const model = useGenerationParamsStore((s) => s.model);
   const characters = useGenerationParamsStore((s) => s.characters);
-  const qualityTagsEnabled = useGenerationParamsStore((s) => s.qualityTagsEnabled);
+  const qualityPreset = useGenerationParamsStore((s) => s.qualityPreset);
+  const furryMode = useGenerationParamsStore((s) => s.furryMode);
+  const transparentBackground = useGenerationParamsStore((s) => s.transparentBackground);
+  const customQualityTags = useQualityTagStore((s) => s.customQualityTags);
   const negativePreset = useGenerationParamsStore((s) => s.negativePreset);
   const sidebarPresets = useGenerationParamsStore((s) => s.sidebarPresets);
   const targets = useSidebarPromptStore((s) => s.targets);
@@ -93,7 +96,7 @@ export function usePromptTokenCounts(): PromptTokenCounts {
     () => buildPromptTexts(),
     // buildPromptTexts reads from store state snapshots; these deps trigger recomputation
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [characters, qualityTagsEnabled, negativePreset, sidebarPresets, targets, artistTags],
+    [model, characters, qualityPreset, furryMode, transparentBackground, customQualityTags, negativePreset, sidebarPresets, targets, artistTags],
   );
 
   const allTexts = useMemo(() => [...positives, ...negatives], [positives, negatives]);

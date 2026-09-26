@@ -1,5 +1,6 @@
-import { MODEL_TO_VIBE_KEY, NEGATIVE_PRESETS, NOISE_SCHEDULES, QUALITY_TAGS, SAMPLERS } from "@/lib/constants";
+import { MODEL_TO_VIBE_KEY, NEGATIVE_PRESETS, NOISE_SCHEDULES, SAMPLERS } from "@/lib/constants";
 import type { NegativePresetId } from "@/lib/constants";
+import { splitDecorations, type CustomQualityTag, type QualityPresetId } from "@/lib/prompt-decoration";
 import type { ArtistTag, CharRefMode, ImageMetadataDto } from "@/types";
 import { extractArtistTags } from "@/lib/artist-extract";
 
@@ -41,13 +42,15 @@ export interface MetadataSettings {
 export interface ParsedMetadata {
   /** App model id guessed from `Source` (null when unknown) */
   model: string | null;
-  /** Main prompt without the quality suffix (artist tags included) */
+  /** Main prompt without the furry prefix / transparent tag / quality suffix (artist tags included) */
   rawPrompt: string;
   /** Main prompt with artist tags and the quality suffix taken out (preview) */
   prompt: string;
   /** Artists found in the main prompt and the character prompts */
   artistTags: MetadataArtist[];
-  qualityTags: boolean;
+  qualityPreset: QualityPresetId;
+  furryMode: boolean;
+  transparentBackground: boolean;
   /** Negative prompt without the detected preset */
   negative: string;
   negativePreset: NegativePresetId;
@@ -83,16 +86,6 @@ export function isImageBase64(data: string): boolean {
   return b64.startsWith("iVBORw0KGgo") || b64.startsWith("/9j/") || /^UklGR.{6}XRUJQ/.test(b64);
 }
 
-/** Take the app's quality suffix off a prompt. */
-export function splitQuality(prompt: string): { prompt: string; qualityTags: boolean } {
-  const text = prompt.trim();
-  if (text === QUALITY_TAGS) return { prompt: "", qualityTags: true };
-  if (text.endsWith(`, ${QUALITY_TAGS}`)) {
-    return { prompt: text.slice(0, -QUALITY_TAGS.length).replace(/,\s*$/, ""), qualityTags: true };
-  }
-  return { prompt: text, qualityTags: false };
-}
-
 /** `prompt` with the artists in `names` taken out (the others stay in the text). */
 export function promptWithoutArtists(prompt: string, names: ReadonlySet<string>): string {
   return extractArtistTags(prompt, (n) => names.has(n)).text;
@@ -122,11 +115,13 @@ function captions(v4: unknown): { base?: string; chars: Json[] } {
   return { base: str(caption.base_caption), chars: arr(caption.char_captions).map(obj) };
 }
 
-export function parseMetadata(meta: ImageMetadataDto): ParsedMetadata {
+/** `customs` lets a user-registered quality tag be recognized too. */
+export function parseMetadata(meta: ImageMetadataDto, customs: readonly CustomQualityTag[] = []): ParsedMetadata {
   const c = meta.comment;
+  const model = modelFromSource(meta.source);
   const pos = captions(c.v4_prompt);
   const neg = captions(c.v4_negative_prompt);
-  const quality = splitQuality(pos.base ?? str(c.prompt) ?? "");
+  const quality = splitDecorations(pos.base ?? str(c.prompt) ?? "", model, customs);
   const main = extractArtistTags(quality.prompt);
   const artistTags: MetadataArtist[] = main.artistTags.map((a) => ({ ...a, source: "main" }));
   const negative = splitNegative(neg.base ?? str(c.uc) ?? "");
@@ -174,11 +169,13 @@ export function parseMetadata(meta: ImageMetadataDto): ParsedMetadata {
   const sampler = str(c.sampler);
   const noise = str(c.noise_schedule);
   return {
-    model: modelFromSource(meta.source),
+    model,
     rawPrompt: quality.prompt,
     prompt: main.text,
     artistTags,
-    qualityTags: quality.qualityTags,
+    qualityPreset: quality.qualityPreset,
+    furryMode: quality.furryMode,
+    transparentBackground: quality.transparentBackground,
     negative: negative.negative,
     negativePreset: negative.preset,
     characters,

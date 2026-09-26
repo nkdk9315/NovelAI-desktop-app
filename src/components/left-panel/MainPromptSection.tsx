@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BadgeCheck, ChevronDown, ChevronRight, Compass, Eye, EyeOff } from "lucide-react";
+import { ChevronDown, ChevronRight, Compass, Eye, EyeOff } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useNaxStore } from "@/stores/nax-store";
 import PromptTextarea from "@/components/shared/PromptTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CharacterPromptGroups from "./CharacterPromptGroups";
+import PromptModeControls from "./PromptModeControls";
 import PromptGroupModal from "@/components/modals/PromptGroupModal";
 import { assembleFullPrompt, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
@@ -14,6 +15,8 @@ import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store"
 import { usePresetStore } from "@/stores/preset-store";
 import { NEGATIVE_PRESETS, type NegativePresetId } from "@/lib/constants";
 import { loadDefaultGroupsForGenre } from "@/lib/default-groups";
+import { decorateMainPrompt } from "@/lib/prompt-decoration";
+import { useQualityTagStore } from "@/stores/quality-tag-store";
 
 const MAIN_TARGET_ID = "main";
 
@@ -22,9 +25,13 @@ export default function MainPromptSection() {
   const negativePrompt = useGenerationParamsStore((s) => s.negativePrompt);
   const negativePreset = useGenerationParamsStore((s) => s.negativePreset);
   const showNegativePresetInInput = useGenerationParamsStore((s) => s.showNegativePresetInInput);
-  const qualityTagsEnabled = useGenerationParamsStore((s) => s.qualityTagsEnabled);
   const setParam = useGenerationParamsStore((s) => s.setParam);
   const characters = useGenerationParamsStore((s) => s.characters);
+  const model = useGenerationParamsStore((s) => s.model);
+  const qualityPreset = useGenerationParamsStore((s) => s.qualityPreset);
+  const furryMode = useGenerationParamsStore((s) => s.furryMode);
+  const transparentBackground = useGenerationParamsStore((s) => s.transparentBackground);
+  const customQualityTags = useQualityTagStore((s) => s.customQualityTags);
   const targets = useSidebarPromptStore((s) => s.targets);
   const initTarget = useSidebarPromptStore((s) => s.initTarget);
   const setNegativeOverride = useSidebarPromptStore((s) => s.setNegativeOverride);
@@ -73,7 +80,9 @@ export default function MainPromptSection() {
     const contrib = getPresetContributionsForCharacter(targetId, presetInstances, allPresets);
     return appendContributions(base, contrib.positive);
   };
-  const mainLine = lineFor(MAIN_TARGET_ID);
+  const mainLine = decorateMainPrompt(lineFor(MAIN_TARGET_ID), {
+    model, qualityPreset, customQualityTags, transparentBackground, furryMode,
+  });
   const charLines = characters.map((c) => ({
     id: c.id,
     name: c.genreName,
@@ -88,19 +97,6 @@ export default function MainPromptSection() {
         </label>
         <button
           type="button"
-          title={t("generation.qualityTags")}
-          onClick={() => setParam("qualityTagsEnabled", !qualityTagsEnabled)}
-          className={`flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] transition-colors ${
-            qualityTagsEnabled
-              ? "text-primary bg-primary/10"
-              : "text-muted-foreground hover:text-foreground hover:bg-accent"
-          }`}
-        >
-          <BadgeCheck className="h-2.5 w-2.5" />
-          {t("generation.qualityTags")}
-        </button>
-        <button
-          type="button"
           title={t("nax.openExplorerTags")}
           onClick={() => useNaxStore.getState().openExplorer()}
           className="ml-auto flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -109,6 +105,8 @@ export default function MainPromptSection() {
           {t("nax.findTags")}
         </button>
       </div>
+
+      <PromptModeControls />
 
       <CharacterPromptGroups
         targetId={MAIN_TARGET_ID}

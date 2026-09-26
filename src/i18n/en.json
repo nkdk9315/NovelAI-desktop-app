@@ -55,6 +55,33 @@
     "seed": "Seed",
     "prompt": "Prompt",
     "qualityTags": "Quality Tags",
+    "qualityPreset": {
+      "standard": "Standard",
+      "light": "Light",
+      "none": "None"
+    },
+    "qualityPresetCustomGroup": "Custom",
+    "qualityPresetManage": "Manage custom…",
+    "qualityPresetLightV5Only": "\"Light\" is V5 only. Standard is used with this model",
+    "qualityTagsDialog": {
+      "title": "Custom Quality Tags",
+      "description": "Register quality tags to add at the end of the prompt. They show up as quality tag choices.",
+      "empty": "No custom quality tags yet",
+      "name": "Name",
+      "tags": "Tags",
+      "namePlaceholder": "e.g. High quality",
+      "tagsPlaceholder": "e.g. best quality, amazing quality, very aesthetic",
+      "add": "Add",
+      "builtin": "Official ({{model}})",
+      "deleteConfirm": "Delete \"{{name}}\"?"
+    },
+    "artStyleMode": {
+      "anime": "Anime",
+      "furry": "Furry",
+      "tooltip": "Furry mode adds \"fur dataset\" to the beginning of the prompt"
+    },
+    "transparentBackground": "Transparent",
+    "transparentBackgroundTooltip": "Adds \"transparent background\" to the prompt for a transparent background (V5)",
     "negativePrompt": "Negative Prompt",
     "negativePresetNone": "None",
     "negativePresetHumanMain": "Human Main",
@@ -94,7 +121,6 @@
     "sizeCustomAction": "Enter size…",
     "sizeErrorTotal": "Total pixels exceed the limit ({{max}})",
     "sizeHint": "64–2048 (multiple of 64)",
-    "transparentBackground": "Transparent background (V5)",
     "noiseScheduleV5Fixed": "Fixed to karras for V5",
     "opusUsage": "V5 free {{percent}}%",
     "opusUsageTooltip": "V5 Opus free usage: ~{{images}} images left / refills {{refill}}%/day",
@@ -683,7 +709,7 @@
     "orUseImage": "Use as an image",
     "none": "This image has no NovelAI metadata",
     "prompt": "Prompt",
-    "qualityTags": "+ quality tags",
+    "qualityTags": "+ quality tags ({{name}})",
     "artistTags": "Artist tags",
     "negative": "Negative prompt",
     "preset": "Preset \"{{name}}\" +",
@@ -717,7 +743,9 @@
     "seedHint": "(fixed for generations; set back to random via ⚙ in the header)",
     "vibesUnencoded": "{{count}} of them are unencoded images; importing encodes them for {{cost}} Anlas in total.",
     "doneVibesEncoded": "{{count}} encoded",
-    "remembered": "Your choices are remembered for next time"
+    "remembered": "Your choices are remembered for next time",
+    "transparentBackground": "+ transparent background",
+    "furryMode": "+ furry mode"
   },
   "nax": {
     "title": "Tag Explorer",

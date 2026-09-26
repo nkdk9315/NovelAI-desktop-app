@@ -55,6 +55,33 @@
     "seed": "シード",
     "prompt": "プロンプト",
     "qualityTags": "クオリティタグ",
+    "qualityPreset": {
+      "standard": "標準",
+      "light": "軽い",
+      "none": "なし"
+    },
+    "qualityPresetCustomGroup": "カスタム",
+    "qualityPresetManage": "カスタムを管理…",
+    "qualityPresetLightV5Only": "「軽い」は V5 のみ。このモデルでは標準を使います",
+    "qualityTagsDialog": {
+      "title": "カスタムクオリティタグ",
+      "description": "プロンプトの末尾に追加するクオリティタグを登録できます。登録したものはクオリティタグの選択肢に表示されます。",
+      "empty": "カスタムクオリティタグはまだありません",
+      "name": "名前",
+      "tags": "タグ",
+      "namePlaceholder": "例: 高品質",
+      "tagsPlaceholder": "例: best quality, amazing quality, very aesthetic",
+      "add": "追加",
+      "builtin": "公式（{{model}}）",
+      "deleteConfirm": "「{{name}}」を削除しますか？"
+    },
+    "artStyleMode": {
+      "anime": "アニメ",
+      "furry": "ケモノ",
+      "tooltip": "ケモノモードではプロンプトの先頭に「fur dataset」を追加します"
+    },
+    "transparentBackground": "透過",
+    "transparentBackgroundTooltip": "プロンプトに「transparent background」を追加して背景を透過します（V5）",
     "negativePrompt": "ネガティブプロンプト",
     "negativePresetNone": "無し",
     "negativePresetHumanMain": "人間メイン",
@@ -94,7 +121,6 @@
     "sizeCustomAction": "サイズを指定…",
     "sizeErrorTotal": "総ピクセル数が上限 ({{max}}) を超えています",
     "sizeHint": "64〜2048 (64 の倍数)",
-    "transparentBackground": "透過背景（V5）",
     "noiseScheduleV5Fixed": "V5 では karras に固定されます",
     "opusUsage": "V5 無料枠 {{percent}}%",
     "opusUsageTooltip": "V5 Opus 無料枠: 残り約 {{images}} 枚 / 回復 {{refill}}%/日",
@@ -683,7 +709,7 @@
     "orUseImage": "画像として使う",
     "none": "この画像には NovelAI のメタデータがありません",
     "prompt": "プロンプト",
-    "qualityTags": "＋クオリティタグ",
+    "qualityTags": "＋クオリティタグ（{{name}}）",
     "artistTags": "アーティストタグ",
     "negative": "ネガティブプロンプト",
     "preset": "プリセット「{{name}}」＋",
@@ -717,7 +743,9 @@
     "seedHint": "（生成時に固定されます。ヘッダーの ⚙ でランダムに戻せます）",
     "vibesUnencoded": "うち {{count}} 件は未エンコードの画像です。インポート時にエンコードし、合計 {{cost}} Anlas を消費します。",
     "doneVibesEncoded": "エンコード {{count}} 件",
-    "remembered": "チェックの状態は次回も引き継がれます"
+    "remembered": "チェックの状態は次回も引き継がれます",
+    "transparentBackground": "＋透過背景",
+    "furryMode": "＋ケモノモード"
   },
   "nax": {
     "title": "タグエクスプローラー",

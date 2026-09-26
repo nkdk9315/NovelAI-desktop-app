@@ -342,6 +342,18 @@ fn test_create_project_creates_directory() {
 prefs → チェックリスト、画像に無い項目は前回値を保持。`nai-metadata.test.ts`: `isImageBase64`（未エンコード Vibe 判定）。
 Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
 
+### 4.4.1 Frontend テスト (`lib/prompt-decoration.ts`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `quality presets: uses the official tags per model` | V5 standard / light、V4.5 curated・V4 full の standard、none は空 |
+| `quality presets: falls back when the preset is unavailable` | light 非対応 → standard、削除済みカスタム → none |
+| `decorateMainPrompt: adds the quality suffix` | 末尾に `, ` 区切りで追加、空プロンプトはタグのみ |
+| `decorateMainPrompt: puts transparent background before the quality tags, on V5 only` | 透過タグの位置、V4.5 では付けない |
+| `decorateMainPrompt: prefixes fur dataset in furry mode unless already there` | `fur dataset` / `background dataset` 始まりは二重に付けない |
+| `decorateMainPrompt: inserts the quality tags before a Text: part` | 公式サイトと同じ `Text:` 前への挿入 |
+| `decorateMainPrompt: round-trips through splitDecorations` | 装飾 → 分離で元に戻る |
+
 ### 4.5 Frontend テスト (`lib/nai-metadata.ts`)
 
 | テストケース | 検証内容 |
@@ -349,9 +361,10 @@ Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
 | `modelFromSource: uses known hashes and falls back to the version text` | 既知ハッシュ → モデル、無ければ V5 / V4.5 / V4 + curated 判定、不明・null は null |
 | `prompt splitting: splits on top-level commas only` | 括弧内のカンマでは分割しない |
 | `prompt splitting: parses artist tag formats` | `artist:x` / `{w::artist:x ::}` / `w::artist:x ::` / `{{}}` / `[]` の強度変換、非アーティスト・括弧不一致は null |
-| `prompt splitting: separates artist tags and the quality suffix` | アーティストタグと QUALITY_TAGS 接尾辞の分離 |
 | `prompt splitting: detects negative presets` | 先頭のネガティブプリセット検出（完全一致 / 接頭辞 / 無し） |
 | `parseMetadata: extracts prompt, characters, vibes and settings` | v4_prompt 優先、キャラ位置・ネガティブ、Vibe（strength / information_extracted）、設定・seed、`vibeModelKey` |
+| `parseMetadata: detects furry mode, transparent background and the quality preset` | V5 の `fur dataset` 接頭辞・透過タグ・light プリセットを分離 |
+| `parseMetadata: recognizes a custom quality tag` | 登録済みカスタムクオリティタグを `custom:<id>` として検出 |
 | `parseMetadata: falls back to legacy fields and ignores unknown values` | prompt / uc へのフォールバック、未知 sampler は無視、モデル不明なら Vibe キー null |
 | `parseMetadata: reads a character reference` | director_reference_* → imageBase64 / strength / fidelity（= 1 − secondary）/ mode |
 

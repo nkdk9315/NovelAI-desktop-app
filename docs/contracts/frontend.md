@@ -230,7 +230,10 @@ export interface UiSnapshotV1 {
   version: 1;
   negativePrompt: string;
   negativePreset: string;
-  qualityTagsEnabled: boolean;
+  qualityTagsEnabled: boolean;      // 旧形式（qualityPreset !== "none"）。古いビルド向けに書き続ける
+  qualityPreset?: QualityPresetId;  // 無ければ qualityTagsEnabled から standard / none に読み替え
+  furryMode?: boolean;
+  transparentBackground?: boolean;
   normalizeVibeStrength: boolean;
   normalizeArtistStrength: boolean;
   characters: Character[];
@@ -850,7 +853,7 @@ function usePromptTokenCounts(): PromptTokenCounts;
 ```
 
 - **組立ロジック**: `ActionBar.executeGenerate` と同じ順序で
-  `artist プレフィックス + mainTarget + QUALITY_TAGS suffix` をポジティブ側に、
+  `decorateMainPrompt(artist プレフィックス + mainTarget, currentPromptDecoration())` をポジティブ側に、
   `NEGATIVE_PRESETS[preset] + mainTarget.negativeOverride` をネガティブ側に結合。
   キャラクターは `characters[i]` ごとに1エントリずつ `sidebar-prompt-store` の target を参照。
 - **デバウンス**: 250ms（`useDebounce`）。
@@ -1159,7 +1162,9 @@ export interface ParsedMetadata {
   rawPrompt: string;                 // 品質タグ接尾辞だけ除いたメインプロンプト（アーティスト込み）
   prompt: string;                    // さらに全アーティストを除いたプレビュー
   artistTags: MetadataArtist[];      // メイン + 各キャラのプロンプトから抽出（名前で重複除去）
-  qualityTags: boolean;
+  qualityPreset: QualityPresetId;    // 末尾のクオリティタグ（モデル別の公式 / カスタム）
+  furryMode: boolean;                // 先頭の "fur dataset"
+  transparentBackground: boolean;    // クオリティタグ直前の "transparent background"
   negative: string;                  // 検出したネガティブプリセットを除いた残り
   negativePreset: NegativePresetId;
   characters: MetadataCharacter[];
@@ -1171,17 +1176,39 @@ export interface ParsedMetadata {
 
 /** Source 末尾のモデルハッシュ（既知のもの）→ 無ければ "V5" / "V4.5" / "V4" + curated 有無からモデル ID */
 export function modelFromSource(source: string | null | undefined): string | null;
-/** 末尾の QUALITY_TAGS を分離 */
-export function splitQuality(prompt: string): { prompt: string; qualityTags: boolean };
 /** names に含まれるアーティストだけをプロンプトから取り除く（他は残す） */
 export function promptWithoutArtists(prompt: string, names: ReadonlySet<string>): string;
 /** 先頭が NEGATIVE_PRESETS のいずれか（長い順に照合）ならプリセットとして分離 */
 export function splitNegative(negative: string): { negative: string; preset: NegativePresetId };
 /** comment の v4_prompt / v4_negative_prompt（無ければ prompt / uc）、reference_*_multiple（Vibe）、
  *  director_reference_*（キャラ参照）、steps / scale / sampler 等を ParsedMetadata に変換 */
-export function parseMetadata(meta: ImageMetadataDto): ParsedMetadata;
+/** メインプロンプトは splitDecorations でケモノ接頭辞・透過タグ・クオリティタグ（customs も照合）を分離 */
+export function parseMetadata(meta: ImageMetadataDto, customs?: readonly CustomQualityTag[]): ParsedMetadata;
 /** MODEL_TO_VIBE_KEY でモデル → Vibe モデルキー（V5 等の非対応は null = Vibe 取り込み不可） */
 export function vibeModelKey(model: string | null): string | null;
+```
+
+### プロンプト装飾 (`src/lib/prompt-decoration.ts`)
+
+公式サイトがメインプロンプトに付け足すもの（サイトの JS から再現）。
+
+```typescript
+type QualityPresetId = "standard" | "light" | "none" | `custom:${string}`;
+interface CustomQualityTag { id: string; name: string; tags: string }  // settings の custom_quality_tags（JSON）に保存
+interface PromptDecoration {
+  model: string; qualityPreset: QualityPresetId; customQualityTags: readonly CustomQualityTag[];
+  transparentBackground: boolean; furryMode: boolean;
+}
+/** モデル別の公式クオリティタグ。light は V5 のみ（V4.5 curated / V4 / V4 curated は standard の中身が異なる） */
+export function builtinQualityTags(model: string): Partial<Record<"standard" | "light", string>>;
+/** light 非対応モデルでは standard、削除済みカスタムは none */
+export function effectiveQualityPreset(model: string, preset: QualityPresetId, customs: readonly CustomQualityTag[]): QualityPresetId;
+export function qualityTagsFor(model: string, preset: QualityPresetId, customs: readonly CustomQualityTag[]): string;
+/** [fur dataset, ] + prompt + [, transparent background (V5)] + [, クオリティタグ]。
+ *  V4.5 / V5 はプロンプト中の `Text:` の直前に接尾辞を入れる。先頭が fur dataset / background dataset なら接頭辞は付けない */
+export function decorateMainPrompt(prompt: string, d: PromptDecoration): string;
+/** decorateMainPrompt の逆（メタデータ読み込み用）。model が null なら全モデルの公式タグで照合 */
+export function splitDecorations(prompt: string, model: string | null, customs?: readonly CustomQualityTag[]): SplitPrompt;
 ```
 
 ### アーティスト抽出 (`src/lib/artist-extract.ts`)

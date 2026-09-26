@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
-  isImageBase64, modelFromSource, parseMetadata, promptWithoutArtists, splitNegative, splitQuality, vibeModelKey,
+  isImageBase64, modelFromSource, parseMetadata, promptWithoutArtists, splitNegative, vibeModelKey,
 } from "@/lib/nai-metadata";
-import { NEGATIVE_PRESETS, QUALITY_TAGS } from "@/lib/constants";
+import { NEGATIVE_PRESETS } from "@/lib/constants";
 
 describe("modelFromSource", () => {
   it("uses known hashes and falls back to the version text", () => {
@@ -16,12 +16,6 @@ describe("modelFromSource", () => {
 });
 
 describe("prompt splitting", () => {
-  it("takes off the quality suffix", () => {
-    expect(splitQuality(`1girl, ${QUALITY_TAGS}`)).toEqual({ prompt: "1girl", qualityTags: true });
-    expect(splitQuality(QUALITY_TAGS)).toEqual({ prompt: "", qualityTags: true });
-    expect(splitQuality("1girl")).toEqual({ prompt: "1girl", qualityTags: false });
-  });
-
   it("removes only the chosen artists", () => {
     expect(promptWithoutArtists("artist:a, 0.3::artist:b::, 1girl", new Set(["b"]))).toBe("artist:a, 1girl");
   });
@@ -78,6 +72,26 @@ describe("parseMetadata", () => {
     expect(m.seed).toBe(4139632993);
     expect(m.characterReference).toBeNull();
     expect(vibeModelKey(m.model)).toBe("v4-5full");
+  });
+
+  it("detects furry mode, transparent background and the quality preset", () => {
+    const m = parseMetadata({ source: "NovelAI Diffusion V5 DB276663", software: "NovelAI", description: null, comment: {
+      prompt: "fur dataset, artist:a, fox, transparent background, very aesthetic, amazing quality, no text",
+    } });
+    expect(m.model).toBe("nai-diffusion-5-full");
+    expect(m.rawPrompt).toBe("artist:a, fox");
+    expect(m.qualityPreset).toBe("light");
+    expect(m.transparentBackground).toBe(true);
+    expect(m.furryMode).toBe(true);
+  });
+
+  it("recognizes a custom quality tag", () => {
+    const m = parseMetadata(
+      { source: null, software: null, description: null, comment: { prompt: "cat, best quality, absurdres" } },
+      [{ id: "q1", name: "Mine", tags: "best quality, absurdres" }],
+    );
+    expect(m.rawPrompt).toBe("cat");
+    expect(m.qualityPreset).toBe("custom:q1");
   });
 
   it("falls back to legacy fields and ignores unknown values", () => {

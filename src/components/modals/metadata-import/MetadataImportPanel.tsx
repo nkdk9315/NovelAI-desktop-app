@@ -5,6 +5,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatArtistTag } from "@/lib/artist-tag";
 import { promptWithoutArtists, vibeModelKey, type ParsedMetadata } from "@/lib/nai-metadata";
 import type { MergeMode, MetadataSelection } from "@/lib/apply-metadata";
+import { qualityPresetLabel } from "@/lib/prompt-decoration";
+import { useQualityTagStore } from "@/stores/quality-tag-store";
 
 interface MetadataImportPanelProps {
   meta: ParsedMetadata;
@@ -81,6 +83,7 @@ function ExpandableText({ text, limit = 160, empty }: { text: string; limit?: nu
 /** Checklist of the parts of a NovelAI image's metadata to import. */
 export default function MetadataImportPanel({ meta, sel, onChange }: MetadataImportPanelProps) {
   const { t } = useTranslation();
+  const customQualityTags = useQualityTagStore((s) => s.customQualityTags);
   const vibesUsable = vibeModelKey(meta.model) !== null;
   const set = <K extends keyof MetadataSelection>(k: K, v: MetadataSelection[K]) => onChange({ ...sel, [k]: v });
   const picked = new Set(sel.artistNames);
@@ -135,7 +138,13 @@ export default function MetadataImportPanel({ meta, sel, onChange }: MetadataImp
       {meta.rawPrompt !== "" && (
         <Row label={t("metadataImport.prompt")} checked={sel.prompt} onChange={(v) => set("prompt", v)}>
           <ExpandableText text={mainPreview} empty={t("metadataImport.emptyAfterArtists")} />
-          {meta.qualityTags && <span className="ml-1 text-primary">{t("metadataImport.qualityTags")}</span>}
+          {meta.qualityPreset !== "none" && (
+            <span className="ml-1 text-primary">
+              {t("metadataImport.qualityTags", { name: qualityPresetLabel(meta.qualityPreset, customQualityTags, t) })}
+            </span>
+          )}
+          {meta.transparentBackground && <span className="ml-1 text-primary">{t("metadataImport.transparentBackground")}</span>}
+          {meta.furryMode && <span className="ml-1 text-primary">{t("metadataImport.furryMode")}</span>}
         </Row>
       )}
       {(meta.negative !== "" || meta.negativePreset !== "none") && (

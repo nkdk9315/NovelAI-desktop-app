@@ -393,7 +393,11 @@ export interface UiSnapshotV1 {
   version: 1;
   negativePrompt: string;
   negativePreset: string;
+  /** Legacy on/off; superseded by `qualityPreset` */
   qualityTagsEnabled: boolean;
+  qualityPreset?: string;
+  furryMode?: boolean;
+  transparentBackground?: boolean;
   normalizeVibeStrength: boolean;
   normalizeArtistStrength: boolean;
   characters: Array<{
