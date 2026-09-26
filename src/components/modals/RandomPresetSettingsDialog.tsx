@@ -71,7 +71,7 @@ export default function RandomPresetSettingsDialog({ open, onOpenChange, setting
         <div className="space-y-4">
           <SettingRow label={t("style.randomVibeCount")}>
             <ModeToggle isRandom={local.vibeCount === "random"} onToggle={(r) => update({ vibeCount: r ? "random" : 2 })} />
-            {local.vibeCount !== "random" && <Input type="number" min={1} max={4} value={local.vibeCount} onChange={(e) => update({ vibeCount: clamp(Number(e.target.value), 1, 4) })} className="h-7 w-16 text-xs" />}
+            {local.vibeCount !== "random" && <Input type="number" min={0} max={4} value={local.vibeCount} onChange={(e) => update({ vibeCount: clamp(Number(e.target.value), 0, 4) })} className="h-7 w-16 text-xs" />}
           </SettingRow>
           <div className="space-y-1.5">
             <Label className="text-xs">{t("style.randomArtistTagCount")}</Label>

@@ -7,6 +7,11 @@ export function defaultWildcardToken(groupName: string): string {
   return `__${slug}__`;
 }
 
+/** Token a group uses in the prompt text when its random mode is on. */
+export function effectiveWildcardToken(group: { wildcardToken: string | null; groupName: string }): string {
+  return group.wildcardToken?.trim() || defaultWildcardToken(group.groupName);
+}
+
 export interface AssembleOptions {
   mode?: AssembleMode;
   random?: () => number;
@@ -18,10 +23,18 @@ export interface AssembleOptions {
  */
 export function formatTagWithStrength(tag: string, strength: number): string {
   if (strength === 0) return tag;
-  return `${strength}::${tag}::`;
+  return `${strength}::${padTrailingDigit(tag)}::`;
 }
 
-function pickRandomTags(
+/**
+ * Append a space when `text` ends in a digit, so the closing `::` is not read
+ * as part of a new `N::` strength block (e.g. `level 5::` → `level 5 ::`).
+ */
+export function padTrailingDigit(text: string): string {
+  return /\d$/.test(text) ? `${text} ` : text;
+}
+
+export function pickRandomTags(
   pool: SidebarPromptTag[],
   count: number,
   rng: () => number,

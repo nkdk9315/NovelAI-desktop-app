@@ -45,7 +45,7 @@ NovelAIのAPIを利用して画像生成を行うクリエイター。
 | F1.2 | プロジェクト一覧表示 |
 | F1.3 | プロジェクトを開く |
 | F1.4 | プロジェクトの削除 |
-| F1.5 | プロジェクトを開いた時、未保存画像（`is_saved = false`）のファイルとDBレコードを削除 |
+| F1.5 | プロジェクトを開いた時も未保存画像（`is_saved = false`）は削除せず履歴に残す |
 | F1.6 | 単純生成プロジェクトでは、全画像保存・個別保存・複数選択一括保存が可能 |
 | F1.7 | 右パネル履歴一覧でサムネイルにチェックボックスを表示し、複数画像を選択して一括保存できる |
 
@@ -53,7 +53,7 @@ NovelAIのAPIを利用して画像生成を行うクリエイター。
 
 - **単純生成**: 生成された画像はデフォルトで未保存状態。ユーザーが明示的に保存を選択するか、全保存を選べる。
 - **漫画（将来）**: プロジェクトに使用されない画像はプロジェクト保存時に削除。
-- **共通**: プロジェクト再オープン時、未保存画像は容量削減のため削除される。
+- **共通**: プロジェクトを閉じても未保存画像は削除されない。不要な画像は履歴から選択して削除する。
 
 ### F2: 画像生成
 
@@ -333,6 +333,26 @@ vibe_encode_cost = 2 // エンコードごと
 | F11.7 | デフォルトスケール（CFG）の設定 |
 | F11.8 | 設定はSQLiteのKey-Valueテーブルに永続化 |
 
+### F12: 画像編集・画像ツール
+
+生成済み画像 / 外部画像を入力にした Img2Img・Inpaint・Enhance・キャラクター参照・Director Tools・Upscale。
+
+| 要件ID | 説明 |
+|--------|------|
+| F12.1 | **Img2Img**: 履歴画像 / 外部画像をベースに strength（既定 0.7）・noise（既定 0）を指定して再生成。出力サイズはベース画像から 64 の倍数・上限内に自動調整（手動変更可） |
+| F12.2 | **落書き（Img2Img + ペイント）**: キャンバスエディタのペイントレイヤー（ブラシ / 消しゴム / スポイト / カラー / 不透明度）で描き込み、ベースと平坦化した画像を Img2Img に送る |
+| F12.3 | **Inpaint**: キャンバスエディタのマスクレイヤー（ブラシ / 消しゴム / 矩形 / 塗りつぶし / 反転）で再生成領域を指定。API に送る 1/8 解像度（8px グリッド）のマスクをリアルタイムにプレビュー。mask strength（既定 1）・色補正を設定可能。マスク未設定時は生成不可 |
+| F12.4 | キャンバスエディタは全画面。Undo/Redo、ショートカット（B / E / I / R / M / `[` `]` / Space パン / ホイールズーム）に対応 |
+| F12.5 | **Enhance**: 表示中画像を ×1 / ×1.5 に拡大して Img2Img（レベル 1–5 の公式プリセット strength / noise） |
+| F12.6 | **キャラクター参照**: 参照画像 + mode（character / character&style / style）・strength・fidelity を指定。V4.5 のみ対応し、Vibe とは併用不可（キャラ参照が優先） |
+| F12.7 | **Director Tools**: bg-removal / lineart / sketch / colorize / emotion / declutter / declutter-keep-bubbles。colorize は任意プロンプト + defry、emotion は感情キーワード + defry（0–5）。入力は 3,145,728px 以下。Before/After 比較スライダーで確認し、結果に続けて別ツールを適用（チェーン）できる |
+| F12.8 | **Upscale**: 2x アップスケール。入力は 1024×1024（1,048,576px）以下 |
+| F12.9 | Director Tools / Upscale の出力はプロジェクト履歴に未保存画像として追加（model 列 `augment:<tool>` / `upscale`、seed 0） |
+| F12.10 | 画像のドロップ時に用途（Img2Img / 落書き / Inpaint / キャラ参照 / Vibe）を選択するダイアログを表示。受け付けるファイルは png / jpg / jpeg / webp、10 MB 以下 |
+| F12.11 | 履歴サムネイルの右クリックメニューから各機能を起動。サムネイルには生成方法（img2img / inpaint / ツール）のバッジを表示 |
+| F12.12 | プロンプトスナップショットに action 要約（type / strength 等）とキャラ参照設定を記録。画像・マスクのバイト列は保存しない。ツール出力はプロンプトを持たないため UI 復元対象外 |
+| F12.13 | コスト予測: Img2Img / Inpaint は strength 倍、小領域 Inpaint は ~1MP 換算、キャラ参照あり / Inpaint 時は Vibe 課金なし。Director Tools / Upscale も実行前にコストを表示 |
+
 ---
 
 ## 4. UI仕様
@@ -478,7 +498,7 @@ vibe_encode_cost = 2 // エンコードごと
 ### 将来拡張性
 
 - プロジェクトタイプの追加（漫画、CG集）
-- img2img / inpaint 機能
-- Augment ツール（colorize, declutter, emotion, sketch, lineart, bg-removal）
-- Upscale（2x / 4x）
-- キャラクターリファレンス（参照画像からの生成）
+- ~~img2img / inpaint 機能~~ → F12 で実装済み
+- ~~Augment ツール（colorize, declutter, emotion, sketch, lineart, bg-removal）~~ → F12（Director Tools）で実装済み
+- Upscale（~~2x~~ 実装済み / 4x は未対応）
+- ~~キャラクターリファレンス（参照画像からの生成）~~ → F12 で実装済み

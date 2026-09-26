@@ -6,6 +6,7 @@ import type {
   CreateProjectRequest, UpdateProjectRequest, GenerateImageRequest, CostEstimateRequest,
   CreateGenreRequest, UpdateGenreRequest,
   GenerateImageResponse, PromptGroupDto,
+  AugmentImageRequest, UpscaleImageRequest, ImageToolResponse, ImageDataDto,
 } from "@/types";
 
 // ---- Re-exports from domain-specific IPC modules ----
@@ -84,6 +85,10 @@ export function saveImage(imageId: string): Promise<void> { return invoke("save_
 export function saveAllImages(projectId: string): Promise<void> { return invoke("save_all_images", { projectId }); }
 export function deleteImage(imageId: string): Promise<void> { return invoke("delete_image", { imageId }); }
 export function getProjectImages(projectId: string, savedOnly?: boolean): Promise<GeneratedImageDto[]> { return invoke("get_project_images", { projectId, savedOnly }); }
+export function augmentImage(req: AugmentImageRequest): Promise<ImageToolResponse> { return invoke("augment_image", { req }); }
+export function upscaleImage(req: UpscaleImageRequest): Promise<ImageToolResponse> { return invoke("upscale_image", { req }); }
+export function getImageData(imageId: string): Promise<ImageDataDto> { return invoke("get_image_data", { imageId }); }
+export function readImageFile(path: string): Promise<ImageDataDto> { return invoke("read_image_file", { path }); }
 export function cleanupUnsavedImages(projectId: string): Promise<void> { return invoke("cleanup_unsaved_images", { projectId }); }
 
 // ---- Tokens ----
@@ -93,8 +98,8 @@ export interface CountTokensResponse {
   maxTokens: number;
 }
 
-export function countTokens(texts: string[]): Promise<CountTokensResponse> {
-  return invoke("count_tokens", { req: { texts } });
+export function countTokens(texts: string[], model?: string): Promise<CountTokensResponse> {
+  return invoke("count_tokens", { req: { texts, model } });
 }
 
 export function getMaxPromptTokens(): Promise<number> {

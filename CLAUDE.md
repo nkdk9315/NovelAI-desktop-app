@@ -43,8 +43,8 @@ NovelAI API を利用した AI イラスト生成・管理デスクトップア�
 
 ```
 main.rs, state.rs, error.rs, db.rs
-├── commands/       # 17 モジュール
-├── services/       # 23 モジュール（テスト除く、generation_snapshot を含む）
+├── commands/       # 18 モジュール
+├── services/       # 24 モジュール（テスト除く、generation_snapshot / image_output / image_tools を含む）
 ├── repositories/   # 17 モジュール（テスト除く）
 └── models/dto.rs   # Row 構造体 + IPC 用 DTO
 ```
@@ -55,11 +55,14 @@ main.rs, state.rs, error.rs, db.rs
 main.tsx, App.tsx
 ├── lib/            # 5 IPC (ipc, ipc-assets, ipc-preset, ipc-prompt, ipc-tags) + ユーティリティ
 ├── types/          # 型定義
-├── stores/         # 12 stores（layout / theme 含む）
+├── stores/         # 15 stores（layout / theme / image-edit / char-ref / director-tools 含む）
 ├── hooks/          # use-debounce, use-autocomplete, use-cost-estimate,
-│                    # use-artist-tag-input, use-prompt-token-counts
+│                    # use-artist-tag-input, use-prompt-token-counts,
+│                    # use-generation-plan, use-run-generation, use-image-source-actions,
+│                    # use-delete-images, use-project-prompt-persistence,
+│                    # use-sidebar-style-persistence, use-token-drag, use-zoom-pan
 ├── components/     # 100+ コンポーネント (ui/, header/, left-panel/, center-panel/,
-│                    # right-panel/, modals/, shared/)
+│                    # right-panel/, modals/, shared/, canvas-editor/)
 ├── pages/          # ProjectListPage, GenerationPage
 └── i18n/           # ja.json, en.json
 ```
@@ -140,20 +143,25 @@ git submodule update --init --recursive
 
 - **ソースファイル**: `src-tauri/icons/source_icon.png`（1024x1024, RGBA, オリジナル）
 - **macOS 用ソース**: `src-tauri/icons/source_icon_filled.png`（1024x1024, RGB, 透明部分をグラデーションで埋めた版）
+- **macOS アイコン**: `src-tauri/icons/source_icon_macos.png`（1024x1024, RGBA）。Apple のアイコングリッド（824px の本体・連続曲線の角丸 r≈185・ドロップシャドウ）で squircle を焼き込んだ版。`icon.icns` はこれから生成する
 - **バンドル設定**: `src-tauri/tauri.conf.json` の `bundle.icon` で指定
-- **注意**: `cargo tauri dev` は `.app` バンドルを生成しないため、macOS の squircle マスクは適用されない。アイコン表示の確認は `cargo tauri build --debug` で `.app` を生成して行う
+- **注意**: `cargo tauri dev` は `icon.icns` をマスクなしでそのまま Dock に表示する。形を焼き込んでいない（正方形の）icns だと Dock で他のアプリと形が揃わないので、必ず `source_icon_macos.png` から生成する
+- **注意**: アイコンはコンパイル時に `generate_context!` で埋め込まれ、Cargo は icns の変更を検知しない。アイコンを差し替えたら `touch src-tauri/src/lib.rs` で再ビルドさせる（`cargo tauri dev` を再起動するだけでは古いバイナリのまま）
 
 ### macOS アイコン再生成
 
 macOS ネイティブツール（`sips` + `iconutil`）を使用:
 
 ```bash
-# source_icon_filled.png から icon.icns を再生成
+# source_icon_filled.png から squircle 版を作成（AppKit / Core Animation を使う Swift スクリプト）
+swift scripts/mask-macos-icon.swift src-tauri/icons/source_icon_filled.png src-tauri/icons/source_icon_macos.png
+
+# source_icon_macos.png から icon.icns を再生成
 ICONSET=src-tauri/icons/icon.iconset
 mkdir -p "$ICONSET"
 for size in 16,16x16 32,16x16@2x 32,32x32 64,32x32@2x 128,128x128 256,128x128@2x 256,256x256 512,256x256@2x 512,512x512 1024,512x512@2x; do
   IFS=',' read -r px name <<< "$size"
-  sips -z $px $px src-tauri/icons/source_icon_filled.png --out "$ICONSET/icon_${name}.png"
+  sips -z $px $px src-tauri/icons/source_icon_macos.png --out "$ICONSET/icon_${name}.png"
 done
 iconutil -c icns "$ICONSET" -o src-tauri/icons/icon.icns
 rm -rf "$ICONSET"

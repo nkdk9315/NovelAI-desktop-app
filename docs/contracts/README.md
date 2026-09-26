@@ -24,3 +24,5 @@
 | 2026-04-16 | PR-E: negative_prompt per entry — migration 021、TagInput/PromptGroupTagRow/Dto更新、SidebarPromptTag.negativePrompt、TargetPromptState.negativeOverride、assembleNegativeFromGroups追加 |
 | 2026-04-16 | contracts.md を論理セクション別ファイルに分割 |
 | 2026-04-17 | Token limit validation — `tokens` service/command 追加、`CountTokensRequest`/`CountTokensResponse` DTO、`usePromptTokenCounts` フック、`TokenCounter` コンポーネント、`ActionBar` で overflow 時 Generate ボタン無効化 |
+| 2026-09-25 | V5 対応 — novelai-api 更新、V5 モデル追加、`AnlasBalanceDto.opusUsage`、`CostEstimateRequest.model/opusUsageExhausted`、`CountTokensRequest.model`（Qwen）、`GenerateImageRequest.transparentBackground`、モデル別キャラ上限（V5: 32）、V5 で Vibe 無効 |
+| 2026-09-26 | 画像編集・画像ツール — `GenerateImageRequest.characterReference`（`CharacterReferenceRequest`）、`ImageSourceRequest` / `AugmentImageRequest` / `UpscaleImageRequest` / `ImageToolResponse` / `ImageDataDto`、`image_output` / `image_tools` service、`commands/image_tools.rs`（augment_image / upscale_image / get_image_data / read_image_file）、prompt_snapshot に `action` / `character_reference` 要約、`CostEstimateRequest.mode/strength`、stores 15・新規 hooks / lib |

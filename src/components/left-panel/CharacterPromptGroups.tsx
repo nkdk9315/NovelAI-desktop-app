@@ -1,16 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, RotateCcw } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PromptTextarea from "@/components/shared/PromptTextarea";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { usePromptStore } from "@/stores/prompt-store";
 import type { SidebarPromptGroup } from "@/stores/sidebar-prompt-store";
 import type { PromptGroupDto, TagInput } from "@/types";
-import { assembleFullPrompt } from "@/lib/prompt-assembly";
-import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
-import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store";
-import { usePresetStore } from "@/stores/preset-store";
+import { assembleFullPrompt, effectiveWildcardToken } from "@/lib/prompt-assembly";
 import { toastError } from "@/lib/toast-error";
 import * as ipc from "@/lib/ipc";
 import PromptGroupEditModal from "@/components/modals/prompt-group/PromptGroupEditModal";
@@ -28,7 +25,7 @@ interface CharacterPromptGroupsProps {
 }
 
 export default function CharacterPromptGroups({
-  targetId, onOpenGroupBrowser, textareaRows = 2, placeholder,
+  targetId, onOpenGroupBrowser, textareaRows = 4, placeholder,
 }: CharacterPromptGroupsProps) {
   const { t } = useTranslation();
   const groups = useSidebarPromptStore((s) => s.targets[targetId]?.groups ?? EMPTY_GROUPS);
@@ -44,7 +41,6 @@ export default function CharacterPromptGroups({
   const setGroupRandomSource = useSidebarPromptStore((s) => s.setGroupRandomSource);
   const setGroupWildcardToken = useSidebarPromptStore((s) => s.setGroupWildcardToken);
   const setPromptOverride = useSidebarPromptStore((s) => s.setPromptOverride);
-  const clearPromptOverride = useSidebarPromptStore((s) => s.clearPromptOverride);
   const hasTarget = useSidebarPromptStore((s) => targetId in s.targets);
   const genres = usePromptStore((s) => s.genres);
   const loadGenres = usePromptStore((s) => s.loadGenres);
@@ -83,33 +79,19 @@ export default function CharacterPromptGroups({
     } catch (e) { toastError(String(e)); }
   };
 
-  const presetInstances = useSidebarPresetGroupStore((s) => s.instances);
-  const allPresets = usePresetStore((s) => s.presets);
-  const assembled = useMemo(() => {
-    const base = assembleFullPrompt("", groups);
-    const contrib = getPresetContributionsForCharacter(targetId, presetInstances, allPresets);
-    return appendContributions(base, contrib.positive);
-  }, [groups, targetId, presetInstances, allPresets]);
-  const highlightTokens = useMemo(() => groups.map((g) => g.wildcardToken).filter((tok): tok is string => !!tok && tok.length > 0), [groups]);
+  const highlightTokens = useMemo(
+    () => groups.filter((g) => g.randomMode).map(effectiveWildcardToken),
+    [groups],
+  );
 
   if (!hasTarget) return null;
 
-  const displayValue = promptOverride ?? assembled;
-  const isDirty = promptOverride != null;
-  const insertWildcardToken = (token: string) => {
-    const current = promptOverride ?? assembled;
-    if (current.includes(token)) return;
-    setPromptOverride(targetId, current + token);
-  };
+  // Legacy targets (restored from old snapshots) have no text yet: show the assembled prompt.
+  const displayValue = promptOverride ?? assembleFullPrompt("", groups);
 
   return (
     <div className="space-y-2">
-      <div className="relative">
-        <PromptTextarea value={displayValue} onChange={(v) => setPromptOverride(targetId, v)} placeholder={placeholder ?? t("character.freeTextPlaceholder")} rows={textareaRows} highlightTokens={highlightTokens} />
-        {isDirty && (
-          <button type="button" title={t("prompt.clearOverride")} onClick={() => clearPromptOverride(targetId)} className="absolute top-1 right-1 rounded p-0.5 text-primary hover:bg-accent"><RotateCcw className="h-3 w-3" /></button>
-        )}
-      </div>
+      <PromptTextarea value={displayValue} onChange={(v) => setPromptOverride(targetId, v)} placeholder={placeholder ?? t("character.freeTextPlaceholder")} rows={textareaRows} highlightTokens={highlightTokens} expandOnFocus />
 
       {groups.map((group) => (
         <GroupItem key={group.groupId} group={group}
@@ -123,7 +105,6 @@ export default function CharacterPromptGroups({
           onSetRandomCount={(n) => setGroupRandomCount(targetId, group.groupId, n)}
           onSetRandomSource={(src) => setGroupRandomSource(targetId, group.groupId, src)}
           onSetWildcardToken={(tok) => setGroupWildcardToken(targetId, group.groupId, tok)}
-          onInsertWildcard={insertWildcardToken}
           onEditGroup={() => openEditGroup(group.groupId)}
           onOpenSystemSettings={() => setEditingSystemGroup({ id: group.groupId, name: group.groupName })}
           onEditEntry={(tag) => setEditingEntry({ groupId: group.groupId, tagId: tag.tagId, name: tag.name, tag: tag.tag, negativePrompt: tag.negativePrompt || "" })} />

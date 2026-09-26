@@ -85,6 +85,7 @@ pub async fn generate_image(
     req: GenerateImageRequest,
 ) -> Result<GenerateImageResponse, String>;
 // → generation_service::generate_image(&state.db, &state.api_client, req).await
+// req.action: Generate | Img2Img | Infill、req.characterReference: キャラ参照（V4.5 のみ、Vibe と併用不可）
 
 #[tauri::command]
 pub fn estimate_cost(req: CostEstimateRequest) -> Result<CostResultDto, String>;
@@ -373,3 +374,34 @@ pub fn get_max_prompt_tokens() -> usize;
 フロントエンドは `count_tokens` に `[main_positive, char1_positive, …, main_negative, char1_negative, …]`
 の形で一括送信し、返ってきた `counts` を前半（ポジティブ）と後半（ネガティブ）で合計して
 それぞれ `max_tokens` と比較する。`AppState` を参照しないため並行実行可能。
+
+## 4.16 commands/image_tools.rs
+
+```rust
+#[tauri::command]
+pub async fn augment_image(
+    state: State<'_, AppState>,
+    req: AugmentImageRequest,
+) -> Result<ImageToolResponse, String>;
+// → image_tools_service::augment_image(&state.db, &state.api_client, req).await
+// Director Tools（colorize / declutter / declutter-keep-bubbles / emotion / sketch / lineart / bg-removal）
+
+#[tauri::command]
+pub async fn upscale_image(
+    state: State<'_, AppState>,
+    req: UpscaleImageRequest,
+) -> Result<ImageToolResponse, String>;
+// → image_tools_service::upscale_image(&state.db, &state.api_client, req).await（2x）
+
+#[tauri::command]
+pub fn get_image_data(state: State<'_, AppState>, image_id: String) -> Result<ImageDataDto, String>;
+// → image_output::read_history_image → image_output::to_image_data
+// 履歴画像のバイト列（キャンバスエディタ / キャラ参照 / Director Tools 入力用）
+
+#[tauri::command]
+pub fn read_image_file(path: String) -> Result<ImageDataDto, String>;
+// → image_output::read_image_file → image_output::to_image_data
+// ユーザーが D&D / ファイルダイアログで選んだ画像（png/jpg/jpeg/webp、10 MB 以下）
+```
+
+augment / upscale の出力は `generated_images` に `is_saved = 0` で追加され、レスポンスの `id` で履歴に反映される。

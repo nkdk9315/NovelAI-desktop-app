@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Search, Sparkles, Star } from "lucide-react";
+import { Cpu, Plus, Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -85,7 +85,7 @@ export default function VibeModalGrid({
           <Plus className="mr-1 h-3 w-3" />{t("vibe.import")}
         </Button>
         <Button variant="outline" size="sm" className="shrink-0 whitespace-nowrap" onClick={onEncodeClick}>
-          <Sparkles className="mr-1 h-3 w-3" />{t("vibe.encodeButton")}
+          <Cpu className="mr-1 h-3 w-3" />{t("vibe.encodeButton")}
         </Button>
       </div>
       <div className="flex items-center gap-2 shrink-0">

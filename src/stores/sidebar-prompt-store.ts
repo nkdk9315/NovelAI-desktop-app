@@ -11,6 +11,7 @@ import {
   updateGroupInTarget,
   migrateTargets,
 } from "./sidebar-prompt-utils";
+import { newTarget, updateTargetSynced } from "./sidebar-prompt-text-sync";
 
 export type { SidebarPromptTag, SidebarPromptGroup, TargetPromptState };
 
@@ -50,7 +51,7 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
     set((state) => {
       if (state.targets[targetId]) return state;
       const groups = defaultGroups ? defaultGroups.map(groupDtoToSidebar) : [];
-      return { targets: { ...state.targets, [targetId]: { groups, freeText: "", promptOverride: null, negativeOverride: null } } };
+      return { targets: { ...state.targets, [targetId]: newTarget(groups) } };
     }),
 
   removeTarget: (targetId) =>
@@ -62,7 +63,7 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
 
   addGroupToTarget: (targetId, group) =>
     set((state) =>
-      updateTarget(state, targetId, (target) => {
+      updateTargetSynced(state, targetId, (target) => {
         if (target.groups.some((g) => g.groupId === group.id)) return target;
         return { ...target, groups: [...target.groups, groupDtoToSidebar(group)] };
       }),
@@ -70,21 +71,14 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
 
   removeGroupFromTarget: (targetId, groupId) =>
     set((state) =>
-      updateTarget(state, targetId, (target) => {
-        const removed = target.groups.find((g) => g.groupId === groupId);
-        const token = removed?.wildcardToken;
-        let nextOverride = target.promptOverride;
-        if (token && nextOverride != null && nextOverride.includes(token)) {
-          const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-          nextOverride = nextOverride.replace(new RegExp(escaped, "g"), "");
-        }
-        return { ...target, groups: target.groups.filter((g) => g.groupId !== groupId), promptOverride: nextOverride };
-      }),
+      updateTargetSynced(state, targetId, (target) => ({
+        ...target, groups: target.groups.filter((g) => g.groupId !== groupId),
+      })),
     ),
 
   toggleTag: (targetId, groupId, tagId) =>
     set((state) =>
-      updateTarget(state, targetId, (target) =>
+      updateTargetSynced(state, targetId, (target) =>
         updateGroupInTarget(target, groupId, (group) => ({
           ...group,
           tags: group.tags.map((t) => {
@@ -98,7 +92,7 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
 
   setTagStrength: (targetId, groupId, tagId, strength) =>
     set((state) =>
-      updateTarget(state, targetId, (target) =>
+      updateTargetSynced(state, targetId, (target) =>
         updateGroupInTarget(target, groupId, (group) => ({
           ...group,
           tags: group.tags.map((t) => (t.tagId === tagId ? { ...t, strength } : t)),
@@ -108,7 +102,7 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
 
   toggleAllTags: (targetId, groupId, enabled) =>
     set((state) =>
-      updateTarget(state, targetId, (target) =>
+      updateTargetSynced(state, targetId, (target) =>
         updateGroupInTarget(target, groupId, (group) => ({
           ...group, tags: group.tags.map((t) => ({ ...t, enabled })),
         })),
@@ -117,21 +111,21 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
 
   toggleGroupExpanded: (targetId, groupId) =>
     set((state) =>
-      updateTarget(state, targetId, (target) =>
+      updateTargetSynced(state, targetId, (target) =>
         updateGroupInTarget(target, groupId, (group) => ({ ...group, expanded: !group.expanded })),
       ),
     ),
 
   setGroupDefaultStrength: (targetId, groupId, strength) =>
     set((state) =>
-      updateTarget(state, targetId, (target) =>
+      updateTargetSynced(state, targetId, (target) =>
         updateGroupInTarget(target, groupId, (group) => ({ ...group, defaultStrength: strength })),
       ),
     ),
 
   toggleGroupEnabled: (targetId, groupId) =>
     set((state) =>
-      updateTarget(state, targetId, (target) =>
+      updateTargetSynced(state, targetId, (target) =>
         updateGroupInTarget(target, groupId, (group) => {
           const anyEnabled = group.tags.some((t) => t.enabled);
           if (anyEnabled) {
@@ -149,30 +143,30 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
     ),
 
   setGroupRandomMode: (targetId, groupId, enabled) => {
-    set((state) => updateTarget(state, targetId, (target) => updateGroupInTarget(target, groupId, (group) => ({ ...group, randomMode: enabled }))));
+    set((state) => updateTargetSynced(state, targetId, (target) => updateGroupInTarget(target, groupId, (group) => ({ ...group, randomMode: enabled }))));
     ipc.updatePromptGroup({ id: groupId, randomMode: enabled }).catch(() => {});
   },
 
   setGroupRandomCount: (targetId, groupId, count) => {
     const next = Math.max(1, Math.floor(count));
-    set((state) => updateTarget(state, targetId, (target) => updateGroupInTarget(target, groupId, (group) => ({ ...group, randomCount: next }))));
+    set((state) => updateTargetSynced(state, targetId, (target) => updateGroupInTarget(target, groupId, (group) => ({ ...group, randomCount: next }))));
     ipc.updatePromptGroup({ id: groupId, randomCount: next }).catch(() => {});
   },
 
   setGroupRandomSource: (targetId, groupId, source) => {
-    set((state) => updateTarget(state, targetId, (target) => updateGroupInTarget(target, groupId, (group) => ({ ...group, randomSource: source }))));
+    set((state) => updateTargetSynced(state, targetId, (target) => updateGroupInTarget(target, groupId, (group) => ({ ...group, randomSource: source }))));
     ipc.updatePromptGroup({ id: groupId, randomSource: source }).catch(() => {});
   },
 
   setGroupWildcardToken: (targetId, groupId, token) => {
     const normalized = token && token.trim().length > 0 ? token.trim() : null;
-    set((state) => updateTarget(state, targetId, (target) => updateGroupInTarget(target, groupId, (group) => ({ ...group, wildcardToken: normalized }))));
+    set((state) => updateTargetSynced(state, targetId, (target) => updateGroupInTarget(target, groupId, (group) => ({ ...group, wildcardToken: normalized }))));
     ipc.updatePromptGroup({ id: groupId, wildcardToken: normalized }).catch(() => {});
   },
 
   addSystemTag: (targetId, groupId, tag) =>
     set((state) =>
-      updateTarget(state, targetId, (target) =>
+      updateTargetSynced(state, targetId, (target) =>
         updateGroupInTarget(target, groupId, (group) => {
           if (group.tags.some((t) => t.tag === tag.name)) return group;
           const newTag: SidebarPromptTag = {
@@ -187,7 +181,7 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
 
   removeSystemTag: (targetId, groupId, tagId) =>
     set((state) =>
-      updateTarget(state, targetId, (target) =>
+      updateTargetSynced(state, targetId, (target) =>
         updateGroupInTarget(target, groupId, (group) => ({ ...group, tags: group.tags.filter((t) => t.tagId !== tagId) })),
       ),
     ),

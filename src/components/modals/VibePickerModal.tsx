@@ -126,9 +126,9 @@ export default function VibePickerModal({
                     onClick={() => toggle(vibe.id)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(vibe.id); } }}
                   >
-                    <div className="aspect-square rounded bg-muted mb-1 overflow-hidden flex items-center justify-center">
+                    <div className="relative aspect-square rounded bg-muted mb-1 overflow-hidden flex items-center justify-center">
                       {vibe.thumbnailPath ? (
-                        <img src={`asset://localhost/${vibe.thumbnailPath}`} alt="" className="h-full w-full object-contain" />
+                        <img src={`asset://localhost/${vibe.thumbnailPath}`} alt="" className="absolute inset-0 h-full w-full object-contain" />
                       ) : (
                         <ImageIcon className="h-6 w-6 text-muted-foreground" />
                       )}

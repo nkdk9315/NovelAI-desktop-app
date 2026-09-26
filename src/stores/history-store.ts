@@ -11,6 +11,8 @@ interface HistoryState {
   saveAllImages: (projectId: string) => Promise<void>;
   saveSelectedImages: () => Promise<void>;
   deleteImage: (imageId: string) => Promise<void>;
+  /** Delete several images. Resolves to the ids that were actually deleted. */
+  deleteImages: (imageIds: string[]) => Promise<string[]>;
   toggleImageSelection: (imageId: string) => void;
   clearSelection: () => void;
 }
@@ -57,6 +59,15 @@ export const useHistoryStore = create<HistoryState>()((set, get) => ({
       images: state.images.filter((img) => img.id !== imageId),
       selectedImageIds: state.selectedImageIds.filter((id) => id !== imageId),
     }));
+  },
+  deleteImages: async (imageIds) => {
+    const results = await Promise.allSettled(imageIds.map((id) => ipc.deleteImage(id)));
+    const deleted = imageIds.filter((_, i) => results[i].status === "fulfilled");
+    set((state) => ({
+      images: state.images.filter((img) => !deleted.includes(img.id)),
+      selectedImageIds: state.selectedImageIds.filter((id) => !deleted.includes(id)),
+    }));
+    return deleted;
   },
   toggleImageSelection: (imageId) => {
     set((state) => ({

@@ -8,6 +8,8 @@ interface GenerationState {
   error: string | null;
   generate: (req: GenerateImageRequest) => Promise<void>;
   selectImage: (img: { id: string; seed: number; filePath: string }) => void;
+  clearResult: () => void;
+  clearError: () => void;
 }
 
 export const useGenerationStore = create<GenerationState>()((set) => ({
@@ -23,6 +25,8 @@ export const useGenerationStore = create<GenerationState>()((set) => ({
       set({ error: String(e), isGenerating: false });
     }
   },
+  clearResult: () => set({ lastResult: null, error: null }),
+  clearError: () => set({ error: null }),
   selectImage: (img) => {
     set({
       lastResult: {

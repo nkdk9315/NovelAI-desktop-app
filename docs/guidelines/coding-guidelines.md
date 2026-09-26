@@ -118,7 +118,7 @@ Pages → Components → Hooks → Stores → lib/ipc → types
 - 外部プロセス実行禁止
 - Tauri CSP 設定を遵守:
   ```
-  default-src 'self'; img-src 'self' asset: https://image.novelai.net;
+  default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob: https://image.novelai.net;
   style-src 'self' 'unsafe-inline'; script-src 'self'
   ```
 

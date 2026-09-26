@@ -4,7 +4,7 @@ use novelai_api::client::NovelAIClient;
 use rusqlite::Connection;
 
 use crate::error::AppError;
-use crate::models::dto::AnlasBalanceDto;
+use crate::models::dto::{AnlasBalanceDto, OpusUsageDto};
 
 pub fn get_all_settings(conn: &Connection) -> Result<HashMap<String, String>, AppError> {
     crate::repositories::settings::get_all(conn)
@@ -38,9 +38,20 @@ pub async fn get_anlas_balance(
         .as_ref()
         .ok_or_else(|| AppError::NotInitialized("API client not initialized".to_string()))?;
     let balance = client.get_anlas_balance().await?;
+    let opus_usage = balance.usage.as_ref().map(|u| {
+        let s = novelai_api::anlas::summarize_opus_usage(u);
+        OpusUsageDto {
+            remaining_percent: s.remaining_percent,
+            refill_percent_per_day: s.refill_percent_per_day,
+            estimated_images_remaining: s.estimated_images_remaining,
+            is_low: s.is_low,
+            is_exhausted: s.is_exhausted,
+        }
+    });
     Ok(AnlasBalanceDto {
         anlas: balance.total,
         tier: balance.tier,
+        opus_usage,
     })
 }
 

@@ -93,14 +93,25 @@
     "sizeCustom": "Custom",
     "sizeCustomAction": "Enter size…",
     "sizeErrorTotal": "Total pixels exceed the limit ({{max}})",
-    "sizeHint": "64–2048 (multiple of 64)"
+    "sizeHint": "64–2048 (multiple of 64)",
+    "transparentBackground": "Transparent background (V5)",
+    "noiseScheduleV5Fixed": "Fixed to karras for V5",
+    "opusUsage": "V5 free {{percent}}%",
+    "opusUsageTooltip": "V5 Opus free usage: ~{{images}} images left / refills {{refill}}%/day",
+    "anlasRefresh": "Refresh Anlas and Opus usage",
+    "anlasRefreshError": "Failed to fetch Anlas balance",
+    "previewEmpty": "No image selected",
+    "previewEmptyHint": "Generate one, or pick an image from the history on the right",
+    "generating": "Generating…",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomFit": "Fit to view (or double-click)"
   },
   "prompt": {
-    "clearOverride": "Clear override",
     "sendPreview": "Send Preview"
   },
   "normalize": {
-    "balanceStrength": "Balance Strength",
+    "balanceStrength": "Auto-balance",
     "vibe": "Vibe",
     "artist": "Artist"
   },
@@ -130,10 +141,22 @@
     "clearSelection": "Clear",
     "saveSelectedSuccess": "Saved {{count}} images",
     "saveSelectedError": "Save failed",
-    "ctrlClickToRestore": "Ctrl/Cmd + click to restore prompts and vibes",
+    "ctrlClickToRestore": "Ctrl/Cmd + click to restore prompts and vibes / right-click for Img2Img, Inpaint and tools",
     "restored": "Restored prompts and vibes from this image",
     "restoredPartial": "Only basic parameters restored (older image)",
-    "restoreFailed": "Could not restore from this image"
+    "restoreFailed": "Could not restore from this image",
+    "deleteSelected": "Delete selected",
+    "deleteSelectedCount": "Delete ({{count}})",
+    "deleteConfirmTitle": "Delete images",
+    "deleteConfirm": "Delete {{count}} image(s)? This cannot be undone.",
+    "deleteSuccess": "Deleted {{count}} image(s)",
+    "deleteError": "Failed to delete {{count}} image(s)",
+    "badge": {
+      "img2img": "i2i",
+      "infill": "Inpaint",
+      "upscale": "×2"
+    },
+    "restoreMenu": "Restore prompt & settings"
   },
   "character": {
     "add": "Add Character",
@@ -197,7 +220,8 @@
     "download": "Download",
     "selectModel": "Model",
     "modelMismatch": "Model mismatch",
-    "allModels": "All Models"
+    "allModels": "All Models",
+    "unsupportedModel": "V5 models do not support Vibe Transfer (vibes are ignored when generating)"
   },
   "style": {
     "title": "Artist / Style",
@@ -252,7 +276,28 @@
     "randomMin": "Min",
     "randomMax": "Max",
     "directTagPlaceholder": "Search artist name...",
-    "directTagStrength": "Strength"
+    "directTagStrength": "Strength",
+    "strengthEditHint": "Click to type a strength (0.01–10)",
+    "strengthTotal": "Total {{total}}",
+    "balance": "Sum to 1",
+    "balanceHint": "Scale strengths proportionally so they sum to 1.00",
+    "switchModelTitle": "Switch model?",
+    "switchModelDescription": "\"{{name}}\" was made for {{model}}. Switch the current model ({{current}}) to {{model}} and use it?",
+    "switchModelConfirm": "Switch model and use",
+    "modelSwitched": "Switched model to {{model}}",
+    "favorites": "Favorite artists",
+    "favoritesAddAll": "Add all",
+    "favoritesEmpty": "None yet. Press ☆ on an added tag to save it here.",
+    "favoriteRemove": "Remove from favorites",
+    "favoriteToggle": "Add to / remove from favorites",
+    "artistToggle": "Click to turn on / off",
+    "favoriteApply": "Click to add to the sidebar",
+    "favoriteUnapply": "Added (click to remove from the sidebar; stays a favorite)",
+    "presetAdded": "Added \"{{name}}\"",
+    "presetRemoved": "Removed \"{{name}}\"",
+    "presetAddToggle": "Add",
+    "presetAddedBadge": "Added",
+    "thumbnailZoom": "Click to enlarge"
   },
   "tagDb": {
     "title": "Tag Database",
@@ -341,8 +386,7 @@
     },
     "wildcard": {
       "token": "Wildcard",
-      "insert": "Insert",
-      "hint": "Click Insert to add the token to the prompt, then move it to the desired position. Random picks are substituted at this spot."
+      "hint": "Turning random on puts this wildcard into the prompt automatically. Drag it to any position; random picks are substituted there at generation time."
     }
   },
   "systemGroupSettings": {
@@ -433,5 +477,200 @@
       "resetToDefault": "Reset to default",
       "customBadge": "custom strength"
     }
+  },
+  "imageEdit": {
+    "generateImg2Img": "Img2Img",
+    "generateInpaint": "Inpaint",
+    "inpaintNeedsMask": "Paint a mask over the area to regenerate",
+    "baseSetImg2Img": "Set as base image (Img2Img)",
+    "baseSetInpaint": "Set as base image (Inpaint)",
+    "loadFailed": "Could not load the image: {{error}}",
+    "mode": {
+      "img2img": "Img2Img",
+      "inpaint": "Inpaint"
+    },
+    "enabled": "Use base image",
+    "outputSize": "Output {{w}}×{{h}}",
+    "outputSizeHint": "Generated at the base image's size (snapped to multiples of 64 within the limits)",
+    "openEditor": "Click to open the editor",
+    "editPaint": "Sketch",
+    "editMask": "Edit mask",
+    "replaceWithCurrent": "Replace with the shown image",
+    "openFile": "Open file",
+    "clearBase": "Remove base image",
+    "maskCoverage": "Regenerates {{percent}}% of the image",
+    "inpaintStrength": "Strength",
+    "strength": "Strength",
+    "noise": "Noise",
+    "colorCorrect": "Color correct",
+    "colorCorrectHint": "Match the colors of the regenerated area to its surroundings",
+    "level": {
+      "low": "subtle",
+      "mid": "medium",
+      "high": "strong"
+    },
+    "img2imgHelp": "Low strength stays close to the image, high strength follows the prompt. Sketch on it to guide shapes and colors.",
+    "inpaintHelp": "Only the masked area is redrawn from the prompt. Combine with a sketch to regenerate from what you drew.",
+    "editorTitle": "Edit image",
+    "layer": {
+      "paint": "Sketch",
+      "paintHint": "Guide Img2Img with strokes",
+      "mask": "Mask",
+      "maskHint": "Area Inpaint redraws"
+    },
+    "sizeInfo": "Source {{w}}×{{h}} → output {{tw}}×{{th}}",
+    "applyImg2Img": "Use for Img2Img",
+    "applyInpaint": "Use for Inpaint",
+    "tools": {
+      "brush": "Brush (B)",
+      "maskBrush": "Mask brush (B)",
+      "eraser": "Eraser (E / Alt+drag)",
+      "eyedropper": "Eyedropper (I)",
+      "rect": "Rectangle (R / Alt to remove)"
+    },
+    "brushSize": "Size",
+    "opacity": "Opacity",
+    "customColor": "Pick a color",
+    "fillMask": "Mask everything",
+    "invertMask": "Invert mask",
+    "showGrid": "Show the mask actually sent (8px cells)",
+    "coverage": "Regenerates {{percent}}%",
+    "coverageHint": "The API receives the mask in 8px cells",
+    "undo": "Undo (⌘Z)",
+    "redo": "Redo (⇧⌘Z)",
+    "clearPaint": "Clear sketch",
+    "clearMask": "Clear mask",
+    "shortcutsPaint": "B brush / E eraser / I eyedropper / [ ] size / M mask / Space+drag to pan / wheel to zoom",
+    "shortcutsMask": "B brush / E eraser / R rectangle / Alt removes / [ ] size / M sketch / Space+drag to pan / wheel to zoom",
+    "actions": {
+      "img2img": "Img2Img",
+      "img2imgHint": "Use this image as the Img2Img base",
+      "paint": "Sketch",
+      "paintHint": "Sketch on this image, then Img2Img",
+      "inpaint": "Inpaint",
+      "inpaintHint": "Paint a mask and redraw part of the image"
+    }
+  },
+  "enhance": {
+    "title": "Enhance",
+    "short": "Enhance",
+    "description": "Upscales the shown image and redraws it with Img2Img for more detail, using the current prompt and settings.",
+    "magnitude": "Scale",
+    "level": "Strength",
+    "levelDetail": "strength {{strength}} / noise {{noise}}",
+    "subtle": "Faithful",
+    "strong": "Redraw more",
+    "size": "{{w}}×{{h}} → {{tw}}×{{th}}",
+    "run": "Enhance"
+  },
+  "tools": {
+    "title": "Director Tools",
+    "short": "Tools",
+    "description": "Process the shown image. Results are added to the history.",
+    "run": "Run {{tool}}",
+    "continue": "Keep editing the result",
+    "showResult": "Show in preview",
+    "failed": "The tool failed: {{error}}",
+    "tooLarge": "Too large",
+    "compare": "Comparison slider",
+    "before": "Before",
+    "after": "After",
+    "names": {
+      "bgRemoval": "Remove background",
+      "lineart": "Line art",
+      "sketch": "Sketch",
+      "colorize": "Colorize",
+      "emotion": "Emotion",
+      "declutter": "Declutter",
+      "declutterKeepBubbles": "Declutter (keep bubbles)",
+      "upscale": "Upscale ×2"
+    },
+    "descriptions": {
+      "bgRemoval": "Makes the background transparent (billed even on Opus)",
+      "lineart": "Extracts the line art",
+      "sketch": "Turns the image into a pencil sketch",
+      "colorize": "Colors line art or sketches",
+      "emotion": "Changes the character's expression",
+      "declutter": "Removes text, effects and speech bubbles",
+      "declutterKeepBubbles": "Removes text and effects but keeps speech bubbles",
+      "upscale": "Doubles the resolution (inputs up to 1024×1024)"
+    },
+    "colorizePrompt": "Color hints (optional)",
+    "colorizePlaceholder": "e.g. blue hair, red dress",
+    "defry": "Keep original",
+    "defryLevel": {
+      "0": "0 (strongest change)",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5 (closest to original)"
+    },
+    "defryStrong": "Change more",
+    "defryWeak": "Stay close",
+    "emotions": {
+      "neutral": "Neutral",
+      "happy": "Happy",
+      "sad": "Sad",
+      "angry": "Angry",
+      "scared": "Scared",
+      "surprised": "Surprised",
+      "tired": "Tired",
+      "excited": "Excited",
+      "nervous": "Nervous",
+      "thinking": "Thinking",
+      "confused": "Confused",
+      "shy": "Shy",
+      "disgusted": "Disgusted",
+      "smug": "Smug",
+      "bored": "Bored",
+      "laughing": "Laughing",
+      "irritated": "Irritated",
+      "aroused": "Aroused",
+      "embarrassed": "Embarrassed",
+      "love": "Love",
+      "worried": "Worried",
+      "determined": "Determined",
+      "hurt": "Hurt",
+      "playful": "Playful"
+    },
+    "upscaleShort": "Upscale"
+  },
+  "charRef": {
+    "title": "Character Reference",
+    "enabled": "Use character reference",
+    "unsupported": "Character Reference only works with V4.5 models; it is not sent with the current model.",
+    "pickFile": "Choose image",
+    "useCurrent": "Shown image",
+    "useThis": "Use as character reference",
+    "set": "Set as character reference",
+    "modes": {
+      "characterAndStyle": "Character + style",
+      "characterAndStyleHint": "Reference both the character and the art style",
+      "character": "Character",
+      "characterHint": "Reference only the character's appearance",
+      "style": "Style",
+      "styleHint": "Reference only the art style"
+    },
+    "strength": "Strength",
+    "strengthHint": "How strongly the reference is applied",
+    "fidelity": "Fidelity",
+    "fidelityHint": "How closely details of the reference are followed",
+    "vibesDisabled": "Vibes are not sent while it is on.",
+    "vibesIgnored": "Character Reference is on, so vibes are not sent",
+    "short": "Char ref"
+  },
+  "imageDrop": {
+    "title": "How should this image be used?",
+    "img2img": "Base image (Img2Img)",
+    "img2imgHint": "Redraw based on this image",
+    "paint": "Sketch, then Img2Img",
+    "paintHint": "Draw on it in the editor, then redraw",
+    "inpaint": "Redraw part of it (Inpaint)",
+    "inpaintHint": "Regenerate only the masked area",
+    "charRef": "Character reference",
+    "charRefHint": "Reference the character or art style (V4.5)",
+    "vibe": "Encode as a vibe",
+    "vibeHint": "Import the mood for Vibe Transfer (V4 / V4.5)"
   }
 }

@@ -7,7 +7,15 @@ import RightPanel from "@/components/right-panel/RightPanel";
 import ResizeHandle from "@/components/shared/ResizeHandle";
 import VibeImportDialog from "@/components/modals/VibeImportDialog";
 import VibeEncodeDialog from "@/components/modals/VibeEncodeDialog";
+import ImageDropChoiceDialog from "@/components/modals/ImageDropChoiceDialog";
+import DirectorToolsDialog from "@/components/modals/director-tools/DirectorToolsDialog";
+import CanvasEditorDialog from "@/components/canvas-editor/CanvasEditorDialog";
 import { useLayoutStore } from "@/stores/layout-store";
+import { useGenerationStore } from "@/stores/generation-store";
+import { useHistoryStore } from "@/stores/history-store";
+import { useDirectorToolsStore } from "@/stores/director-tools-store";
+import { useProjectStore } from "@/stores/project-store";
+import { useProjectPromptPersistence } from "@/hooks/use-project-prompt-persistence";
 
 const VIBE_EXTENSIONS = [".naiv4vibe"];
 const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
@@ -21,10 +29,22 @@ export default function GenerationPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [importFilePath, setImportFilePath] = useState<string | null>(null);
   const [encodeImagePath, setEncodeImagePath] = useState<string | null>(null);
+  const [droppedImagePath, setDroppedImagePath] = useState<string | null>(null);
   const leftSidebarWidth = useLayoutStore((s) => s.leftSidebarWidth);
   const rightSidebarWidth = useLayoutStore((s) => s.rightSidebarWidth);
   const setLeftSidebarWidth = useLayoutStore((s) => s.setLeftSidebarWidth);
   const setRightSidebarWidth = useLayoutStore((s) => s.setRightSidebarWidth);
+
+  const projectId = useProjectStore((s) => s.currentProject?.id ?? null);
+  useProjectPromptPersistence(projectId);
+
+  // The viewed image and history selection belong to this project; drop them
+  // on leave so the next project doesn't show (or delete) a stale image.
+  useEffect(() => () => {
+    useGenerationStore.getState().clearResult();
+    useDirectorToolsStore.getState().close();
+    useHistoryStore.setState({ images: [], selectedImageIds: [] });
+  }, []);
 
   // Listen for Tauri file drop events
   useEffect(() => {
@@ -40,7 +60,7 @@ export default function GenerationPage() {
           if (VIBE_EXTENSIONS.includes(ext)) {
             setImportFilePath(paths[0]);
           } else if (IMAGE_EXTENSIONS.includes(ext)) {
-            setEncodeImagePath(paths[0]);
+            setDroppedImagePath(paths[0]);
           }
         }
       } else if (event.payload.type === "leave") {
@@ -110,6 +130,18 @@ export default function GenerationPage() {
           onImported={handleVibesChanged}
         />
       )}
+
+      {/* Dropped image: base image / character reference / vibe */}
+      {droppedImagePath && (
+        <ImageDropChoiceDialog
+          path={droppedImagePath}
+          onClose={() => setDroppedImagePath(null)}
+          onEncodeVibe={() => setEncodeImagePath(droppedImagePath)}
+        />
+      )}
+
+      <CanvasEditorDialog />
+      <DirectorToolsDialog />
 
       {/* Vibe Encode Dialog */}
       {encodeImagePath && (

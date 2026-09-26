@@ -1,34 +1,11 @@
 import { useTranslation } from "react-i18next";
-import { useCostEstimate } from "@/hooks/use-cost-estimate";
-import { useGenerationParamsStore } from "@/stores/generation-params-store";
-import { useSettingsStore } from "@/stores/settings-store";
+import { useGenerationPlan } from "@/hooks/use-generation-plan";
 
 export default function CostDisplay() {
   const { t } = useTranslation();
-  const selectedVibes = useGenerationParamsStore((s) => s.selectedVibes);
-  const sidebarPresets = useGenerationParamsStore((s) => s.sidebarPresets);
-  const width = useGenerationParamsStore((s) => s.width);
-  const height = useGenerationParamsStore((s) => s.height);
-  const steps = useGenerationParamsStore((s) => s.steps);
-  const anlas = useSettingsStore((s) => s.anlas);
-  const tier = anlas?.tier ?? 0;
-
-  const activePresets = sidebarPresets.filter((p) => p.enabled);
-  const uniqueVibeIds = new Set([
-    ...activePresets.flatMap((p) => p.selectedVibes.filter((v) => v.enabled).map((v) => v.vibeId)),
-    ...selectedVibes.filter((v) => v.enabled).map((v) => v.vibeId),
-  ]);
-  const totalVibeCount = uniqueVibeIds.size;
-
-  const cost = useCostEstimate({
-    width,
-    height,
-    steps,
-    vibeCount: totalVibeCount,
-    // V4 multi-character prompts are free; only image Character References cost.
-    hasCharacterReference: false,
-    tier,
-  });
+  // Same estimate as the generate button: mode (img2img / inpaint),
+  // base image size, character reference and vibes are all accounted for.
+  const { cost } = useGenerationPlan();
 
   return (
     <div className="flex items-baseline gap-1.5">

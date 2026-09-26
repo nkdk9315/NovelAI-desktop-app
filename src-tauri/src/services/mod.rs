@@ -3,6 +3,8 @@ pub mod project;
 pub mod image;
 pub mod generation;
 pub mod generation_snapshot;
+pub mod image_output;
+pub mod image_tools;
 pub mod prompt_group;
 pub mod prompt_group_folder;
 pub mod genre;
@@ -20,3 +22,6 @@ pub mod tokens;
 pub mod prompt_preset;
 pub mod preset_folder;
 pub mod sidebar_preset_group;
+
+#[cfg(test)]
+mod live_api_tests;

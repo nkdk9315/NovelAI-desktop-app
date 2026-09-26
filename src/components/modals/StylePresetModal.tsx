@@ -11,6 +11,8 @@ import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import type { AssetFolderDto, StylePresetDto, VibeDto } from "@/types";
 import * as ipc from "@/lib/ipc";
 import DeleteConfirmDialog from "./DeleteConfirmDialog";
+import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import StylePresetEditorModal from "./StylePresetEditorModal";
 import FolderTreePane, { type FolderSelection } from "./shared/FolderTreePane";
 import FolderPickerDialog from "./shared/FolderPickerDialog";
@@ -64,7 +66,9 @@ export default function StylePresetModal({ open, onOpenChange, onPresetsChanged 
     return () => { cancelled = true; };
   }, [selectedFolder, treeRefreshKey, folderRoots]);
 
-  const modelOptions = useMemo(() => { const models = new Set(presets.map((p) => p.model)); return [...models].sort(); }, [presets]);
+  const modelOptions = useMemo(() => { const models = new Set([...presets.map((p) => p.model), currentModel]); return [...models].sort(); }, [presets, currentModel]);
+  // Show the filter whenever presets for another model exist, so they are reachable.
+  const hasOtherModelPresets = presets.some((p) => p.model !== filterModel);
   const displayPresets = useMemo(() => {
     let list = presets;
     if (selectedFolder === "unclassified") list = list.filter((p) => p.folderId == null);
@@ -78,7 +82,13 @@ export default function StylePresetModal({ open, onOpenChange, onPresetsChanged 
   const handleToggleFavorite = async (id: string) => { try { await ipc.togglePresetFavorite(id); await loadPresets(); } catch (e) { toastError(String(e)); } };
   const handleDelete = async () => { if (!deleteTarget) return; try { await ipc.deleteStylePreset(deleteTarget.id); setDeleteTarget(null); await loadPresets(); onPresetsChanged(); } catch (e) { toastError(String(e)); } };
   const handleEditorClose = async () => { setEditorPreset(undefined); await loadPresets(); onPresetsChanged(); };
-  const handleToggleSidebar = (preset: StylePresetDto) => { if (sidebarPresetIds.includes(preset.id)) { removeSidebarPreset(preset.id); } else { if (preset.model !== currentModel) { toast.error(t("vibe.modelMismatch")); return; } addSidebarPreset(preset, vibes); } };
+  const setParam = useGenerationParamsStore((s) => s.setParam);
+  const [modelSwitchTarget, setModelSwitchTarget] = useState<StylePresetDto | null>(null);
+  // Applying a preset: its artist tags replace the direct ones (switched off, not deleted).
+  // The dialog stays open so several presets can be added in a row.
+  const applyPreset = (preset: StylePresetDto) => { useSidebarArtistTagsStore.getState().disableAllSidebarArtistTags(); addSidebarPreset(preset, vibes); toast.success(t("style.presetAdded", { name: preset.name })); };
+  const handleToggleSidebar = (preset: StylePresetDto) => { if (sidebarPresetIds.includes(preset.id)) { removeSidebarPreset(preset.id); toast(t("style.presetRemoved", { name: preset.name })); } else if (preset.model !== currentModel) { setModelSwitchTarget(preset); } else { applyPreset(preset); } };
+  const confirmModelSwitch = () => { if (!modelSwitchTarget) return; setParam("model", modelSwitchTarget.model); applyPreset(modelSwitchTarget); toast.success(t("style.modelSwitched", { model: modelSwitchTarget.model })); setModelSwitchTarget(null); };
 
   return (
     <>
@@ -105,7 +115,7 @@ export default function StylePresetModal({ open, onOpenChange, onPresetsChanged 
                 <Button variant={showFavoritesOnly ? "default" : "ghost"} size="sm" className="h-7 w-7 p-0" onClick={() => setShowFavoritesOnly((v) => !v)} title={t("vibe.favoritesOnly")}>
                   <Star className={`h-3.5 w-3.5 ${showFavoritesOnly ? "fill-current" : ""}`} />
                 </Button>
-                {modelOptions.length > 1 && (
+                {hasOtherModelPresets && (
                   <Select value={filterModel ?? "__all__"} onValueChange={(v) => setFilterModel(v === "__all__" ? null : v)}>
                     <SelectTrigger className="h-7 w-auto min-w-[120px] text-[10px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -135,6 +145,18 @@ export default function StylePresetModal({ open, onOpenChange, onPresetsChanged 
         loadRoots={ipc.listStylePresetFolderRoots} loadChildren={ipc.listStylePresetFolderChildren} initial={moveTarget?.folderId ?? null} onPick={handlePickFolder} />
       <DeleteConfirmDialog open={!!folderDeleteTarget} onOpenChange={(o) => !o && setFolderDeleteTarget(null)} onConfirm={confirmDeleteFolder}
         title={t("folder.deleteConfirmTitle")} description={folderDeleteTarget ? t("folder.deleteConfirmDesc", { name: folderDeleteTarget.title }) : undefined} />
+      <AlertDialog open={!!modelSwitchTarget} onOpenChange={(o) => !o && setModelSwitchTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("style.switchModelTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("style.switchModelDescription", { name: modelSwitchTarget?.name ?? "", model: modelSwitchTarget?.model ?? "", current: currentModel })}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmModelSwitch}>{t("style.switchModelConfirm")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <DeleteConfirmDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)} onConfirm={handleDelete} title={t("style.deleteConfirm")} description={deleteTarget?.name} />
       {editorPreset !== undefined && <StylePresetEditorModal open={true} onOpenChange={(o) => { if (!o) handleEditorClose(); }} preset={editorPreset} />}
     </>

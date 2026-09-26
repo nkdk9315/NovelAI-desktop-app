@@ -1,10 +1,10 @@
 # Frontend Types & Utilities (TypeScript)
 
-> **Stores 一覧（`src/stores/`, 12 ストア）**: `settings-store`, `project-store`, `generation-store`, `generation-params-store`, `history-store`, `prompt-store`, `preset-store`, `sidebar-prompt-store`, `sidebar-preset-group-store`, `sidebar-artist-tags-store`, `layout-store`（サイドバー幅, PR #25）, `theme-store`（ダーク/ライト切替）。
+> **Stores 一覧（`src/stores/`, 15 ストア）**: `settings-store`, `project-store`, `generation-store`, `generation-params-store`, `history-store`, `prompt-store`, `preset-store`, `sidebar-prompt-store`, `sidebar-preset-group-store`, `sidebar-artist-tags-store`, `layout-store`（サイドバー幅, PR #25）, `theme-store`（ダーク/ライト切替）, `image-edit-store`（Img2Img / Inpaint ベース画像・キャンバスエディタ）, `char-ref-store`（キャラクター参照）, `director-tools-store`（Director Tools ダイアログ）。
 >
 > **IPC モジュール（`src/lib/`, 5 ファイル）**: `ipc.ts`（基盤 + settings/projects/images/genres/system_prompts/tags/tokens 等）、`ipc-tags.ts`（Tag DB）、`ipc-prompt.ts`（Prompt Group + Folders + system_group_settings）、`ipc-assets.ts`（Vibe / Style Preset + 各 Folder）、`ipc-preset.ts`（Prompt Preset / Preset Folder / Sidebar Preset Group）。
 >
-> **Hooks（`src/hooks/`, 5 フック）**: `use-debounce`, `use-autocomplete`, `use-cost-estimate`, `use-artist-tag-input`, `use-prompt-token-counts`。
+> **Hooks（`src/hooks/`, 13 フック）**: `use-debounce`, `use-autocomplete`, `use-cost-estimate`（IPC 版見積もり。現在 `CostDisplay` は `use-generation-plan` を使用）, `use-artist-tag-input`, `use-prompt-token-counts`, `use-generation-plan`, `use-run-generation`, `use-image-source-actions`, `use-delete-images`, `use-project-prompt-persistence`, `use-sidebar-style-persistence`, `use-token-drag`, `use-zoom-pan`。
 
 
 ## 5.1 型定義
@@ -92,6 +92,15 @@ export interface StylePresetDto {
 export interface AnlasBalanceDto {
   anlas: number;
   tier: number;
+  opusUsage: OpusUsageDto | null; // V5 Opus 無料枠
+}
+
+export interface OpusUsageDto {
+  remainingPercent: number;
+  refillPercentPerDay: number;
+  estimatedImagesRemaining: number;
+  isLow: boolean;
+  isExhausted: boolean;
 }
 
 export interface CostResultDto {
@@ -144,6 +153,54 @@ export interface GenerateImageRequest {
   model: string;
   action: GenerateActionRequest;
   uiSnapshot?: UiSnapshotV1; // 履歴 Ctrl/Cmd+クリック復元用スナップショット
+  transparentBackground?: boolean; // V5 のみ
+  characterReference?: CharacterReferenceRequest; // V4.5 のみ。Vibe と併用不可
+}
+
+export type CharRefMode = "character" | "character&style" | "style";
+
+export interface CharacterReferenceRequest {
+  imageBase64: string;   // data URL 接頭辞なし
+  strength: number;      // 0–1
+  fidelity: number;      // 0–1
+  mode: CharRefMode;
+}
+
+/** Director Tools (augment) の req_type */
+export type AugmentTool =
+  | "bg-removal" | "lineart" | "sketch" | "colorize"
+  | "emotion" | "declutter" | "declutter-keep-bubbles";
+
+export type ImageSourceRequest =
+  | { type: "history"; imageId: string }
+  | { type: "base64"; data: string };
+
+export interface AugmentImageRequest {
+  projectId: string;
+  source: ImageSourceRequest;
+  reqType: AugmentTool;
+  prompt?: string;   // colorize: 任意 / emotion: 感情キーワード（`;;` は API クライアントが付与するため送らない）
+  defry?: number;    // colorize / emotion: 0–5
+}
+
+export interface UpscaleImageRequest {
+  projectId: string;
+  source: ImageSourceRequest;
+}
+
+export interface ImageToolResponse {
+  id: string;
+  base64Image: string;
+  filePath: string;
+  width: number;
+  height: number;
+  anlasRemaining?: number;
+  anlasConsumed?: number;
+}
+
+export interface ImageDataDto {
+  base64: string;
+  mime: string;   // image/png | image/jpeg | image/webp
 }
 
 // 履歴画像から UI 状態を戻すためのスナップショット。Rust 側は不透明 JSON として
@@ -196,6 +253,10 @@ export interface CostEstimateRequest {
   vibeCount: number;
   hasCharacterReference: boolean;
   tier: number;
+  model?: string;               // V5 は 1.5 倍
+  opusUsageExhausted?: boolean; // V5 Opus 無料枠切れ
+  mode?: "txt2img" | "img2img" | "inpaint"; // 既定 txt2img。img2img / inpaint は strength 倍
+  strength?: number;            // img2img strength / inpaint mask strength (0–1)
 }
 
 export interface TagInput { name?: string; tag: string; negativePrompt?: string; defaultStrength?: number; thumbnailPath?: string; }
@@ -342,6 +403,7 @@ import type {
   CreatePromptGroupRequest, UpdatePromptGroupRequest, CreateGenreRequest,
   AddVibeRequest, EncodeVibeRequest, CreateStylePresetRequest,
   UpdateStylePresetRequest,
+  AugmentImageRequest, UpscaleImageRequest, ImageToolResponse, ImageDataDto,
 } from "@/types";
 
 // ---- Settings ----
@@ -401,6 +463,13 @@ export function generateImage(req: GenerateImageRequest): Promise<GenerateImageR
 export function estimateCost(req: CostEstimateRequest): Promise<CostResultDto> {
   return invoke("estimate_cost", { req });
 }
+
+// ---- Image Tools (commands/image_tools.rs) ----
+
+export function augmentImage(req: AugmentImageRequest): Promise<ImageToolResponse> { return invoke("augment_image", { req }); }
+export function upscaleImage(req: UpscaleImageRequest): Promise<ImageToolResponse> { return invoke("upscale_image", { req }); }
+export function getImageData(imageId: string): Promise<ImageDataDto> { return invoke("get_image_data", { imageId }); }
+export function readImageFile(path: string): Promise<ImageDataDto> { return invoke("read_image_file", { path }); }
 
 export function saveImage(imageId: string): Promise<void> {
   return invoke("save_image", { imageId });
@@ -617,10 +686,16 @@ export interface SidebarPromptTag {
 export interface TargetPromptState {
   groups: SidebarPromptGroup[];
   freeText: string;
-  promptOverride: string | null;
-  negativeOverride: string | null;  // 021: negative prompt override per target
+  promptOverride: string | null;    // 入力欄のテキスト（送信内容の正）。null は旧スナップショット由来のみ
+  negativeOverride: string | null;  // ネガティブ入力欄のテキスト（同上）
 }
 ```
+
+入力欄のテキストが送信内容の唯一の正（`src/stores/sidebar-prompt-text-sync.ts`）。
+グループ操作はテキストへ反映される: 通常グループのタグを ON にすると先頭に挿入・OFF で削除、
+ランダム ON でそのグループのタグをワイルドカード（`effectiveWildcardToken`）に置き換える。
+生成時は `rollTargetForGeneration`（`src/lib/prompt-roll.ts`）がワイルドカードを 1 回だけ抽選し、
+同じ抽選結果のネガティブをネガティブ側に追加する。
 
 ### useSidebarPromptStore — アクション (抜粋)
 
@@ -897,4 +972,144 @@ export function computeDesiredCharacterPositions(
   instances: SidebarPresetGroupInstanceDto[],
   presets: PromptPresetDto[],
 ): Map<string, { x: number; y: number }>;
+```
+
+## 6.10 画像編集・画像ツール (Img2Img / Inpaint / Enhance / キャラ参照 / Director Tools / Upscale)
+
+### コスト計算 (`src/lib/cost.ts`)
+
+```typescript
+export const UPSCALE_MAX_PIXELS = 1_048_576;   // Upscale 入力上限（1024×1024）
+export const AUGMENT_MAX_PIXELS = 3_145_728;   // Director Tools 入力上限
+
+/** mode 対応: img2img / inpaint は perImageCost × strength（最小 / 最大コストでクランプ）。
+ *  inpaint は inpaintBilledSize で小領域を ~1MP 換算。キャラ参照あり / inpaint 時は Vibe 課金なし */
+export function calculateCost(params: CostEstimateRequest): CostResultDto;
+/** 1MP × 0.8 未満の inpaint サイズを 1MP 相当（64 刻み）に拡大して課金サイズを返す */
+export function inpaintBilledSize(width: number, height: number): { width: number; height: number };
+/** 3MP にクランプ → 1MP 未満は拡大 → 28 step の基本コスト。bg-removal は ×3 + 5 で Opus 無料対象外 */
+export function calculateAugmentCost(tool: AugmentTool, width: number, height: number, tier: number): CostResultDto;
+/** ピクセル数テーブル（≤1MP: 1 Anlas）。上限超過は null。Opus 無料枠なし */
+export function calculateUpscaleCost(width: number, height: number): number | null;
+```
+
+### サイズ・マスク (`src/lib/image-size.ts`, `src/lib/mask-grid.ts`)
+
+```typescript
+export interface Size { width: number; height: number }
+/** 64 の倍数・各辺 64–2048・MAX_TOTAL_PIXELS 以下でアスペクト比を保つ生成サイズ */
+export function fitGenerationSize(width: number, height: number): Size;
+/** Enhance 出力サイズ = fitGenerationSize(w × magnitude, h × magnitude) */
+export function enhanceSize(width: number, height: number, magnitude: number): Size;
+
+export const MASK_CELL = 8;             // API はマスクを生成サイズの 1/8 で受け取る
+export const MASK_CELL_THRESHOLD = 24;  // セル平均 alpha がこれを超えたらマスク
+export interface MaskCells { cols: number; rows: number; cells: Uint8Array; count: number }
+/** 描画した alpha チャネル（RGBA）を targetW/8 × targetH/8 のセルに縮約 */
+export function alphaToMaskCells(
+  rgba: Uint8ClampedArray, srcW: number, srcH: number,
+  targetW: number, targetH: number, threshold?: number,
+): MaskCells;
+```
+
+### キャンバス補助 (`src/lib/canvas-image.ts`)
+
+```typescript
+export interface LoadedImage { src: string; width: number; height: number } // src は data URL
+export function toDataUrl(data: ImageDataDto): string;
+export function stripDataUrl(src: string): string;
+export function loadImage(src: string): Promise<LoadedImage>;
+export function loadHistoryImage(imageId: string): Promise<LoadedImage>; // ipc.getImageData
+export function loadImageFile(path: string): Promise<LoadedImage>;       // ipc.readImageFile
+export function composeImage(baseSrc: string, paint: HTMLCanvasElement): Promise<string>; // ベース + 落書きを PNG(base64) に平坦化
+export function maskCellsOf(mask: HTMLCanvasElement, targetW: number, targetH: number): MaskCells;
+export function maskCellsToBase64(m: MaskCells): string; // 1/8 サイズの白黒 PNG（白 = 再生成）
+```
+
+### リクエスト組立 (`src/lib/generation-request.ts`)
+
+`ActionBar` から抽出した生成リクエスト組立ロジック。
+
+```typescript
+/** プリセット + Vibe セクションの有効 Vibe（id 重複排除）。V5 では空 */
+export function collectActiveVibes(params: ParamsState): SelectedVibe[];
+/** 送信するキャラ参照。画像なし / 無効 / 非 V4.5 モデルなら undefined */
+export function currentCharacterReference(model: string): CharacterReferenceRequest | undefined;
+export interface EditPlan { action: GenerateActionRequest; width: number; height: number; mode: "img2img" | "inpaint"; strength: number }
+/** image-edit-store から action を組立。txt2img なら null、inpaint でマスク未設定なら { error: "inpaintNeedsMask" } */
+export function currentEditPlan(): EditPlan | { error: "inpaintNeedsMask" } | null;
+export interface RequestOverrides { action?: GenerateActionRequest; width?: number; height?: number } // Enhance 等で使用
+export type BuildResult = { ok: true; req: GenerateImageRequest } | { ok: false; errorKey: string; errorArgs?: Record<string, unknown> };
+/** キャラ参照が有効なら Vibe は送らない（キャラ参照優先） */
+export function buildGenerateRequest(projectId: string, overrides?: RequestOverrides): BuildResult;
+```
+
+### 履歴アクション (`src/lib/history-action.ts`)
+
+```typescript
+export type HistoryActionKind = "generate" | "img2img" | "infill" | "augment" | "upscale";
+export interface HistoryAction { kind: HistoryActionKind; tool?: string }
+/** prompt_snapshot.action.type から判定（無し / 未知は "generate"）。サムネイルのバッジ表示用 */
+export function historyActionOf(snapshot: Record<string, unknown> | null | undefined): HistoryAction;
+/** augment / upscale 出力はプロンプトを持たないため復元対象外 */
+export function isToolOutput(snapshot: Record<string, unknown> | null | undefined): boolean;
+```
+
+### 定数 (`src/lib/constants.ts`)
+
+`DEFAULT_IMG2IMG_STRENGTH = 0.7` / `DEFAULT_IMG2IMG_NOISE = 0` / `DEFAULT_INPAINT_STRENGTH = 1`、
+`ENHANCE_LEVELS`（level 1–5: strength 0.2/0.4/0.5/0.6/0.7、level 5 のみ noise 0.1）、`ENHANCE_MAGNITUDES = [1, 1.5]`、
+`supportsCharacterReference(model)`（`nai-diffusion-4-5*` のみ true）、`AUGMENT_TOOLS`、`EMOTIONS`（感情キーワード + 絵文字）、
+`MAX_DEFRY = 5` / `DEFAULT_DEFRY = 0`。
+
+### Stores
+
+```typescript
+// --- src/stores/image-edit-store.ts ---
+export type EditMode = "img2img" | "inpaint";
+export type EditorLayer = "paint" | "mask";
+export interface BaseImage extends LoadedImage { sourceImageId: string | null }
+export interface EditLayers {
+  paintSrc: string | null;         // 落書きレイヤー（data URL、ベース解像度）
+  maskSrc: string | null;          // マスクレイヤー（再編集用）
+  compositeBase64: string | null;  // ベース + 落書きを平坦化した PNG（未描画なら null）
+  maskBase64: string | null;       // 1/8 サイズ白黒マスク PNG
+  maskCoverage: number;            // 再生成される割合 (0–1)
+}
+// state: base, enabled, mode, targetWidth/targetHeight（setBase 時に fitGenerationSize）,
+//        editorOpen, editorLayer, img2imgStrength, img2imgNoise, inpaintStrength, colorCorrect, ...EditLayers
+// actions: setBase(base, mode?), clear, setEnabled, setMode, setParam, applyLayers, openEditor(layer), closeEditor
+export function activeEditMode(s): EditMode | null; // base && enabled のときのみ mode
+
+// --- src/stores/char-ref-store.ts ---
+// state: image: LoadedImage | null, enabled, mode (既定 "character&style"), strength (1), fidelity (1)
+// actions: setImage（null 以外で enabled = true）, setEnabled, setMode, setStrength, setFidelity
+
+// --- src/stores/director-tools-store.ts ---
+// state: imageId: string | null（null = 閉）, initialTool: DirectorTool
+// actions: openFor(imageId, tool?), close
+```
+
+### Hooks
+
+```typescript
+// --- src/hooks/use-generation-plan.ts ---
+/** 次に生成ボタンを押したときの内容: mode / 出力サイズ / コスト / ブロック理由。
+ *  CostDisplay・ActionBar が使用（use-cost-estimate を置き換え） */
+export function useGenerationPlan(): {
+  mode: EditMode | null; width: number; height: number; cost: CostResultDto;
+  charRefActive: boolean; blocker: "inpaintNeedsMask" | null;
+};
+
+// --- src/hooks/use-run-generation.ts ---
+/** buildGenerateRequest → generationStore.generate → 履歴 / Anlas 再取得。失敗時は toast */
+export function useRunGeneration(): (overrides?: RequestOverrides) => Promise<void>;
+
+// --- src/hooks/use-image-source-actions.ts ---
+export type ImageSource = { imageId: string } | { path: string } | { loaded: LoadedImage };
+/** 履歴画像 / ファイルを Img2Img・Inpaint のベース、またはキャラ参照に設定 */
+export function useImageSourceActions(): {
+  setAsBase: (source: ImageSource, mode: EditMode, editor?: EditorLayer) => Promise<void>;
+  setAsCharacterReference: (source: ImageSource) => Promise<void>;
+};
 ```

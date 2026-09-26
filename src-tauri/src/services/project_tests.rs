@@ -128,10 +128,10 @@ fn test_update_thumbnail() {
 }
 
 #[test]
-fn test_open_project_cleans_unsaved() {
+fn test_open_project_keeps_unsaved() {
     let conn = setup_test_db();
     let project = crate::test_utils::create_test_project(&conn);
-    let saved = create_test_image(&conn, &project.id, 1);
+    create_test_image(&conn, &project.id, 1);
     create_test_image(&conn, &project.id, 0);
 
     let dto = open_project(&conn, &project.id).unwrap();
@@ -139,8 +139,7 @@ fn test_open_project_cleans_unsaved() {
 
     let remaining =
         crate::repositories::image::list_by_project(&conn, &project.id, None).unwrap();
-    assert_eq!(remaining.len(), 1);
-    assert_eq!(remaining[0].id, saved.id);
+    assert_eq!(remaining.len(), 2);
 }
 
 #[test]

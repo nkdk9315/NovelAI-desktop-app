@@ -187,7 +187,7 @@ fn test_create_project_creates_directory() {
 | テストケース | 検証内容 |
 |-------------|---------|
 | `test_create_project` | ディレクトリ + images/ サブディレクトリ作成確認 (tempdir) |
-| `test_open_project_cleans_unsaved` | 未保存画像がクリーンアップされること |
+| `test_open_project_keeps_unsaved` | 未保存画像が削除されずに残ること |
 | `test_delete_project` | DB削除 + ディレクトリ削除確認 (tempdir) |
 
 #### image_service
@@ -249,6 +249,32 @@ fn test_create_project_creates_directory() {
 | `test_with_vibes` | Vibe追加コスト |
 | `test_with_char_ref` | CharRef追加コスト |
 
+#### generation_service — キャラクター参照・スナップショット (`services/generation_tests.rs`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `test_char_ref_valid_on_v45` | V4.5 + `character&style` は検証通過 |
+| `test_char_ref_rejected_on_v5` | V5 モデルでのキャラ参照は Validation エラー |
+| `test_char_ref_rejected_with_vibes` | Vibe との併用は Validation エラー |
+| `test_char_ref_invalid_mode_or_strength` | 不正 mode（`face`）/ 範囲外 strength（1.5）を拒否 |
+| `test_snapshot_records_action_without_image_data` | `action_summary(Infill)` が type / strength を記録し、画像・マスクのバイト列を含まない |
+
+#### image_output (`services/image_output.rs`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `detects_formats` | マジックバイトから PNG / JPEG / WebP を判定、GIF は `bin` |
+| `decode_base64_strips_data_url_prefix` | `data:...;base64,` 接頭辞の除去、不正 base64 はエラー |
+| `read_image_file_rejects_non_images` | `.txt` と存在しないファイルは Validation、大文字拡張子 `.PNG` は読込可 (tempdir) |
+
+#### image_tools (`services/image_tools.rs`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `accepts_all_official_tools` | 公式 7 ツールを受理（emotion はキーワード + defry 0） |
+| `rejects_unknown_tool_and_bad_options` | 未知ツール、defry > 5、emotion のキーワード欠落 / 空白のみを拒否 |
+| `pixel_limits` | Upscale 入力 1024×1024 は可、1024×1088 は超過 |
+
 ### 4.3 Frontend テスト (`lib/cost.ts`)
 
 | テストケース | 検証内容 |
@@ -257,6 +283,29 @@ fn test_create_project_creates_directory() {
 | `opus free generation` | Opus tier, ≤1024×1024, ≤28steps → cost 0 |
 | `vibe cost added` | 5+ vibes で追加コスト発生 |
 | `char ref cost added` | CharRef使用時の追加コスト |
+| `img2img scales the cost by strength` | img2img は strength 倍 |
+| `txt2img ignores strength` | txt2img では strength を無視 |
+| `small inpaint areas are billed as ~1MP and ignore vibes` | 小領域 inpaint の 1MP 換算、Vibe 課金なし |
+| `vibes are not billed with a character reference` | キャラ参照ありで Vibe 課金なし |
+| `calculateAugmentCost: small images are expanded to 1MP and free for Opus` | 小画像を 1MP へ拡大、Opus 無料 |
+| `calculateAugmentCost: 832x1216 is enlarged to just under 1MP and stays Opus-free` | 公式の切り捨て拡大ロジック |
+| `calculateAugmentCost: bg-removal is always billed with the multiplier` | bg-removal は ×3 + 5、Opus 無料対象外 |
+| `calculateUpscaleCost: uses the pixel table and rejects >1MP inputs` | ピクセルテーブル、1MP 超は null |
+
+### 4.4 Frontend テスト (`lib/image-size.ts` / `lib/mask-grid.ts` / `lib/history-action.ts`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `fitGenerationSize: keeps valid sizes` | 有効サイズはそのまま |
+| `fitGenerationSize: snaps to multiples of 64` | 64 の倍数に丸め |
+| `fitGenerationSize: shrinks oversized images within the pixel budget` | ピクセル上限内に縮小 |
+| `fitGenerationSize: clamps extreme aspect ratios to 2048 per side` | 極端な比率は各辺 2048 でクランプ |
+| `enhanceSize: enlarges by the magnitude and respects the limits` | 倍率拡大 + 上限遵守 |
+| `alphaToMaskCells: maps painted pixels to 1/8 cells` | 描画ピクセル → 1/8 セル |
+| `alphaToMaskCells: scales between source and target sizes` | ソース / 生成サイズ間のスケーリング |
+| `alphaToMaskCells: ignores faint strokes below the threshold` | 閾値未満の薄いストロークを無視 |
+| `historyActionOf: defaults to generate for legacy snapshots` | action なし / null は generate |
+| `historyActionOf: reads img2img / infill / tools` | img2img / infill / augment(tool) の判定、`isToolOutput` |
 
 ---
 
@@ -284,13 +333,17 @@ src-tauri/src/
 │   ├── vibe.rs
 │   ├── style_preset.rs
 │   ├── system_prompt.rs
-│   └── generation.rs          # estimate_cost のみテスト
+│   ├── generation_tests.rs    # validate_generate_request / estimate_cost / snapshot
+│   ├── image_output.rs        # 末尾に #[cfg(test)] mod tests（形式判定・base64・ファイル読込制限）
+│   └── image_tools.rs         # 同上（augment 検証・ピクセル上限）
 
 src/
 ├── lib/
 │   ├── cost.ts
 │   └── __tests__/
-│       └── cost.test.ts       # Vitest
+│       ├── cost.test.ts       # Vitest
+│       ├── image-size.test.ts # fitGenerationSize / enhanceSize / alphaToMaskCells
+│       └── history-action.test.ts
 ├── stores/
 │   └── __tests__/
 │       └── generation-params-store.test.ts  # Vitest
@@ -350,6 +403,8 @@ src/
 | Frontend Stores / UI (IPC依存部分) | IPC呼び出し部分は手動テストで十分。状態管理ロジック・描画・操作はVitest + Testing Library |
 | 並行アクセス | シングルユーザーデスクトップアプリ |
 | generate_image / encode_vibe | API呼び出し含む。crate側でカバー |
+| augment_image / upscale_image 本体 | API呼び出し含む。入力検証（`validate_augment_request` / ピクセル上限）のみテスト |
+| キャンバスエディタ描画 | Canvas API 依存。マスク縮約ロジック（`alphaToMaskCells`）のみテスト |
 
 ---
 
@@ -374,3 +429,4 @@ npx vitest run src/lib/__tests__/cost.test.ts
 |------|------|
 | 2026-04-07 | 初版作成 |
 | 2026-04-07 | Frontend Stores/UIテスト方針追加 (Phase 3対応) |
+| 2026-09-26 | Img2Img / Inpaint / キャラ参照 / Director Tools / Upscale — generation_tests（char ref・snapshot）、image_output / image_tools、cost.test.ts 追加分、image-size / history-action テスト追加 |

@@ -2,6 +2,7 @@ import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import type { NegativePresetId } from "@/lib/constants";
+import { isToolOutput } from "@/lib/history-action";
 
 export type RestoreResult = "full" | "partial" | "none";
 
@@ -26,7 +27,7 @@ interface LegacySnapshotParams {
 export function restoreFromSnapshot(
   snapshot: Record<string, unknown> | null | undefined,
 ): RestoreResult {
-  if (!snapshot || typeof snapshot !== "object") return "none";
+  if (!snapshot || typeof snapshot !== "object" || isToolOutput(snapshot)) return "none";
 
   const params = useGenerationParamsStore.getState();
   const legacy = snapshot as LegacySnapshotParams;

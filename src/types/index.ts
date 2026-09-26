@@ -92,6 +92,8 @@ export interface AssetFolderDto {
 export interface ArtistTag {
   name: string;
   strength: number;
+  /** false = kept in the list but not sent. Missing means on (older saves). */
+  enabled?: boolean;
 }
 
 export interface PresetVibeRef {
@@ -114,6 +116,16 @@ export interface StylePresetDto {
 export interface AnlasBalanceDto {
   anlas: number;
   tier: number;
+  /** V5 Opus free-generation usage (null for non-Opus accounts) */
+  opusUsage: OpusUsageDto | null;
+}
+
+export interface OpusUsageDto {
+  remainingPercent: number;
+  refillPercentPerDay: number;
+  estimatedImagesRemaining: number;
+  isLow: boolean;
+  isExhausted: boolean;
 }
 
 export interface CostResultDto {
@@ -291,6 +303,61 @@ export interface GenerateImageRequest {
   model: string;
   action: GenerateActionRequest;
   uiSnapshot?: UiSnapshotV1;
+  /** V5 only */
+  transparentBackground?: boolean;
+  /** V4.5 only; cannot be combined with vibes */
+  characterReference?: CharacterReferenceRequest;
+}
+
+export type CharRefMode = "character" | "character&style" | "style";
+
+export interface CharacterReferenceRequest {
+  imageBase64: string;
+  strength: number;
+  fidelity: number;
+  mode: CharRefMode;
+}
+
+/** Director Tools (augment) request types supported by the API. */
+export type AugmentTool =
+  | "bg-removal"
+  | "lineart"
+  | "sketch"
+  | "colorize"
+  | "emotion"
+  | "declutter"
+  | "declutter-keep-bubbles";
+
+export type ImageSourceRequest =
+  | { type: "history"; imageId: string }
+  | { type: "base64"; data: string };
+
+export interface AugmentImageRequest {
+  projectId: string;
+  source: ImageSourceRequest;
+  reqType: AugmentTool;
+  prompt?: string;
+  defry?: number;
+}
+
+export interface UpscaleImageRequest {
+  projectId: string;
+  source: ImageSourceRequest;
+}
+
+export interface ImageToolResponse {
+  id: string;
+  base64Image: string;
+  filePath: string;
+  width: number;
+  height: number;
+  anlasRemaining?: number;
+  anlasConsumed?: number;
+}
+
+export interface ImageDataDto {
+  base64: string;
+  mime: string;
 }
 
 export interface UiSnapshotV1 {
@@ -357,6 +424,13 @@ export interface CostEstimateRequest {
   vibeCount: number;
   hasCharacterReference: boolean;
   tier: number;
+  model?: string;
+  /** V5 Opus usage exhausted: V5 generations are no longer Opus-free */
+  opusUsageExhausted?: boolean;
+  /** Generation mode (default txt2img). img2img / inpaint scale the cost by `strength`. */
+  mode?: "txt2img" | "img2img" | "inpaint";
+  /** img2img strength / inpaint mask strength (0–1) */
+  strength?: number;
 }
 
 export interface TagInput {
