@@ -43,9 +43,9 @@ NovelAI API を利用した AI イラスト生成・管理デスクトップア�
 
 ```
 main.rs, state.rs, error.rs, db.rs
-├── commands/       # 18 モジュール
-├── services/       # 26 モジュール（テスト除く、generation_snapshot / image_output / image_tools / image_metadata / vibe_import を含む）
-├── repositories/   # 17 モジュール（テスト除く）
+├── commands/       # 19 モジュール
+├── services/       # 29 モジュール（テスト除く、generation_snapshot / image_output / image_tools / image_metadata / vibe_import / nax / nax_catalog / nax_thumb を含む）
+├── repositories/   # 19 モジュール（テスト除く）
 └── models/dto.rs   # Row 構造体 + IPC 用 DTO
 ```
 
@@ -53,9 +53,9 @@ main.rs, state.rs, error.rs, db.rs
 
 ```
 main.tsx, App.tsx
-├── lib/            # 5 IPC (ipc, ipc-assets, ipc-preset, ipc-prompt, ipc-tags) + ユーティリティ
+├── lib/            # 6 IPC (ipc, ipc-assets, ipc-preset, ipc-prompt, ipc-tags, ipc-nax) + ユーティリティ
 ├── types/          # 型定義
-├── stores/         # 15 stores（layout / theme / image-edit / char-ref / director-tools 含む）
+├── stores/         # 17 stores（layout / theme / image-edit / char-ref / director-tools / nax / nax-view 含む）
 ├── hooks/          # use-debounce, use-autocomplete, use-cost-estimate,
 │                    # use-artist-tag-input, use-prompt-token-counts,
 │                    # use-generation-plan, use-run-generation, use-image-source-actions,

@@ -91,9 +91,17 @@ pub fn run() {
                 system_tags,
                 app_data_dir: data_dir,
             };
+            let thumb_dir = app
+                .path()
+                .app_cache_dir()
+                .expect("Failed to resolve app cache dir")
+                .join("nax_thumbs");
+            let thumb_limit = services::nax_thumb::saved_limit_mb(&app_state.db.lock().expect("db lock"));
+            app.manage(services::nax_thumb::NaxThumbCache::new(thumb_dir, thumb_limit)?);
             app.manage(app_state);
             Ok(())
         })
+        .register_asynchronous_uri_scheme_protocol("naxthumb", commands::nax::thumb_protocol)
         .invoke_handler(tauri::generate_handler![
             commands::settings::get_settings,
             commands::settings::set_setting,
@@ -206,6 +214,16 @@ pub fn run() {
             commands::sidebar_preset_groups::reorder_sidebar_preset_group_instances,
             commands::sidebar_preset_groups::update_sidebar_preset_group_default_strength,
             commands::sidebar_preset_groups::set_sidebar_preset_group_preset_strength,
+            commands::nax::nax_sync,
+            commands::nax::nax_get_status,
+            commands::nax::nax_list_galleries,
+            commands::nax::nax_list_gallery_images,
+            commands::nax::nax_find_tags,
+            commands::nax::nax_list_favorite_tags,
+            commands::nax::nax_toggle_favorite_tag,
+            commands::nax::nax_thumb_cache_info,
+            commands::nax::nax_set_thumb_cache_limit,
+            commands::nax::nax_clear_thumb_cache,
             commands::tags::search_tags,
             commands::tags::get_tag_group,
             commands::tags::list_tag_group_roots,

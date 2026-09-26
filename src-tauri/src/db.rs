@@ -28,6 +28,8 @@ const MIGRATION_023: &str = include_str!("../migrations/023_sidebar_preset_group
 const MIGRATION_024: &str = include_str!("../migrations/024_sidebar_preset_group_strength.sql");
 const MIGRATION_025: &str = include_str!("../migrations/025_preset_slot_positions.sql");
 const MIGRATION_026: &str = include_str!("../migrations/026_prompt_preset_sort_key.sql");
+const MIGRATION_027: &str = include_str!("../migrations/027_nax_explorer.sql");
+const MIGRATION_028: &str = include_str!("../migrations/028_nax_first_seen.sql");
 
 pub fn init_db(path: &str) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;
@@ -259,6 +261,22 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
             rusqlite::params!["schema_version", "26"],
+        )?;
+    }
+
+    if version < 27 {
+        conn.execute_batch(MIGRATION_027)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "27"],
+        )?;
+    }
+
+    if version < 28 {
+        conn.execute_batch(MIGRATION_028)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "28"],
         )?;
     }
 

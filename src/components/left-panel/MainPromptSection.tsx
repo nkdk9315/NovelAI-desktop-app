@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BadgeCheck, ChevronDown, ChevronRight, Eye, EyeOff } from "lucide-react";
+import { BadgeCheck, ChevronDown, ChevronRight, Compass, Eye, EyeOff } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
+import { useNaxStore } from "@/stores/nax-store";
 import PromptTextarea from "@/components/shared/PromptTextarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import CharacterPromptGroups from "./CharacterPromptGroups";
@@ -97,6 +98,15 @@ export default function MainPromptSection() {
         >
           <BadgeCheck className="h-2.5 w-2.5" />
           {t("generation.qualityTags")}
+        </button>
+        <button
+          type="button"
+          title={t("nax.openExplorerTags")}
+          onClick={() => useNaxStore.getState().openExplorer()}
+          className="ml-auto flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <Compass className="h-2.5 w-2.5" />
+          {t("nax.findTags")}
         </button>
       </div>
 

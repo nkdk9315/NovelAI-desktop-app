@@ -10,6 +10,7 @@ import VibeEncodeDialog from "@/components/modals/VibeEncodeDialog";
 import ImageDropChoiceDialog from "@/components/modals/ImageDropChoiceDialog";
 import DirectorToolsDialog from "@/components/modals/director-tools/DirectorToolsDialog";
 import CanvasEditorDialog from "@/components/canvas-editor/CanvasEditorDialog";
+import NaxExplorerDialog from "@/components/modals/nax/NaxExplorerDialog";
 import { useLayoutStore } from "@/stores/layout-store";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useHistoryStore } from "@/stores/history-store";
@@ -142,6 +143,7 @@ export default function GenerationPage() {
 
       <CanvasEditorDialog />
       <DirectorToolsDialog />
+      <NaxExplorerDialog />
 
       {/* Vibe Encode Dialog */}
       {encodeImagePath && (
