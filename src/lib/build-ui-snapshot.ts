@@ -1,11 +1,14 @@
 import type { ArtistTag, UiSnapshotV1 } from "@/types";
 import type { Character, SelectedVibe, SidebarPreset } from "@/stores/generation-params-store";
 import type { NegativePresetId } from "@/lib/constants";
+import type { QualityPresetId } from "@/lib/prompt-decoration";
 
 interface SnapshotSource {
   negativePrompt: string;
   negativePreset: NegativePresetId;
-  qualityTagsEnabled: boolean;
+  qualityPreset: QualityPresetId;
+  furryMode: boolean;
+  transparentBackground: boolean;
   normalizeVibeStrength: boolean;
   normalizeArtistStrength: boolean;
   characters: Character[];
@@ -22,7 +25,11 @@ export function buildUiSnapshot(
     version: 1,
     negativePrompt: src.negativePrompt,
     negativePreset: src.negativePreset,
-    qualityTagsEnabled: src.qualityTagsEnabled,
+    // Kept for snapshots read by older builds
+    qualityTagsEnabled: src.qualityPreset !== "none",
+    qualityPreset: src.qualityPreset,
+    furryMode: src.furryMode,
+    transparentBackground: src.transparentBackground,
     normalizeVibeStrength: src.normalizeVibeStrength,
     normalizeArtistStrength: src.normalizeArtistStrength,
     characters: src.characters,

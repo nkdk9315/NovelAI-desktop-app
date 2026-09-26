@@ -138,7 +138,9 @@ export async function applyMetadata(
   if (sel.prompt) {
     ensureTarget(MAIN);
     useSidebarPromptStore.getState().setPromptOverride(MAIN, promptWithoutArtists(meta.rawPrompt, artists));
-    params.setParam("qualityTagsEnabled", meta.qualityTags);
+    params.setParam("qualityPreset", meta.qualityPreset);
+    params.setParam("furryMode", meta.furryMode);
+    params.setParam("transparentBackground", meta.transparentBackground);
   }
   if (sel.negative) {
     ensureTarget(MAIN);

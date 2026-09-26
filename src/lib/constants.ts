@@ -128,8 +128,6 @@ export const DEFAULT_RANDOM_PRESET_SETTINGS = {
 
 export const DEFAULT_NEGATIVE_PROMPT = "";
 
-export const QUALITY_TAGS = "masterpiece, very aesthetic, no text";
-
 export const NEGATIVE_PRESETS = {
   none: "",
   "human-main":

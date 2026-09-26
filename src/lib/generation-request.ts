@@ -5,14 +5,16 @@ import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store"
 import { usePresetStore } from "@/stores/preset-store";
 import { useImageEditStore, activeEditMode } from "@/stores/image-edit-store";
 import { useCharRefStore } from "@/stores/char-ref-store";
+import { useQualityTagStore } from "@/stores/quality-tag-store";
 import {
-  MAX_TOTAL_VIBES, NEGATIVE_PRESETS, QUALITY_TAGS, isV5Model, supportsCharacterReference,
+  MAX_TOTAL_VIBES, NEGATIVE_PRESETS, isV5Model, supportsCharacterReference,
 } from "@/lib/constants";
 import { normalizeStrengths } from "@/lib/normalize-strength";
 import { buildArtistPrefix, isArtistTagOn } from "@/lib/artist-tag";
 import { rollTargetForGeneration } from "@/lib/prompt-roll";
 import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
 import { buildUiSnapshot } from "@/lib/build-ui-snapshot";
+import { decorateMainPrompt, type PromptDecoration } from "@/lib/prompt-decoration";
 import { stripDataUrl } from "@/lib/canvas-image";
 import type { SelectedVibe } from "@/stores/generation-params-store";
 import type { CharacterReferenceRequest, GenerateActionRequest, GenerateImageRequest } from "@/types";
@@ -79,6 +81,17 @@ export type BuildResult =
   | { ok: true; req: GenerateImageRequest }
   | { ok: false; errorKey: string; errorArgs?: Record<string, unknown> };
 
+/** Furry prefix / transparent tag / quality tags for the main prompt, from the current state. */
+export function currentPromptDecoration(params: ParamsState = useGenerationParamsStore.getState()): PromptDecoration {
+  return {
+    model: params.model,
+    qualityPreset: params.qualityPreset,
+    customQualityTags: useQualityTagStore.getState().customQualityTags,
+    transparentBackground: params.transparentBackground,
+    furryMode: params.furryMode,
+  };
+}
+
 /** Assemble the generate request from the sidebar / header state. */
 export function buildGenerateRequest(projectId: string, overrides: RequestOverrides = {}): BuildResult {
   const params = useGenerationParamsStore.getState();
@@ -104,7 +117,7 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
   }
   const artistPrefix = buildArtistPrefix(finalArtistTags);
 
-  // Main prompt: artist prefix + main target (or assembled groups) + quality tags
+  // Main prompt: [furry prefix] + artist prefix + main target (or assembled groups) + [transparent tag] + quality tags
   const sidebarState = useSidebarPromptStore.getState();
   const mainTarget = sidebarState.targets["main"];
   const presetInstances = useSidebarPresetGroupStore.getState().instances;
@@ -112,10 +125,7 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
   const mainContrib = getPresetContributionsForCharacter("main", presetInstances, allPresets);
   const mainRolled = mainTarget ? rollTargetForGeneration(mainTarget) : { positive: "", negative: "" };
   const assembledMain = appendContributions(mainRolled.positive, mainContrib.positive);
-  const qualitySuffix = params.qualityTagsEnabled
-    ? (assembledMain ? `, ${QUALITY_TAGS}` : QUALITY_TAGS)
-    : "";
-  const fullPrompt = artistPrefix + assembledMain + qualitySuffix;
+  const fullPrompt = decorateMainPrompt(artistPrefix + assembledMain, currentPromptDecoration(params));
 
   let enabledVibes = allVibes.map((v) => ({ vibeId: v.vibeId, strength: v.strength }));
   if (params.normalizeVibeStrength && enabledVibes.length > 0) {

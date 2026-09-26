@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { SlidersHorizontal } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import {
@@ -44,7 +43,7 @@ function clampDimension(v: number): number {
 
 export default function GenerationParams() {
   const { t } = useTranslation();
-  const { model, width, height, steps, scale, sampler, noiseSchedule, transparentBackground, setParam } =
+  const { model, width, height, steps, scale, sampler, noiseSchedule, setParam } =
     useGenerationParamsStore();
   const isV5 = isV5Model(model);
   const [customMode, setCustomMode] = useState(false);
@@ -211,19 +210,6 @@ export default function GenerationParams() {
               <p className="text-[10px] text-muted-foreground">{t("generation.noiseScheduleV5Fixed")}</p>
             )}
           </div>
-
-          {isV5 && (
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="transparent-background"
-                checked={transparentBackground}
-                onCheckedChange={(v) => setParam("transparentBackground", v === true)}
-              />
-              <Label htmlFor="transparent-background" className="text-xs cursor-pointer">
-                {t("generation.transparentBackground")}
-              </Label>
-            </div>
-          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

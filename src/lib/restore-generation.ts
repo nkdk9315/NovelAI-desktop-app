@@ -2,6 +2,7 @@ import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import type { NegativePresetId } from "@/lib/constants";
+import type { QualityPresetId } from "@/lib/prompt-decoration";
 import { isToolOutput } from "@/lib/history-action";
 
 export type RestoreResult = "full" | "partial" | "none";
@@ -57,8 +58,14 @@ export function restoreFromSnapshot(
   if (typeof u.negativePreset === "string") {
     params.setParam("negativePreset", u.negativePreset as NegativePresetId);
   }
-  if (typeof u.qualityTagsEnabled === "boolean") {
-    params.setParam("qualityTagsEnabled", u.qualityTagsEnabled);
+  if (typeof u.qualityPreset === "string") {
+    params.setParam("qualityPreset", u.qualityPreset as QualityPresetId);
+  } else if (typeof u.qualityTagsEnabled === "boolean") {
+    params.setParam("qualityPreset", u.qualityTagsEnabled ? "standard" : "none");
+  }
+  params.setParam("furryMode", u.furryMode === true);
+  if (typeof u.transparentBackground === "boolean") {
+    params.setParam("transparentBackground", u.transparentBackground);
   }
   if (typeof u.normalizeVibeStrength === "boolean") {
     params.setParam("normalizeVibeStrength", u.normalizeVibeStrength);
