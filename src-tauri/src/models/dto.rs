@@ -511,6 +511,47 @@ pub struct ImageToolResponse {
     pub anlas_consumed: Option<u64>,
 }
 
+/// NovelAI generation metadata embedded in an image (PNG text chunks or stealth alpha).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageMetadataDto {
+    /// e.g. "NovelAI Diffusion V4.5 4BDE2A90"
+    pub source: Option<String>,
+    pub software: Option<String>,
+    pub description: Option<String>,
+    /// The request parameters (`Comment` JSON): prompt, v4_prompt, uc, steps, vibes, ...
+    pub comment: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportVibeEncodingRequest {
+    pub name: String,
+    /// Vibe model key: v4curated | v4full | v4-5curated | v4-5full
+    pub model_key: String,
+    pub encoding: String,
+    pub information_extracted: f64,
+    pub strength: f64,
+}
+
+/// Encode a vibe from raw image data (an unencoded vibe in image metadata). Costs Anlas.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EncodeVibeImageRequest {
+    pub image_base64: String,
+    pub model: String,
+    pub name: String,
+    pub information_extracted: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportedVibeDto {
+    pub vibe: VibeDto,
+    /// true when the same encoding was already in the library
+    pub existed: bool,
+}
+
 /// Image bytes handed to the frontend (canvas editor, character reference, ...).
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

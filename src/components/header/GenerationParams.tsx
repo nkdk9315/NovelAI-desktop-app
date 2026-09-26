@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
+import SeedField from "./SeedField";
 import {
   Popover,
   PopoverContent,
@@ -60,6 +61,8 @@ export default function GenerationParams() {
 
   const totalPixels = width * height;
   const totalPixelError = totalPixels > MAX_TOTAL_PIXELS;
+
+  const seedFixed = useGenerationParamsStore((s) => s.seed !== null);
 
   return (
     <div className="flex items-center gap-2">
@@ -167,8 +170,9 @@ export default function GenerationParams() {
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Button variant="ghost" size="sm" className="relative h-8 w-8 p-0" title={seedFixed ? t("generation.seedFixed") : undefined}>
             <SlidersHorizontal size={14} />
+            {seedFixed && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-64 space-y-4" align="end">
@@ -248,6 +252,8 @@ export default function GenerationParams() {
               step={0.1}
             />
           </div>
+
+          <SeedField />
         </PopoverContent>
       </Popover>
     </div>

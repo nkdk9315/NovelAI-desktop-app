@@ -85,3 +85,34 @@ pub async fn encode_vibe(
 
     Ok(VibeDto::from(row))
 }
+
+/// Encode a vibe from base64 image data (e.g. an unencoded vibe found in image
+/// metadata). The image is written to a temporary file for the regular flow.
+pub async fn encode_vibe_image(
+    db: &std::sync::Mutex<Connection>,
+    api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
+    app_data_dir: &Path,
+    req: crate::models::dto::EncodeVibeImageRequest,
+) -> Result<VibeDto, AppError> {
+    let bytes = crate::services::image_output::decode_base64(&req.image_base64)?;
+    if bytes.len() as u64 > crate::services::image_output::MAX_INPUT_IMAGE_BYTES {
+        return Err(AppError::Validation("vibe image is larger than 10 MB".to_string()));
+    }
+    let (_, ext) = crate::services::image_output::detect_format(&bytes);
+    if ext == "bin" {
+        return Err(AppError::Validation("vibe data is not an image".to_string()));
+    }
+    let tmp_dir = app_data_dir.join("vibe-imports");
+    std::fs::create_dir_all(&tmp_dir)?;
+    let tmp = tmp_dir.join(format!("{}.{ext}", uuid::Uuid::new_v4()));
+    std::fs::write(&tmp, &bytes)?;
+    let result = encode_vibe(db, api_client, app_data_dir, EncodeVibeRequest {
+        image_path: tmp.to_string_lossy().to_string(),
+        model: req.model,
+        name: req.name,
+        information_extracted: req.information_extracted,
+    })
+    .await;
+    let _ = std::fs::remove_file(&tmp);
+    result
+}

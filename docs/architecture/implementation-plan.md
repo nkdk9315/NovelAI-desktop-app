@@ -4,7 +4,7 @@
 
 > 本ディレクトリツリーは `src-tauri/src/{commands,services,repositories}/mod.rs` および `src/{stores,lib,components,hooks,pages}` の実体を単一真実源とする。テスト専用 `*_tests.rs` は除外して数える。
 
-**モジュール数サマリ**: commands 18 / services 24 / repositories 17 / frontend stores 15 / ipc modules 5
+**モジュール数サマリ**: commands 18 / services 26 / repositories 17 / frontend stores 15 / ipc modules 5
 
 ```
 src-tauri/
@@ -21,11 +21,11 @@ src-tauri/
     │   ├── settings.rs                  # KVS, APIクライアント初期化, Anlas
     │   ├── projects.rs                  # Project CRUD / open / cleanup
     │   ├── images.rs                    # generate / estimate_cost / save / delete
-    │   ├── image_tools.rs               # augment / upscale / get_image_data / read_image_file
+    │   ├── image_tools.rs               # augment / upscale / get_image_data / read_image_file / read_image_metadata
     │   ├── prompt_groups.rs             # PromptGroup CRUD + タグ差し替え
     │   ├── prompt_group_folders.rs      # PromptGroup 用フォルダ木 CRUD
     │   ├── genres.rs                    # Genre CRUD + デフォルト紐付け
-    │   ├── vibes.rs                     # Vibe import/delete/encode
+    │   ├── vibes.rs                     # Vibe import/delete/encode / import_vibe_encoding
     │   ├── vibe_folders.rs              # Vibe 用フォルダ木 CRUD
     │   ├── style_presets.rs             # StylePreset CRUD + Vibe junction
     │   ├── style_preset_folders.rs      # StylePreset 用フォルダ木 CRUD
@@ -36,12 +36,12 @@ src-tauri/
     │   ├── prompt_presets.rs            # PromptPreset + キャラクタースロット
     │   ├── preset_folders.rs            # PromptPreset 用フォルダ木 CRUD
     │   └── sidebar_preset_groups.rs     # サイドバープリセットグループ
-    ├── services/                        # 24 モジュール（テスト除く、mod.rs 基準）
+    ├── services/                        # 26 モジュール（テスト除く、mod.rs 基準）
     │   ├── settings / project / project_vibe / image / generation / generation_snapshot
-    │   ├── image_output / image_tools
+    │   ├── image_output / image_tools / image_metadata
     │   ├── prompt_group / prompt_group_folder / prompt_preset / preset_folder
     │   ├── genre / system_prompt / system_group_settings
-    │   ├── vibe / vibe_encode / vibe_folder
+    │   ├── vibe / vibe_encode / vibe_import / vibe_folder
     │   ├── style_preset / style_preset_folder
     │   ├── sidebar_preset_group
     │   ├── tag / tag_seed / tag_seed_csv
@@ -66,6 +66,7 @@ src/
 │   ├── prompt-assembly.ts / preset-contributions.ts / preset-positions.ts
 │   ├── normalize-strength.ts / random-preset.ts / vibe-utils.ts
 │   ├── genre-icons.ts / toast-error.ts
+│   ├── nai-metadata.ts / apply-metadata.ts  # 画像メタデータのパース・生成 UI への適用
 ├── types/index.ts                       # 全TS型定義
 ├── stores/                              # 12 stores
 │   ├── settings-store / project-store
@@ -270,3 +271,4 @@ Danbooru タグを SQLite FTS5 に格納し全文検索。
 | 2026-04-08 | Phase 5 完了マーク |
 | 2026-04-17 | doc-refresh: ディレクトリ構成を実装（17/22/17）に正準化、Phase 6〜10 を追記 |
 | 2026-09-26 | 画像編集・画像ツール（Img2Img / Inpaint / Enhance / キャラ参照 / Director Tools / Upscale）: 18/24/17、stores 15 |
+| 2026-09-26 | 画像メタデータ取り込み（services/image_metadata・vibe_import）: 18/26/17 |

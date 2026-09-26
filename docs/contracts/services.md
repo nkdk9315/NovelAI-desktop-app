@@ -260,6 +260,36 @@ pub async fn upscale_image(
 
 `source_image_id` は `ImageSourceRequest::History` のときのみ値が入り、Base64 入力では `null`。
 
+### 3.3d image_metadata
+
+```rust
+// --- services/image_metadata.rs ---
+// NovelAI が PNG に埋め込む生成メタデータを読む（D&D 時のメタデータ取り込み用）。
+// tEXt チャンク（Title / Description / Software / Source / Comment = リクエスト JSON）が
+// 削除された画像でも、alpha チャンネルの LSB に同じデータが stealth 形式で残っている場合がある。
+
+const PNG_SIGNATURE: &[u8] = &[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A];
+const STEALTH_MAGIC: &[u8] = b"stealth_pngcomp";
+const MAX_TEXT_BYTES: u64 = 32 * 1024 * 1024;   // 展開後テキストの上限（32 MB、細工ファイル対策）
+
+/// PNG のテキストチャンク（tEXt / zTXt / iTXt）を keyword → 値で返す。PNG でなければ空
+/// tEXt は仕様上 Latin-1 だが NovelAI は UTF-8 で書くため UTF-8 を優先し、失敗時のみ Latin-1。
+/// zTXt / 圧縮 iTXt は zlib 展開（MAX_TEXT_BYTES で打ち切り）。途中で切れたチャンクは読み飛ばして終了（panic しない）
+pub fn png_text_chunks(bytes: &[u8]) -> HashMap<String, String>;
+
+/// alpha チャンネル LSB に埋め込まれたメタデータ（`stealth_pngcomp`: gzip 圧縮 JSON）。
+/// ビットは列優先（x ごとに y を上から下へ）で読む: マジック 15 byte → ビット長 u32 BE → gzip ペイロード。
+/// alpha なし / マジック不一致 / 展開・パース失敗は None
+pub fn stealth_metadata(bytes: &[u8]) -> Option<HashMap<String, String>>;
+
+/// テキストチャンクに Comment があればそれを、無ければ stealth_metadata を使う。
+/// Comment が JSON オブジェクトでなければ None
+pub fn extract(bytes: &[u8]) -> Option<ImageMetadataDto>;
+
+/// image_output::read_image_file（拡張子・サイズ制限）→ extract
+pub fn read_file_metadata(path: &str) -> Result<Option<ImageMetadataDto>, AppError>;
+```
+
 ## 3.4 image_service
 
 ```rust
@@ -385,6 +415,38 @@ pub async fn encode_vibe(
     app_data_dir: &Path,
     req: EncodeVibeRequest,
 ) -> Result<VibeDto, AppError>;
+```
+
+### 3.7a vibe_import
+
+```rust
+// --- services/vibe_import.rs ---
+// 生のエンコーディング（NovelAI 画像メタデータの reference_image_multiple 等）を
+// .naiv4vibe としてライブラリに追加する。
+
+/// Vibe Transfer 対応モデルキー（V5 は Vibe Transfer 非対応）
+const VIBE_MODEL_KEYS: &[(&str, &str)] = &[
+    ("v4curated", "nai-diffusion-4-curated-preview"),
+    ("v4full", "nai-diffusion-4-full"),
+    ("v4-5curated", "nai-diffusion-4-5-curated"),
+    ("v4-5full", "nai-diffusion-4-5-full"),
+];
+
+/// 検証してモデル名を返す: model_key が VIBE_MODEL_KEYS に無い / encoding が空・
+/// MAX_VIBE_ENCODING_LENGTH 超・base64 文字以外を含む / information_extracted・strength が 0..=1 外 → Validation
+pub fn validate_request(req: &ImportVibeEncodingRequest) -> Result<&'static str, AppError>;
+
+/// 1. validate_request
+/// 2. 重複検出: 同じ model_key の既存 Vibe の .naiv4vibe を読み、同一 encoding があれば
+///    ImportedVibeDto { vibe, existed: true } を返す（ファイル・DB は変更しない）
+/// 3. .naiv4vibe JSON を組立（id = encoding の SHA-256、encodings.<model_key>.unknown、importInfo）
+/// 4. $APPDATA/vibes/<uuid>.naiv4vibe に書込 → vibe_repo::insert（thumbnail なし）
+/// 5. ImportedVibeDto { vibe, existed: false }
+pub fn import_vibe_encoding(
+    conn: &Connection,
+    app_data_dir: &Path,
+    req: ImportVibeEncodingRequest,
+) -> Result<ImportedVibeDto, AppError>;
 ```
 
 ## 3.8 project_vibe_service

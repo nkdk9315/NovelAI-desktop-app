@@ -104,6 +104,8 @@ OWASP Top 10に基づき、本アプリケーションへの該当を評価。
 | 画像パス | DB内は相対パスで保存（ポータビリティ + パストラバーサルリスク低減） |
 | 履歴画像の読込（`get_image_data` / augment・upscale の `History` 入力） | `image_output::read_history_image` が DB の `file_path` をプロジェクトディレクトリと結合し、結果がプロジェクト外になる / `..` を含む場合は Validation エラー。出力保存（`persist_output_image`）も同様にプロジェクト外への書込みを拒否 |
 | 外部画像ファイルの読込（`read_image_file`） | D&D / ファイルダイアログ由来の任意パスを受け取るため、拡張子ホワイトリスト（png / jpg / jpeg / webp、大文字小文字無視）、通常ファイルのみ、10 MB 以下に制限。返却前にマジックバイトで PNG / JPEG / WebP を再判定し、それ以外は拒否 |
+| 画像メタデータの読込（`read_image_metadata`） | ファイル読込は `image_output::read_image_file` を再利用し、`read_image_file` と同じ拡張子ホワイトリスト・通常ファイルのみ・10 MB 以下の制限を適用。PNG シグネチャが無ければテキストチャンクを読まない。zTXt / iTXt（zlib）と stealth alpha（gzip）の展開結果は 32 MB（`MAX_TEXT_BYTES`）で打ち切り、解凍爆弾によるメモリ枯渇を防ぐ。不正・途中で切れたチャンクは panic せず無視。メタデータは JSON として返すのみで、フロントエンドはテキストとして store に反映する（HTML として描画しない） |
+| Vibe エンコーディングの取り込み（`import_vibe_encoding`） | 画像メタデータ由来の文字列を受け取るため、モデルキーのホワイトリスト、base64 文字のみ・`MAX_VIBE_ENCODING_LENGTH` 以下、数値 0..=1 を検証。書込先は `$APPDATA/vibes/<uuid>.naiv4vibe` 固定（ユーザー入力をパスに使わない） |
 
 ### データ保持ポリシー
 
@@ -123,3 +125,4 @@ OWASP Top 10に基づき、本アプリケーションへの該当を評価。
 |------|------|
 | 2026-04-07 | 初版作成 |
 | 2026-09-26 | CSP `img-src` に `http://asset.localhost data: blob:` を追加。画像編集・画像ツール（`get_image_data` / `read_image_file`）の読込制限を追記 |
+| 2026-09-26 | 画像メタデータ取り込み（`read_image_metadata` / `import_vibe_encoding`）の読込制限・展開上限・入力検証を追記 |

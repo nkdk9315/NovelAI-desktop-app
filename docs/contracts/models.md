@@ -412,6 +412,16 @@ pub struct ImageDataDto {
     pub mime: String,   // マジックバイトから判定（image/png | image/jpeg | image/webp）
 }
 
+/// 画像に埋め込まれた NovelAI 生成メタデータ（PNG テキストチャンク / stealth alpha）
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageMetadataDto {
+    pub source: Option<String>,        // 例: "NovelAI Diffusion V4.5 4BDE2A90"（モデル推定に使用）
+    pub software: Option<String>,
+    pub description: Option<String>,
+    pub comment: serde_json::Value,    // `Comment` JSON（prompt / v4_prompt / uc / steps / vibes ...）。常にオブジェクト
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GenerateImageResponse {
@@ -503,6 +513,24 @@ pub struct EncodeVibeRequest {
     pub model: String,
     pub name: String,
     pub information_extracted: f64,
+}
+
+/// 画像メタデータ内の Vibe エンコーディングの取り込み
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportVibeEncodingRequest {
+    pub name: String,
+    pub model_key: String,               // v4curated | v4full | v4-5curated | v4-5full
+    pub encoding: String,                // base64
+    pub information_extracted: f64,      // 0..=1
+    pub strength: f64,                   // 0..=1
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportedVibeDto {
+    pub vibe: VibeDto,
+    pub existed: bool,                   // 同一モデル + 同一エンコーディングが既にライブラリにあった
 }
 
 #[derive(Debug, Deserialize)]

@@ -355,6 +355,35 @@ export interface ImageToolResponse {
   anlasConsumed?: number;
 }
 
+/** NovelAI generation metadata embedded in an image. */
+export interface ImageMetadataDto {
+  source: string | null;
+  software: string | null;
+  description: string | null;
+  /** The request parameters (the `Comment` JSON) */
+  comment: Record<string, unknown>;
+}
+
+export interface ImportVibeEncodingRequest {
+  name: string;
+  modelKey: string;
+  encoding: string;
+  informationExtracted: number;
+  strength: number;
+}
+
+export interface EncodeVibeImageRequest {
+  imageBase64: string;
+  model: string;
+  name: string;
+  informationExtracted: number;
+}
+
+export interface ImportedVibeDto {
+  vibe: VibeDto;
+  existed: boolean;
+}
+
 export interface ImageDataDto {
   base64: string;
   mime: string;

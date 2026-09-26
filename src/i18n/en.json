@@ -105,7 +105,11 @@
     "generating": "Generating…",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "zoomFit": "Fit to view (or double-click)"
+    "zoomFit": "Fit to view (or double-click)",
+    "seedRandom": "Random",
+    "seedFixed": "Seed fixed",
+    "seedUseLast": "Use the shown image's seed",
+    "seedClear": "Back to random"
   },
   "prompt": {
     "sendPreview": "Send Preview"
@@ -672,5 +676,47 @@
     "charRefHint": "Reference the character or art style (V4.5)",
     "vibe": "Encode as a vibe",
     "vibeHint": "Import the mood for Vibe Transfer (V4 / V4.5)"
+  },
+  "metadataImport": {
+    "title": "NovelAI metadata found",
+    "reading": "Reading the image…",
+    "orUseImage": "Use as an image",
+    "none": "This image has no NovelAI metadata",
+    "prompt": "Prompt",
+    "qualityTags": "+ quality tags",
+    "artistTags": "Artist tags",
+    "negative": "Negative prompt",
+    "preset": "Preset \"{{name}}\" +",
+    "characters": "Characters",
+    "vibes": "Vibes",
+    "vibesHint": "Added to the vibe library and enabled in this project (strength {{strengths}}). Existing vibes are not duplicated.",
+    "vibesUnsupported": "Vibes cannot be imported because this image's model has no Vibe Transfer",
+    "characterReference": "Character reference",
+    "settings": "Generation settings (model, size, steps, ...)",
+    "seed": "Seed",
+    "import": "Import selected",
+    "done": "Imported the metadata",
+    "doneArtists": "{{count}} artist tags",
+    "doneCharacters": "{{count}} characters",
+    "doneVibes": "vibes: {{added}} added, {{existing}} existing",
+    "failed": "Import failed: {{error}}",
+    "mode": {
+      "replace": "Replace",
+      "append": "Append"
+    },
+    "artistHint": "Click to toggle. Selected tags go to the artist list and are removed from the prompt; unselected ones stay in the prompt.",
+    "artistOn": "Import (click to skip)",
+    "artistOff": "Keep in the prompt (click to import)",
+    "fromCharacter": "char {{n}}",
+    "emptyAfterArtists": "(nothing but artist tags)",
+    "importToggle": "Also import metadata",
+    "importToggleHint": "When on, picking an option below also imports what is ticked on the left",
+    "plusMetadata": "+ imports the metadata too",
+    "showAll": "Show all ({{count}} chars)",
+    "showLess": "Show less",
+    "seedHint": "(fixed for generations; set back to random via ⚙ in the header)",
+    "vibesUnencoded": "{{count}} of them are unencoded images; importing encodes them for {{cost}} Anlas in total.",
+    "doneVibesEncoded": "{{count}} encoded",
+    "remembered": "Your choices are remembered for next time"
   }
 }

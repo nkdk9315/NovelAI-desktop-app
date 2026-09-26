@@ -44,7 +44,7 @@ NovelAI API を利用した AI イラスト生成・管理デスクトップア�
 ```
 main.rs, state.rs, error.rs, db.rs
 ├── commands/       # 18 モジュール
-├── services/       # 24 モジュール（テスト除く、generation_snapshot / image_output / image_tools を含む）
+├── services/       # 26 モジュール（テスト除く、generation_snapshot / image_output / image_tools / image_metadata / vibe_import を含む）
 ├── repositories/   # 17 モジュール（テスト除く）
 └── models/dto.rs   # Row 構造体 + IPC 用 DTO
 ```

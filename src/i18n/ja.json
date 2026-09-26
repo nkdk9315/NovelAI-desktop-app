@@ -105,7 +105,11 @@
     "generating": "生成中…",
     "zoomIn": "拡大",
     "zoomOut": "縮小",
-    "zoomFit": "全体表示（ダブルクリックでも切替）"
+    "zoomFit": "全体表示（ダブルクリックでも切替）",
+    "seedRandom": "ランダム",
+    "seedFixed": "シード固定中",
+    "seedUseLast": "表示中の画像のシードを使う",
+    "seedClear": "ランダムに戻す"
   },
   "prompt": {
     "sendPreview": "送信プレビュー"
@@ -672,5 +676,47 @@
     "charRefHint": "キャラクターや画風を参照します（V4.5）",
     "vibe": "Vibe としてエンコード",
     "vibeHint": "雰囲気を Vibe Transfer 用に取り込みます（V4 / V4.5）"
+  },
+  "metadataImport": {
+    "title": "NovelAI のメタデータが見つかりました",
+    "reading": "画像を読み込み中…",
+    "orUseImage": "画像として使う",
+    "none": "この画像には NovelAI のメタデータがありません",
+    "prompt": "プロンプト",
+    "qualityTags": "＋クオリティタグ",
+    "artistTags": "アーティストタグ",
+    "negative": "ネガティブプロンプト",
+    "preset": "プリセット「{{name}}」＋",
+    "characters": "キャラクター",
+    "vibes": "Vibe",
+    "vibesHint": "Vibe ライブラリに追加してこのプロジェクトで有効にします（強さ {{strengths}}）。同じ Vibe は重複しません。",
+    "vibesUnsupported": "この画像のモデルでは Vibe を使えないため取り込めません",
+    "characterReference": "キャラクター参照",
+    "settings": "生成設定（モデル・サイズ・ステップなど）",
+    "seed": "シード",
+    "import": "選択した項目をインポート",
+    "done": "メタデータをインポートしました",
+    "doneArtists": "アーティスト {{count}} 件",
+    "doneCharacters": "キャラクター {{count}} 人",
+    "doneVibes": "Vibe 追加 {{added}} 件・既存 {{existing}} 件",
+    "failed": "インポートに失敗しました: {{error}}",
+    "mode": {
+      "replace": "置き換え",
+      "append": "追加"
+    },
+    "artistHint": "クリックで選択を切り替え。選んだタグはアーティスト欄に入り、プロンプトからは取り除きます。選ばなかったタグはプロンプトに残ります。",
+    "artistOn": "インポートする（クリックで外す）",
+    "artistOff": "プロンプトに残す（クリックで選ぶ）",
+    "fromCharacter": "キャラ{{n}}",
+    "emptyAfterArtists": "（アーティストタグ以外なし）",
+    "importToggle": "メタデータも一緒にインポート",
+    "importToggleHint": "オンにすると、下の操作を選んだときに左で選んだ項目も取り込みます",
+    "plusMetadata": "＋ メタデータもインポート",
+    "showAll": "すべて表示（{{count}} 文字）",
+    "showLess": "折りたたむ",
+    "seedHint": "（生成時に固定されます。ヘッダーの ⚙ でランダムに戻せます）",
+    "vibesUnencoded": "うち {{count}} 件は未エンコードの画像です。インポート時にエンコードし、合計 {{cost}} Anlas を消費します。",
+    "doneVibesEncoded": "エンコード {{count}} 件",
+    "remembered": "チェックの状態は次回も引き継がれます"
   }
 }
