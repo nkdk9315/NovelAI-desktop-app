@@ -151,3 +151,27 @@ pub fn list_project_vibes_all(
     crate::services::project_vibe::list_project_vibes_all(&conn, &project_id)
         .map_err(|e| e.into())
 }
+
+/// Add a vibe from a raw encoding (image metadata); returns the existing one for duplicates.
+#[tauri::command]
+pub fn import_vibe_encoding(
+    state: State<'_, AppState>,
+    req: crate::models::dto::ImportVibeEncodingRequest,
+) -> Result<crate::models::dto::ImportedVibeDto, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    crate::services::vibe_import::import_vibe_encoding(&conn, &state.app_data_dir, req)
+        .map_err(|e| e.into())
+}
+
+/// Encode an unencoded vibe image from image metadata (costs Anlas like a normal encode).
+#[tauri::command]
+pub async fn encode_vibe_image(
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+    req: crate::models::dto::EncodeVibeImageRequest,
+) -> Result<VibeDto, String> {
+    let app_data_dir = app_handle.path().app_data_dir().map_err(|e| e.to_string())?;
+    crate::services::vibe_encode::encode_vibe_image(&state.db, &state.api_client, &app_data_dir, req)
+        .await
+        .map_err(|e| e.into())
+}

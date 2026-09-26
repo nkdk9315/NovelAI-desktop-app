@@ -1,6 +1,8 @@
 use tauri::State;
 
-use crate::models::dto::{AugmentImageRequest, ImageDataDto, ImageToolResponse, UpscaleImageRequest};
+use crate::models::dto::{
+    AugmentImageRequest, ImageDataDto, ImageMetadataDto, ImageToolResponse, UpscaleImageRequest,
+};
 use crate::state::AppState;
 
 #[tauri::command]
@@ -37,4 +39,10 @@ pub fn read_image_file(path: String) -> Result<ImageDataDto, String> {
     crate::services::image_output::read_image_file(&path)
         .and_then(|bytes| crate::services::image_output::to_image_data(&bytes))
         .map_err(|e| e.into())
+}
+
+/// NovelAI generation metadata of a dropped image file (None when it has none).
+#[tauri::command]
+pub fn read_image_metadata(path: String) -> Result<Option<ImageMetadataDto>, String> {
+    crate::services::image_metadata::read_file_metadata(&path).map_err(|e| e.into())
 }

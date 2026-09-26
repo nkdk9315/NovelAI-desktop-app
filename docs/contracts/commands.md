@@ -181,6 +181,15 @@ pub fn export_vibe(state: State<'_, AppState>, id: String, dest_path: String) ->
 pub async fn encode_vibe(state: State<'_, AppState>, app_handle: tauri::AppHandle, req: EncodeVibeRequest) -> Result<VibeDto, String>;
 
 #[tauri::command]
+pub fn import_vibe_encoding(state: State<'_, AppState>, req: ImportVibeEncodingRequest) -> Result<ImportedVibeDto, String>;
+// → vibe_import::import_vibe_encoding(&conn, &state.app_data_dir, req)
+
+/// メタデータ内の未エンコード Vibe 画像（base64）をエンコードしてライブラリに追加（通常のエンコードと同じく Anlas を消費）
+pub async fn encode_vibe_image(state, app_handle, req: EncodeVibeImageRequest) -> Result<VibeDto, String>;
+// → vibe_encode::encode_vibe_image: base64 を検証（画像形式・10MB 以下）→ 一時ファイル（app_data/vibe-imports）→ encode_vibe → 一時ファイル削除
+// 画像メタデータ内の Vibe エンコーディングを .naiv4vibe としてライブラリに追加。同一モデル + 同一エンコーディングは既存を返す（existed = true）
+
+#[tauri::command]
 pub fn add_vibe_to_project(state: State<'_, AppState>, project_id: String, vibe_id: String) -> Result<(), String>;
 
 #[tauri::command]
@@ -402,6 +411,12 @@ pub fn get_image_data(state: State<'_, AppState>, image_id: String) -> Result<Im
 pub fn read_image_file(path: String) -> Result<ImageDataDto, String>;
 // → image_output::read_image_file → image_output::to_image_data
 // ユーザーが D&D / ファイルダイアログで選んだ画像（png/jpg/jpeg/webp、10 MB 以下）
+
+#[tauri::command]
+pub fn read_image_metadata(path: String) -> Result<Option<ImageMetadataDto>, String>;
+// → image_metadata::read_file_metadata(&path)
+// ドロップされた画像の NovelAI 生成メタデータ（PNG テキストチャンク / stealth alpha）。無ければ None
+// ファイル読込は read_image_file と同じ制限（image_output::read_image_file 経由）
 ```
 
 augment / upscale の出力は `generated_images` に `is_saved = 0` で追加され、レスポンスの `id` で履歴に反映される。

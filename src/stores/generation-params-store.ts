@@ -60,6 +60,8 @@ interface GenerationParamsData {
   normalizeArtistStrength: boolean;
   /** V5 only: request a transparent background */
   transparentBackground: boolean;
+  /** Fixed seed; null = random for every generation */
+  seed: number | null;
 }
 
 interface GenerationParamsState extends GenerationParamsData {
@@ -112,6 +114,7 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set) =>
   normalizeVibeStrength: true,
   normalizeArtistStrength: true,
   transparentBackground: false,
+  seed: null,
   characters: [],
   selectedVibes: [],
   sidebarPresets: [],

@@ -203,6 +203,27 @@ export interface ImageDataDto {
   mime: string;   // image/png | image/jpeg | image/webp
 }
 
+/** 画像に埋め込まれた NovelAI 生成メタデータ */
+export interface ImageMetadataDto {
+  source: string | null;        // 例: "NovelAI Diffusion V4.5 4BDE2A90"
+  software: string | null;
+  description: string | null;
+  comment: Record<string, unknown>;   // `Comment` JSON（リクエストパラメータ）
+}
+
+export interface ImportVibeEncodingRequest {
+  name: string;
+  modelKey: string;             // v4curated | v4full | v4-5curated | v4-5full
+  encoding: string;
+  informationExtracted: number;
+  strength: number;
+}
+
+export interface ImportedVibeDto {
+  vibe: VibeDto;
+  existed: boolean;             // 同一エンコーディングが既にライブラリにあった
+}
+
 // 履歴画像から UI 状態を戻すためのスナップショット。Rust 側は不透明 JSON として
 // prompt_snapshot 内に保持する。version フィールドで将来のマイグレーションを判別。
 export interface UiSnapshotV1 {
@@ -403,7 +424,8 @@ import type {
   CreatePromptGroupRequest, UpdatePromptGroupRequest, CreateGenreRequest,
   AddVibeRequest, EncodeVibeRequest, CreateStylePresetRequest,
   UpdateStylePresetRequest,
-  AugmentImageRequest, UpscaleImageRequest, ImageToolResponse, ImageDataDto,
+  AugmentImageRequest, UpscaleImageRequest, ImageToolResponse, ImageDataDto, ImageMetadataDto,
+  ImportVibeEncodingRequest, ImportedVibeDto,
 } from "@/types";
 
 // ---- Settings ----
@@ -470,6 +492,8 @@ export function augmentImage(req: AugmentImageRequest): Promise<ImageToolRespons
 export function upscaleImage(req: UpscaleImageRequest): Promise<ImageToolResponse> { return invoke("upscale_image", { req }); }
 export function getImageData(imageId: string): Promise<ImageDataDto> { return invoke("get_image_data", { imageId }); }
 export function readImageFile(path: string): Promise<ImageDataDto> { return invoke("read_image_file", { path }); }
+export function readImageMetadata(path: string): Promise<ImageMetadataDto | null> { return invoke("read_image_metadata", { path }); }
+export function importVibeEncoding(req: ImportVibeEncodingRequest): Promise<ImportedVibeDto> { return invoke("import_vibe_encoding", { req }); }
 
 export function saveImage(imageId: string): Promise<void> {
   return invoke("save_image", { imageId });
@@ -1113,3 +1137,125 @@ export function useImageSourceActions(): {
   setAsCharacterReference: (source: ImageSource) => Promise<void>;
 };
 ```
+
+## 6.11 画像メタデータ取り込み (D&D 時)
+
+画像ファイルをドロップすると `ImageDropChoiceDialog` が `ipc.readImageMetadata(path)` と `ipc.readImageFile(path)` を並行実行し、
+NovelAI メタデータがあれば `parseMetadata` した結果を `MetadataImportPanel`（`src/components/modals/metadata-import/`）で
+表示する（メタデータ無しなら従来の用途選択のみ）。
+
+### パース (`src/lib/nai-metadata.ts`)
+
+```typescript
+export interface MetadataCharacter { rawPrompt: string; prompt: string; negative: string; centerX: number; centerY: number }
+export interface MetadataArtist extends ArtistTag { source: "main" | number }   // 見つかった場所（main / キャラ index）
+export interface MetadataVibe { encoding: string; strength: number; informationExtracted: number }
+export interface MetadataSettings {
+  width?: number; height?: number; steps?: number; scale?: number;
+  cfgRescale?: number; sampler?: string; noiseSchedule?: string;   // 未知の sampler / schedule は無視
+}
+export interface ParsedMetadata {
+  model: string | null;              // Source から推定（不明は null）
+  rawPrompt: string;                 // 品質タグ接尾辞だけ除いたメインプロンプト（アーティスト込み）
+  prompt: string;                    // さらに全アーティストを除いたプレビュー
+  artistTags: MetadataArtist[];      // メイン + 各キャラのプロンプトから抽出（名前で重複除去）
+  qualityTags: boolean;
+  negative: string;                  // 検出したネガティブプリセットを除いた残り
+  negativePreset: NegativePresetId;
+  characters: MetadataCharacter[];
+  settings: MetadataSettings;
+  seed: number | null;               // 表示のみ（アプリに seed 入力が無いため適用しない）
+  vibes: MetadataVibe[];
+  characterReference: { imageBase64: string; strength: number; fidelity: number; mode: CharRefMode } | null;
+}
+
+/** Source 末尾のモデルハッシュ（既知のもの）→ 無ければ "V5" / "V4.5" / "V4" + curated 有無からモデル ID */
+export function modelFromSource(source: string | null | undefined): string | null;
+/** 末尾の QUALITY_TAGS を分離 */
+export function splitQuality(prompt: string): { prompt: string; qualityTags: boolean };
+/** names に含まれるアーティストだけをプロンプトから取り除く（他は残す） */
+export function promptWithoutArtists(prompt: string, names: ReadonlySet<string>): string;
+/** 先頭が NEGATIVE_PRESETS のいずれか（長い順に照合）ならプリセットとして分離 */
+export function splitNegative(negative: string): { negative: string; preset: NegativePresetId };
+/** comment の v4_prompt / v4_negative_prompt（無ければ prompt / uc）、reference_*_multiple（Vibe）、
+ *  director_reference_*（キャラ参照）、steps / scale / sampler 等を ParsedMetadata に変換 */
+export function parseMetadata(meta: ImageMetadataDto): ParsedMetadata;
+/** MODEL_TO_VIBE_KEY でモデル → Vibe モデルキー（V5 等の非対応は null = Vibe 取り込み不可） */
+export function vibeModelKey(model: string | null): string | null;
+```
+
+### アーティスト抽出 (`src/lib/artist-extract.ts`)
+
+```typescript
+/** `artist#` は重みブロック内でアーティストグループを開始し、ブロックが閉じるまでの項目もすべてアーティスト
+ *  （例 `0.8::artist#ei (eiei e1), 2equal8, ::` → 2 件とも 0.8）。先頭の `artist#` 項目だけ取り除く場合は次に残る項目へ
+ *  マーカーを移す。数字で終わる名前の直後に `::` を詰めない（`2equal8 ::`、NovelAI が重みと解釈するため）。
+ *  NovelAI の重み構文（`1.2::a, b::`・入れ子・`0.3::artist:x::` のような空白なし、`{}` ×1.05、`[]` ÷1.05）を
+ *  トークン化し、アーティスト（`artist:` / `artist#`）の強さを周囲の重みの積で求める。アプリ形式 `{1.2::x ::}` の
+ *  波括弧は区切りとして扱う（×1.05 しない）。remove(name) が true のものを本文から除き、空になったブロックや
+ *  余分なカンマを整える（行末のカンマは残す） */
+export function extractArtistTags(prompt: string, remove?: (name: string) => boolean): { text: string; artistTags: ArtistTag[] };
+```
+
+### 適用 (`src/lib/apply-metadata.ts`)
+
+```typescript
+export type MergeMode = "replace" | "append";
+export interface MetadataSelection {
+  prompt: boolean; negative: boolean;
+  artistNames: string[]; artistMode: MergeMode;     // 選んだアーティストだけ取り込みプロンプトから除去。
+                                                    // append は既存タグを残したまま OFF（enabled:false）にし、取り込んだタグだけ ON
+  seed: boolean;                                    // params.seed に設定（生成時に固定）
+  characters: boolean; characterMode: MergeMode;    // replace は既存キャラを削除。maxCharactersFor(model) で打ち切り
+  vibes: boolean; characterReference: boolean; settings: boolean;
+}
+export interface ApplyResult { artistTags: number; characters: number; vibesAdded: number; vibesExisting: number }
+/** 初期選択（アーティストは全選択、設定のみ OFF） / 何か選ばれているか */
+export function defaultSelection(meta: ParsedMetadata): MetadataSelection;
+export function hasAnySelected(sel: MetadataSelection): boolean;
+
+/** 選択された項目を生成 UI の各 store に反映する。
+ *  settings（model 含む）を最初に適用 → prompt / negative（main ターゲットの override + qualityTags / negativePreset）
+ *  → artistTags → characters（Other ジャンル、位置 + プロンプト override）→ キャラ参照（char-ref-store）
+ *  → vibes（ipc.importVibeEncoding → addVibeToProject → 選択 + strength 反映、`vibes-changed` を発火）。
+ *  Vibe 名は baseName（複数なら `baseName #n`） */
+export async function applyMetadata(
+  meta: ParsedMetadata, sel: MetadataSelection, projectId: string, baseName: string,
+): Promise<ApplyResult>;
+```
+
+### 選択の記憶 (`src/lib/metadata-import-prefs.ts`)
+
+```typescript
+export interface MetadataImportPrefs {
+  prompt; negative; artists: boolean; artistMode: MergeMode; characters; characterMode: MergeMode;
+  vibes; characterReference; settings; seed; withImage: boolean;   // withImage = 「画像として使う」でも取り込む
+}
+export const DEFAULT_PREFS: MetadataImportPrefs;   // settings / seed / withImage は OFF、artistMode は "append"
+export function parsePrefs(raw: string | undefined): MetadataImportPrefs;   // 不正値は既定値
+export async function loadPrefs(): Promise<MetadataImportPrefs>;            // settings キー metadata_import_prefs
+export function savePrefs(prefs: MetadataImportPrefs): void;
+export function selectionFromPrefs(meta: ParsedMetadata, p: MetadataImportPrefs): MetadataSelection;
+/** 画像に無い項目は前回の値を保持 */
+export function prefsFromSelection(meta, sel, prev, withImage): MetadataImportPrefs;
+```
+
+`MetadataVibe.encoded` が false（`isImageBase64`: PNG / JPEG / WebP の base64）の Vibe は未エンコード画像として扱い、
+取り込み時に `ipc.encodeVibeImage` でエンコードする（1 件 2 Anlas。UI に件数と合計を表示）。
+Rust 側はテキストチャンクの Comment に `reference_image_multiple` が無ければ stealth（アルファ）側を優先する。
+
+### シード (`generation-params-store` / `SeedField.tsx`)
+
+`seed: number | null`（null = 毎回ランダム）。ヘッダーの ⚙ ポップオーバーの `SeedField` で入力・表示中の画像のシードを使う・ランダムに戻す。
+固定中はポップオーバーのボタンにドットを表示。`buildGenerateRequest` が `seed` を送る。
+
+### UI (`MetadataImportPanel.tsx` / `ImageDropChoiceDialog.tsx`)
+
+`MetadataImportPanel` は制御コンポーネント（`meta` / `sel` / `onChange` / `enabled`）のチェックリスト:
+アーティストタグ（タグごとにクリックで選択、キャラ由来は「キャラn」表示、置換・追加トグル）/ プロンプト（選択中のアーティストを除いたプレビュー）/
+ネガティブ / キャラクター（置換・追加トグル）/ Vibe（モデルが Vibe 非対応なら無効）/ キャラクター参照 / 設定（既定 OFF）。seed は読み取り専用で表示。
+
+`ImageDropChoiceDialog` が選択状態と「メタデータも一緒にインポート」スイッチ（既定 OFF）を持ち、変更のたびに記憶する。
+「選択した項目をインポート」は常に取り込む。スイッチ ON のときは右側の「画像として使う」（Img2Img / 落書き / Inpaint /
+キャラ参照 / Vibe）を選んでも先にメタデータを取り込んでから画像の操作を行う。プロンプト・ネガティブ・キャラの長い本文は
+「すべて表示」で全文を展開できる。シードも行として選択できる（既定 OFF）。

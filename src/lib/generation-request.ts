@@ -157,6 +157,7 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
       height: overrides.height ?? params.height,
       steps: params.steps,
       scale: params.scale,
+      seed: params.seed ?? undefined,
       cfgRescale: params.cfgRescale,
       sampler: params.sampler,
       noiseSchedule: params.noiseSchedule,

@@ -6,7 +6,8 @@ import type {
   CreateProjectRequest, UpdateProjectRequest, GenerateImageRequest, CostEstimateRequest,
   CreateGenreRequest, UpdateGenreRequest,
   GenerateImageResponse, PromptGroupDto,
-  AugmentImageRequest, UpscaleImageRequest, ImageToolResponse, ImageDataDto,
+  AugmentImageRequest, UpscaleImageRequest, ImageToolResponse, ImageDataDto, ImageMetadataDto,
+  ImportVibeEncodingRequest, ImportedVibeDto, EncodeVibeImageRequest, VibeDto,
 } from "@/types";
 
 // ---- Re-exports from domain-specific IPC modules ----
@@ -89,6 +90,9 @@ export function augmentImage(req: AugmentImageRequest): Promise<ImageToolRespons
 export function upscaleImage(req: UpscaleImageRequest): Promise<ImageToolResponse> { return invoke("upscale_image", { req }); }
 export function getImageData(imageId: string): Promise<ImageDataDto> { return invoke("get_image_data", { imageId }); }
 export function readImageFile(path: string): Promise<ImageDataDto> { return invoke("read_image_file", { path }); }
+export function readImageMetadata(path: string): Promise<ImageMetadataDto | null> { return invoke("read_image_metadata", { path }); }
+export function encodeVibeImage(req: EncodeVibeImageRequest): Promise<VibeDto> { return invoke("encode_vibe_image", { req }); }
+export function importVibeEncoding(req: ImportVibeEncodingRequest): Promise<ImportedVibeDto> { return invoke("import_vibe_encoding", { req }); }
 export function cleanupUnsavedImages(projectId: string): Promise<void> { return invoke("cleanup_unsaved_images", { projectId }); }
 
 // ---- Tokens ----

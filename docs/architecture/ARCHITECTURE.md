@@ -110,7 +110,7 @@ domain-model.md の境界コンテキストに準拠。モジュール数は `sr
 
 > **更新トリガー**: `src-tauri/src/commands/mod.rs` に新モジュールを追加したら本セクションと `implementation-plan.md` の構造表も同時に更新すること。
 
-**現在のモジュール数**: commands 18 / services 24 / repositories 17
+**現在のモジュール数**: commands 18 / services 26 / repositories 17
 
 ### 4-1. コアドメイン（画像生成・プロンプト）
 
@@ -121,6 +121,7 @@ domain-model.md の境界コンテキストに準拠。モジュール数は `sr
 | generation_snapshot | 生成スナップショット組立 | `PromptSnapshotInput` 構築（UI 復元用 `ui_snapshot` を不透明 JSON で保持。action 要約・キャラ参照設定を記録し画像バイトは含めない） | なし |
 | image_output | 画像入出力 | 出力画像の履歴保存（ファイル書込 + INSERT）、履歴画像 / 外部画像ファイルの読込、base64 デコード、形式判定 | project, image（repository） |
 | image_tools | 画像ツール | Director Tools（augment）/ Upscale の検証・API呼び出し・履歴保存 | image_output |
+| image_metadata | 画像メタデータ読取 | NovelAI 画像の生成メタデータ抽出（PNG tEXt / zTXt / iTXt、alpha LSB の stealth_pngcomp）。展開は 32 MB 上限 | image_output |
 | prompt_group | プロンプトグループ | PromptGroup/PromptGroupTag CRUD, デフォルト制御 | なし |
 | genre | ジャンル管理 | Genre CRUD, Genre↔PromptGroup デフォルト紐付け | なし |
 | system_prompt | システムプロンプト | CSV由来の内蔵プロンプト検索・カテゴリ管理 | なし |
@@ -133,6 +134,7 @@ domain-model.md の境界コンテキストに準拠。モジュール数は `sr
 |-----------|------|--------|
 | vibe | Vibe import/delete, サムネイル管理, `.naiv4vibe` パース | なし |
 | vibe_encode | NovelAI Vibe Transfer の事前エンコード結果キャッシュ | vibe |
+| vibe_import | 生エンコーディング（画像メタデータ由来）から `.naiv4vibe` を作成してライブラリに追加。同一モデル + 同一エンコーディングは既存を返す | vibe（repository） |
 | project_vibe | プロジェクト ↔ Vibe 多対多, 表示/非表示切替, JOIN | vibe |
 | style_preset | StylePreset CRUD（アーティストタグ + Vibe 参照束） | vibe |
 
@@ -184,6 +186,8 @@ graph LR
     generation --> settings
     generation --> image_output
     image_tools --> image_output
+    image_metadata --> image_output
+    vibe_import --> vibe
     project --> settings
     project_vibe --> vibe
     style_preset --> vibe
@@ -201,7 +205,7 @@ graph LR
 
 ### 外部クレート
 
-`novelai_api_client/rust-api`（submodule）は `novelai-api` crate として取り込み、services 層（`generation`, `vibe_encode`, `image_tools`）からのみ呼び出す。本モジュール一覧には含めない。
+`novelai_api_client/rust-api`（submodule）は `novelai-api` crate として取り込み、services 層（`generation`, `vibe_encode`, `image_tools`, `vibe_import`）からのみ呼び出す。本モジュール一覧には含めない。
 
 ---
 
@@ -449,3 +453,4 @@ v4_prompt: {
 | 2026-04-16 | feat/sidebar-direct-artist-tags: サイドバー直接アーティストタグ入力を追加 (useSidebarArtistTagsStore, useArtistTagInput hook) |
 | 2026-04-17 | doc-refresh: セクション4 モジュール構成を正準化（17/22/17）、Folder 階層管理・Tag DB・Prompt Preset 節を追加。AppState に `app_data_dir` を明記。 |
 | 2026-09-26 | 画像編集・画像ツール: commands/image_tools、services/image_output・image_tools を追加（18/24/17）。generation にキャラクター参照を追加 |
+| 2026-09-26 | 画像メタデータ取り込み: services/image_metadata・vibe_import を追加（18/26/17）。外部クレート image（png）/ flate2 / sha2 を追加 |

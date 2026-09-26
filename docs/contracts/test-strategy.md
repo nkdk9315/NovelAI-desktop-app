@@ -275,6 +275,25 @@ fn test_create_project_creates_directory() {
 | `rejects_unknown_tool_and_bad_options` | 未知ツール、defry > 5、emotion のキーワード欠落 / 空白のみを拒否 |
 | `pixel_limits` | Upscale 入力 1024×1024 は可、1024×1088 は超過 |
 
+#### image_metadata (`services/image_metadata_tests.rs`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `reads_text_chunks` | tEXt の `Source` / `Comment` を読み、Comment JSON（prompt・reference_image_multiple）を返す |
+| `reads_compressed_chunks` | zTXt（zlib）と非圧縮 iTXt の Comment を読める |
+| `reads_stealth_alpha_metadata` | alpha LSB（列優先）に埋め込んだ `stealth_pngcomp` + gzip JSON から Source / Comment を復元 |
+| `images_without_metadata_return_none` | メタデータ無し PNG・非 PNG・Comment が JSON オブジェクトでない場合は None |
+| `truncated_chunks_do_not_panic` | 長さが範囲外のチャンクで panic せず空を返す |
+| `text_chunks_are_utf8` | tEXt を UTF-8 として読む（日本語プロンプト） |
+| `real_image` (`#[ignore]`) | 手動確認用。`NAI_IMAGE=/path/to.png cargo test real_image -- --ignored` で実画像の v4_prompt を確認 |
+
+#### vibe_import (`services/vibe_import.rs`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `validates_model_and_encoding` | 対応モデルキーのみ受理（v5full は拒否）、空・非 base64 エンコーディング、範囲外 strength を拒否 |
+| `imports_readable_vibe_and_deduplicates` | 書き出した .naiv4vibe を `load_vibe_file` / `extract_encoding` で読める。同一モデル + 同一エンコーディングは `existed = true` で同じ id、別モデルなら新規 (tempdir) |
+
 ### 4.3 Frontend テスト (`lib/cost.ts`)
 
 | テストケース | 検証内容 |
@@ -307,6 +326,35 @@ fn test_create_project_creates_directory() {
 | `historyActionOf: defaults to generate for legacy snapshots` | action なし / null は generate |
 | `historyActionOf: reads img2img / infill / tools` | img2img / infill / augment(tool) の判定、`isToolOutput` |
 
+### 4.6 Frontend テスト (`lib/artist-extract.ts`)
+
+| テスト | 内容 |
+|--------|------|
+| reads weights in every syntax | `0.3::artist:x::` / `artist#x` / `{0.33::artist:x ::}` / `{{}}` `[]` / 複数項目ブロック / 入れ子の重み |
+| removes artists and cleans up empty blocks | 除去後に空ブロック・余分なカンマが残らない。混在ブロックは他の項目を残す |
+| keeps artists the caller does not remove | 選ばれなかったアーティストは本文に残る |
+| does not treat numbers inside words as weights | `1girl` / `2boys` を重みと誤認しない |
+| reads artist# groups up to the end of their block | `0.8::artist#a, b, ::` の 2 件を抽出・部分除去時のマーカー移動 |
+| never glues a name ending in a digit to a close | `2equal8, ::` を `2equal8 ::` に整形（`8::` にしない） |
+| keeps line breaks | 行末のカンマと改行を保持 |
+
+`metadata-import-prefs.test.ts`: 既定値（settings / seed / withImage OFF、append）、保存値のマージと不正値の無視、
+prefs → チェックリスト、画像に無い項目は前回値を保持。`nai-metadata.test.ts`: `isImageBase64`（未エンコード Vibe 判定）。
+Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
+
+### 4.5 Frontend テスト (`lib/nai-metadata.ts`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `modelFromSource: uses known hashes and falls back to the version text` | 既知ハッシュ → モデル、無ければ V5 / V4.5 / V4 + curated 判定、不明・null は null |
+| `prompt splitting: splits on top-level commas only` | 括弧内のカンマでは分割しない |
+| `prompt splitting: parses artist tag formats` | `artist:x` / `{w::artist:x ::}` / `w::artist:x ::` / `{{}}` / `[]` の強度変換、非アーティスト・括弧不一致は null |
+| `prompt splitting: separates artist tags and the quality suffix` | アーティストタグと QUALITY_TAGS 接尾辞の分離 |
+| `prompt splitting: detects negative presets` | 先頭のネガティブプリセット検出（完全一致 / 接頭辞 / 無し） |
+| `parseMetadata: extracts prompt, characters, vibes and settings` | v4_prompt 優先、キャラ位置・ネガティブ、Vibe（strength / information_extracted）、設定・seed、`vibeModelKey` |
+| `parseMetadata: falls back to legacy fields and ignores unknown values` | prompt / uc へのフォールバック、未知 sampler は無視、モデル不明なら Vibe キー null |
+| `parseMetadata: reads a character reference` | director_reference_* → imageBase64 / strength / fidelity（= 1 − secondary）/ mode |
+
 ---
 
 ## 5. テスト構成
@@ -335,7 +383,9 @@ src-tauri/src/
 │   ├── system_prompt.rs
 │   ├── generation_tests.rs    # validate_generate_request / estimate_cost / snapshot
 │   ├── image_output.rs        # 末尾に #[cfg(test)] mod tests（形式判定・base64・ファイル読込制限）
-│   └── image_tools.rs         # 同上（augment 検証・ピクセル上限）
+│   ├── image_tools.rs         # 同上（augment 検証・ピクセル上限）
+│   ├── image_metadata_tests.rs # PNG テキストチャンク / stealth alpha メタデータ
+│   └── vibe_import.rs         # 末尾に #[cfg(test)] mod tests（検証・重複排除）
 
 src/
 ├── lib/
@@ -343,7 +393,9 @@ src/
 │   └── __tests__/
 │       ├── cost.test.ts       # Vitest
 │       ├── image-size.test.ts # fitGenerationSize / enhanceSize / alphaToMaskCells
-│       └── history-action.test.ts
+│       ├── history-action.test.ts
+│       ├── artist-extract.test.ts # 重み構文からのアーティスト抽出・除去
+│       └── nai-metadata.test.ts # メタデータのパース・プロンプト分割
 ├── stores/
 │   └── __tests__/
 │       └── generation-params-store.test.ts  # Vitest
@@ -405,6 +457,7 @@ src/
 | generate_image / encode_vibe | API呼び出し含む。crate側でカバー |
 | augment_image / upscale_image 本体 | API呼び出し含む。入力検証（`validate_augment_request` / ピクセル上限）のみテスト |
 | キャンバスエディタ描画 | Canvas API 依存。マスク縮約ロジック（`alphaToMaskCells`）のみテスト |
+| `applyMetadata` / MetadataImportPanel | 各 store への反映と IPC のみ。パース（`nai-metadata.ts`）をテスト |
 
 ---
 
@@ -430,3 +483,4 @@ npx vitest run src/lib/__tests__/cost.test.ts
 | 2026-04-07 | 初版作成 |
 | 2026-04-07 | Frontend Stores/UIテスト方針追加 (Phase 3対応) |
 | 2026-09-26 | Img2Img / Inpaint / キャラ参照 / Director Tools / Upscale — generation_tests（char ref・snapshot）、image_output / image_tools、cost.test.ts 追加分、image-size / history-action テスト追加 |
+| 2026-09-26 | 画像メタデータ取り込み — image_metadata_tests、vibe_import、nai-metadata.test.ts 追加 |
