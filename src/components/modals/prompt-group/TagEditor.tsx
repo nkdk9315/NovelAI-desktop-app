@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { Compass, Plus } from "lucide-react";
+import { toast } from "sonner";
 import {
   DndContext,
   DragEndEvent,
@@ -26,6 +27,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import PromptTextarea from "@/components/shared/PromptTextarea";
+import IconTooltip from "@/components/shared/IconTooltip";
+import NaxTagPickerDialog, { type NaxPickedTag } from "@/components/modals/nax/NaxTagPickerDialog";
+import { naxTagKey, naxTagToEntry } from "@/lib/nax";
 import type { TagInput } from "@/types";
 import SortableTagBadge from "./SortableTagBadge";
 
@@ -43,6 +47,7 @@ function makeId(): string {
 export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
   const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [modalName, setModalName] = useState("");
   const [modalContent, setModalContent] = useState("");
@@ -154,6 +159,22 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
     }
   };
 
+  // Entries from the tag gallery; ones whose prompt text is already here are skipped.
+  const handlePick = (picked: NaxPickedTag[]) => {
+    const existing = new Set(tags.map((e) => naxTagKey(e.tag)));
+    const added: TagInput[] = [];
+    for (const p of picked) {
+      const entry = naxTagToEntry(p.tag, p.category);
+      if (existing.has(naxTagKey(entry.tag))) continue;
+      existing.add(naxTagKey(entry.tag));
+      added.push({ ...entry, defaultStrength: 0 });
+    }
+    if (added.length > 0) onTagsChange([...tags, ...added]);
+    const skipped = picked.length - added.length;
+    if (added.length > 0) toast.success(t("nax.picker.added", { count: added.length }));
+    if (skipped > 0) toast.info(t("nax.picker.skipped", { count: skipped }));
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -192,7 +213,19 @@ export default function TagEditor({ tags, onTagsChange }: TagEditorProps) {
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
+        <IconTooltip label={t("nax.picker.openButton")}>
+          <button
+            type="button"
+            onClick={() => setShowPicker(true)}
+            aria-label={t("nax.picker.openButton")}
+            className="inline-flex items-center rounded-md border border-dashed border-primary/40 bg-transparent px-1.5 py-0.5 text-primary hover:bg-accent outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+          >
+            <Compass className="h-3.5 w-3.5" />
+          </button>
+        </IconTooltip>
       </div>
+
+      <NaxTagPickerDialog open={showPicker} onOpenChange={setShowPicker} onPick={handlePick} />
 
       {/* Add / Edit entry modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>

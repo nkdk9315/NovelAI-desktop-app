@@ -11,6 +11,7 @@ import { useArtistTagInput } from "@/hooks/use-artist-tag-input";
 import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import { isArtistTagOn } from "@/lib/artist-tag";
 import ArtistFavoritesPopover from "./ArtistFavoritesPopover";
+import NaxArtistPreview from "./NaxArtistPreview";
 import type { ArtistTag } from "@/types";
 
 interface Props {
@@ -162,15 +163,17 @@ function ArtistTagChip({ tag, onRemove, onToggle, toggleLabel, onStrengthChange,
           >
             <Star className={`h-2.5 w-2.5 ${isFavorite ? "fill-primary text-primary" : ""}`} />
           </button>
-          <button
-            type="button"
-            title={toggleLabel}
-            aria-pressed={on}
-            onClick={(e) => { e.stopPropagation(); onToggle(); }}
-            className={`max-w-[96px] truncate text-left hover:text-foreground ${on ? "" : "line-through opacity-70"}`}
-          >
-            {tag.name}
-          </button>
+          <NaxArtistPreview name={tag.name}>
+            <button
+              type="button"
+              aria-label={toggleLabel}
+              aria-pressed={on}
+              onClick={(e) => { e.stopPropagation(); onToggle(); }}
+              className={`max-w-[96px] truncate text-left hover:text-foreground ${on ? "" : "line-through opacity-70"}`}
+            >
+              {tag.name}
+            </button>
+          </NaxArtistPreview>
           {draft !== null ? (
             <input
               ref={(el) => el?.focus()}

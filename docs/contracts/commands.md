@@ -420,3 +420,66 @@ pub fn read_image_metadata(path: String) -> Result<Option<ImageMetadataDto>, Str
 ```
 
 augment / upscale の出力は `generated_images` に `is_saved = 0` で追加され、レスポンスの `id` で履歴に反映される。
+
+## 4.17 commands/nax.rs
+
+nax.moe（NovelAI Tag Experiments）のタグ検証ギャラリーを閲覧する「タグエクスプローラー」用。
+カタログ（ギャラリー一覧 + 各タグのファイル名・投票数）を公開 API（`/api/gallery/list`）と
+日次エクスポート（`/downloads/tags.zip`）から取得し、`nax_galleries` / `nax_images`（migration 027）に
+キャッシュする。画像は保存せず、DTO の CDN URL（`cdn.zele.st`、CSP `img-src` 許可済み）を WebView が直接読む。
+
+```rust
+#[tauri::command]
+pub async fn nax_sync(state: State<'_, AppState>, force: Option<bool>) -> Result<NaxStatusDto, String>;
+// → nax::sync(&state.db, force)。最終同期から 24 時間以内なら通信せず現状を返す
+// ネットワーク I/O 中は DB ロックを持たない。同時呼び出しは直列化
+
+#[tauri::command]
+pub fn nax_get_status(state: State<'_, AppState>) -> Result<NaxStatusDto, String>;
+
+#[tauri::command]
+pub fn nax_list_galleries(state: State<'_, AppState>) -> Result<Vec<NaxGalleryDto>, String>;
+// API の順（新しいモデル順）。category は slug から導出（artist / character / copyright / face / hair / other）
+
+#[tauri::command]
+pub fn nax_list_gallery_images(state: State<'_, AppState>, slug: String) -> Result<Vec<NaxImageDto>, String>;
+// 評価（score）降順。未知の slug は NotFound
+// firstSeenAt: このアプリの同期で初めて見つかった時刻（nax.moe は画像ごとの日付を公開していないため、
+//   「新着順」はこれで並べる。migration 028、同期は upsert + sync_gen で既存行の値を保持）
+// isNew: 初回同期より後に見つかり、かつ 7 日以内
+
+#[tauri::command]
+pub fn nax_find_tags(state: State<'_, AppState>, tags: Vec<String>) -> Result<Vec<NaxImageDto>, String>;
+// 全ギャラリー横断。大文字小文字無視・`_` と空白を同一視（tag_key）
+
+#[tauri::command]
+pub fn nax_list_favorite_tags(state: State<'_, AppState>) -> Result<Vec<NaxFavoriteTagDto>, String>;
+
+#[tauri::command]
+pub fn nax_toggle_favorite_tag(state: State<'_, AppState>, tag: String, category: String) -> Result<bool, String>;
+// artist 以外のタグのお気に入り（nax_favorite_tags）。category = "artist" は Validation エラー:
+// アーティストのお気に入りはサイドバーと共通の `artist_favorites` 設定で管理する
+```
+
+### 画像キャッシュ（`naxthumb://` プロトコル）
+
+```rust
+// lib.rs で register_asynchronous_uri_scheme_protocol("naxthumb", commands::nax::thumb_protocol)
+// フロント: convertFileSrc(imageUrl, "naxthumb")
+//   → naxthumb://localhost/<encodeURIComponent(CDN URL)>（Windows は http://naxthumb.localhost/...）
+// → services::nax_thumb::NaxThumbCache::get: キャッシュに無ければ CDN から取得し、幅 360px の
+//   lossy WebP（約 15〜20 KB）に縮小して app_cache_dir/nax_thumbs に保存。
+//   https://cdn.zele.st/data/NAX/Images/ 以外の URL は 400（任意 URL の取得プロキシにしない）。
+//   上限（設定 nax_thumb_cache_limit_mb、既定 500 MB）超過時は mtime の古い順に 90% まで削除。
+
+#[tauri::command]
+pub async fn nax_thumb_cache_info(cache: State<'_, NaxThumbCache>) -> Result<NaxThumbCacheInfoDto, String>;
+
+#[tauri::command]
+pub async fn nax_set_thumb_cache_limit(state: State<'_, AppState>, cache: State<'_, NaxThumbCache>, limit_mb: u64)
+    -> Result<NaxThumbCacheInfoDto, String>;
+// 50〜20000 MB に丸めて保存し、超過分はすぐ削除
+
+#[tauri::command]
+pub async fn nax_clear_thumb_cache(cache: State<'_, NaxThumbCache>) -> Result<NaxThumbCacheInfoDto, String>;
+```

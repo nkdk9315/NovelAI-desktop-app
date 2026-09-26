@@ -1212,3 +1212,80 @@ where
 {
     Ok(Some(Option::deserialize(deserializer)?))
 }
+
+// ---- nax.moe explorer (migration 027) ----
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NaxGalleryRow {
+    pub slug: String,
+    pub title: String,
+    pub model_version: String,
+    pub description: Option<String>,
+    pub image_base_url: String,
+    pub image_count: i64,
+    pub sort_order: i64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct NaxImageRow {
+    pub gallery_slug: String,
+    pub tag: String,
+    pub filename: String,
+    pub up_votes: i64,
+    pub down_votes: i64,
+    pub score: i64,
+    /// RFC 3339 time of the sync that first saw this image ("" before any).
+    pub first_seen_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NaxGalleryDto {
+    pub slug: String,
+    pub title: String,
+    pub model_version: String,
+    pub description: Option<String>,
+    pub image_count: i64,
+    /// "artist" | "character" | "copyright" | "face" | "hair" | "other"
+    pub category: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NaxImageDto {
+    pub gallery_slug: String,
+    pub model_version: String,
+    pub tag: String,
+    pub image_url: String,
+    pub up_votes: i64,
+    pub down_votes: i64,
+    pub score: i64,
+    pub first_seen_at: String,
+    /// Added to nax.moe since the first sync, within the last week.
+    pub is_new: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NaxStatusDto {
+    /// RFC 3339 time of the last successful sync; `None` = never synced.
+    pub synced_at: Option<String>,
+    pub gallery_count: i64,
+    pub image_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NaxFavoriteTagDto {
+    pub tag: String,
+    pub category: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NaxThumbCacheInfoDto {
+    pub used_bytes: u64,
+    pub file_count: u64,
+    pub limit_mb: u64,
+}

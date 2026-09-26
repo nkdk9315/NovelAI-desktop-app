@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Dices, ImageIcon, Settings, Settings2, SlidersHorizontal, X } from "lucide-react";
+import { Compass, Dices, ImageIcon, Settings, Settings2, SlidersHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,12 +8,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import { useProjectStore } from "@/stores/project-store";
+import { useNaxStore } from "@/stores/nax-store";
 import type { RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
 import { DEFAULT_RANDOM_PRESET_SETTINGS } from "@/lib/constants";
 import { generateRandomPreset } from "@/lib/random-preset";
 import { loadAllVibeFolders } from "@/lib/vibe-utils";
 import * as ipc from "@/lib/ipc";
 import StylePresetModal from "@/components/modals/StylePresetModal";
+import IconTooltip from "@/components/shared/IconTooltip";
 import RandomPresetSettingsDialog from "@/components/modals/RandomPresetSettingsDialog";
 import PresetTweakPanel from "./PresetTweakPanel";
 import SidebarArtistTagInput from "./SidebarArtistTagInput";
@@ -38,6 +40,7 @@ export default function ArtistStyleSection() {
   const balanceSidebarArtistTags = useSidebarArtistTagsStore((s) => s.balanceSidebarArtistTags);
   const toggleSidebarArtistTag = useSidebarArtistTagsStore((s) => s.toggleSidebarArtistTag);
 
+  const openNaxExplorer = useNaxStore((s) => s.openExplorer);
   const [presets, setPresets] = useState<StylePresetDto[]>([]);
   const [vibes, setVibes] = useState<VibeDto[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -117,6 +120,17 @@ export default function ArtistStyleSection() {
       <div className="flex items-center justify-between">
         <p className="text-xs font-medium text-muted-foreground">{t("style.title")}</p>
         <div className="flex items-center gap-0.5">
+          <IconTooltip label={t("nax.openExplorer")}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={openNaxExplorer}
+              aria-label={t("nax.openExplorer")}
+            >
+              <Compass className="h-3.5 w-3.5" />
+            </Button>
+          </IconTooltip>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-6 w-6 p-0">

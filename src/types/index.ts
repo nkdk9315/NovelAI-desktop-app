@@ -613,3 +613,50 @@ export interface AppError {
   kind: "NotFound" | "Validation" | "Database" | "ApiClient" | "Io" | "NotInitialized";
   message: string;
 }
+
+// ---- nax.moe explorer ----
+
+export type NaxCategory = "artist" | "character" | "copyright" | "face" | "hair" | "other";
+
+export interface NaxGalleryDto {
+  slug: string;
+  title: string;
+  /** "v4" | "v4.5" | "v5" */
+  modelVersion: string;
+  description: string | null;
+  imageCount: number;
+  category: NaxCategory;
+}
+
+export interface NaxImageDto {
+  gallerySlug: string;
+  modelVersion: string;
+  tag: string;
+  imageUrl: string;
+  upVotes: number;
+  downVotes: number;
+  score: number;
+  /** RFC 3339: when this app first saw the image in a sync */
+  firstSeenAt: string;
+  /** Added since the first sync, within the last week */
+  isNew: boolean;
+}
+
+export interface NaxThumbCacheInfoDto {
+  usedBytes: number;
+  fileCount: number;
+  limitMb: number;
+}
+
+export interface NaxStatusDto {
+  /** RFC 3339; null = never synced */
+  syncedAt: string | null;
+  galleryCount: number;
+  imageCount: number;
+}
+
+export interface NaxFavoriteTagDto {
+  tag: string;
+  category: NaxCategory;
+  createdAt: string;
+}
