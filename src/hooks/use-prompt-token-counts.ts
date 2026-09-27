@@ -8,6 +8,8 @@ import { currentPromptDecoration } from "@/lib/generation-request";
 import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { buildArtistPrefix } from "@/lib/artist-tag";
 import { assembleFullPrompt, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
+import { appendTargetExtras } from "@/lib/in-image-text";
+import { useBubbleStyleStore } from "@/stores/bubble-style-store";
 import * as ipc from "@/lib/ipc";
 import { useDebounce } from "./use-debounce";
 
@@ -44,8 +46,11 @@ function buildPromptTexts(): { positives: string[]; negatives: string[] } {
   const artistPrefix = buildArtistPrefix(allArtistTags);
 
   const mainTarget = sidebar.targets[MAIN_TARGET_ID];
+  const bubbleStyles = useBubbleStyleStore.getState().customBubbleStyles;
   const assembledMain = mainTarget
-    ? (mainTarget.promptOverride ?? assembleFullPrompt("", mainTarget.groups))
+    ? appendTargetExtras(
+      mainTarget.promptOverride ?? assembleFullPrompt("", mainTarget.groups), mainTarget, bubbleStyles, params.autoSfx,
+    )
     : "";
   const mainPrompt = decorateMainPrompt(artistPrefix + assembledMain, currentPromptDecoration(params));
 
@@ -63,7 +68,7 @@ function buildPromptTexts(): { positives: string[]; negatives: string[] } {
   for (const c of params.characters) {
     const t = sidebar.targets[c.id];
     const charPrompt = t
-      ? (t.promptOverride ?? assembleFullPrompt("", t.groups))
+      ? appendTargetExtras(t.promptOverride ?? assembleFullPrompt("", t.groups), t, bubbleStyles)
       : c.prompt;
     const charNeg = t
       ? (t.negativeOverride ?? assembleNegativeFromGroups(t.groups))
@@ -86,6 +91,9 @@ export function usePromptTokenCounts(): PromptTokenCounts {
   const qualityPreset = useGenerationParamsStore((s) => s.qualityPreset);
   const furryMode = useGenerationParamsStore((s) => s.furryMode);
   const transparentBackground = useGenerationParamsStore((s) => s.transparentBackground);
+  const bubbleStyles = useBubbleStyleStore((s) => s.customBubbleStyles);
+  const stripNoText = useGenerationParamsStore((s) => s.stripNoTextWithDialogue);
+  const autoSfx = useGenerationParamsStore((s) => s.autoSfx);
   const customQualityTags = useQualityTagStore((s) => s.customQualityTags);
   const negativePreset = useGenerationParamsStore((s) => s.negativePreset);
   const sidebarPresets = useGenerationParamsStore((s) => s.sidebarPresets);
@@ -96,7 +104,10 @@ export function usePromptTokenCounts(): PromptTokenCounts {
     () => buildPromptTexts(),
     // buildPromptTexts reads from store state snapshots; these deps trigger recomputation
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [model, characters, qualityPreset, furryMode, transparentBackground, customQualityTags, negativePreset, sidebarPresets, targets, artistTags],
+    [
+      model, characters, qualityPreset, furryMode, transparentBackground, bubbleStyles, stripNoText, autoSfx,
+      customQualityTags, negativePreset, sidebarPresets, targets, artistTags,
+    ],
   );
 
   const allTexts = useMemo(() => [...positives, ...negatives], [positives, negatives]);

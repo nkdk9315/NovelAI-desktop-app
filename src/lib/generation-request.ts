@@ -1,11 +1,12 @@
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
-import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
+import { useSidebarPromptStore, type TargetPromptState } from "@/stores/sidebar-prompt-store";
 import { useSidebarPresetGroupStore } from "@/stores/sidebar-preset-group-store";
 import { usePresetStore } from "@/stores/preset-store";
 import { useImageEditStore, activeEditMode } from "@/stores/image-edit-store";
 import { useCharRefStore } from "@/stores/char-ref-store";
 import { useQualityTagStore } from "@/stores/quality-tag-store";
+import { useBubbleStyleStore } from "@/stores/bubble-style-store";
 import {
   MAX_TOTAL_VIBES, NEGATIVE_PRESETS, isV5Model, supportsCharacterReference,
 } from "@/lib/constants";
@@ -14,7 +15,9 @@ import { buildArtistPrefix, isArtistTagOn } from "@/lib/artist-tag";
 import { rollTargetForGeneration } from "@/lib/prompt-roll";
 import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
 import { buildUiSnapshot } from "@/lib/build-ui-snapshot";
-import { decorateMainPrompt, type PromptDecoration } from "@/lib/prompt-decoration";
+import { decorateMainPrompt, hasTextMarker, type PromptDecoration } from "@/lib/prompt-decoration";
+import { appendTargetExtras, hasSfx, hasTextContent } from "@/lib/in-image-text";
+import { positiveTextOf } from "@/stores/sidebar-prompt-text-sync";
 import { stripDataUrl } from "@/lib/canvas-image";
 import type { SelectedVibe } from "@/stores/generation-params-store";
 import type { CharacterReferenceRequest, GenerateActionRequest, GenerateImageRequest } from "@/types";
@@ -81,6 +84,33 @@ export type BuildResult =
   | { ok: true; req: GenerateImageRequest }
   | { ok: false; errorKey: string; errorArgs?: Record<string, unknown> };
 
+type Targets = Record<string, TargetPromptState>;
+const liveTargets = (characters: ParamsState["characters"], targets: Targets) =>
+  ["main", ...characters.map((c) => c.id)].map((id) => targets[id]);
+
+/** Whether any prompt (main or a current character) will draw text: dialogue, sound effects or a typed `Text:`. */
+export function promptDrawsText(
+  characters: ParamsState["characters"] = useGenerationParamsStore.getState().characters,
+  targets: Targets = useSidebarPromptStore.getState().targets,
+): boolean {
+  const main = targets["main"];
+  if (main && hasTextMarker(positiveTextOf(main))) return true;
+  return liveTargets(characters, targets).some(hasTextContent);
+}
+
+/**
+ * Whether to drop `no text` from the quality tags: always with sound effects
+ * (it suppresses soft ones like チョロロロ / シーン, and the automatic ones),
+ * and with other text when the user opted in.
+ */
+export function shouldStripNoText(
+  params: Pick<ParamsState, "characters" | "autoSfx" | "stripNoTextWithDialogue"> = useGenerationParamsStore.getState(),
+  targets: Targets = useSidebarPromptStore.getState().targets,
+): boolean {
+  if (params.autoSfx || liveTargets(params.characters, targets).some(hasSfx)) return true;
+  return params.stripNoTextWithDialogue && promptDrawsText(params.characters, targets);
+}
+
 /** Furry prefix / transparent tag / quality tags for the main prompt, from the current state. */
 export function currentPromptDecoration(params: ParamsState = useGenerationParamsStore.getState()): PromptDecoration {
   return {
@@ -89,6 +119,7 @@ export function currentPromptDecoration(params: ParamsState = useGenerationParam
     customQualityTags: useQualityTagStore.getState().customQualityTags,
     transparentBackground: params.transparentBackground,
     furryMode: params.furryMode,
+    stripNoText: shouldStripNoText(params),
   };
 }
 
@@ -118,13 +149,17 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
   const artistPrefix = buildArtistPrefix(finalArtistTags);
 
   // Main prompt: [furry prefix] + artist prefix + main target (or assembled groups) + [transparent tag] + quality tags
+  // + [effects, dialogue / sound effects `Text:` block — last; the quality tags are inserted before it]
   const sidebarState = useSidebarPromptStore.getState();
   const mainTarget = sidebarState.targets["main"];
   const presetInstances = useSidebarPresetGroupStore.getState().instances;
   const allPresets = usePresetStore.getState().presets;
   const mainContrib = getPresetContributionsForCharacter("main", presetInstances, allPresets);
+  const bubbleStyles = useBubbleStyleStore.getState().customBubbleStyles;
   const mainRolled = mainTarget ? rollTargetForGeneration(mainTarget) : { positive: "", negative: "" };
-  const assembledMain = appendContributions(mainRolled.positive, mainContrib.positive);
+  const assembledMain = appendTargetExtras(
+    appendContributions(mainRolled.positive, mainContrib.positive), mainTarget, bubbleStyles, params.autoSfx,
+  );
   const fullPrompt = decorateMainPrompt(artistPrefix + assembledMain, currentPromptDecoration(params));
 
   let enabledVibes = allVibes.map((v) => ({ vibeId: v.vibeId, strength: v.strength }));
@@ -147,7 +182,9 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
           ? rollTargetForGeneration(charTarget)
           : { positive: c.prompt, negative: c.negativePrompt };
         return {
-          prompt: appendContributions(charRolled.positive, charContrib.positive),
+          prompt: appendTargetExtras(
+            appendContributions(charRolled.positive, charContrib.positive), charTarget, bubbleStyles,
+          ),
           centerX: c.centerX,
           centerY: c.centerY,
           negativePrompt: appendContributions(charRolled.negative, charContrib.negative),

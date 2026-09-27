@@ -7,6 +7,9 @@ import PromptTextarea from "@/components/shared/PromptTextarea";
 import PositionEditor from "./PositionEditor";
 import CharacterHeader from "./CharacterHeader";
 import CharacterPromptGroups from "./CharacterPromptGroups";
+import DialogueEditor from "./DialogueEditor";
+import SfxEditor from "./SfxEditor";
+import EffectPalette from "./EffectPalette";
 import PromptGroupModal from "@/components/modals/PromptGroupModal";
 import { assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 
@@ -68,6 +71,10 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
             targetId={character.id}
             onOpenGroupBrowser={() => setShowGroupBrowser(true)}
           />
+
+          <DialogueEditor targetId={character.id} />
+          <SfxEditor targetId={character.id} />
+          <EffectPalette targetId={character.id} scope="character" />
 
           {/* Negative prompt */}
           <button

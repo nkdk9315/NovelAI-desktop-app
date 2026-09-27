@@ -64,6 +64,10 @@ interface GenerationParamsData {
   normalizeArtistStrength: boolean;
   /** V5 only: request a transparent background */
   transparentBackground: boolean;
+  /** Drop `no text` from the quality tags while the prompt draws text (off = keep it, like the site) */
+  stripNoTextWithDialogue: boolean;
+  /** Add `sound effects` so the model draws fitting onomatopoeia on its own */
+  autoSfx: boolean;
   /** Fixed seed; null = random for every generation */
   seed: number | null;
 }
@@ -119,6 +123,8 @@ export const useGenerationParamsStore = create<GenerationParamsState>()((set) =>
   normalizeVibeStrength: true,
   normalizeArtistStrength: true,
   transparentBackground: false,
+  stripNoTextWithDialogue: false,
+  autoSfx: false,
   seed: null,
   characters: [],
   selectedVibes: [],

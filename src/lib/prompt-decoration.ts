@@ -81,6 +81,18 @@ function supportsText(model: string): boolean {
   return isV5Model(model) || model.startsWith("nai-diffusion-4-5");
 }
 
+/** Whether the prompt contains a `Text:` part (everything after it is drawn as text). */
+export function hasTextMarker(prompt: string): boolean {
+  return TEXT_MARKER.test(prompt);
+}
+
+export const NO_TEXT_TAG = "no text";
+
+/** Drop the `no text` tag from a comma-separated tag list. */
+export function withoutNoText(tags: string): string {
+  return tags.split(",").map((t) => t.trim()).filter((t) => t && t.toLowerCase() !== NO_TEXT_TAG).join(", ");
+}
+
 function appendTo(text: string, suffix: string): string {
   if (!suffix) return text;
   return text ? `${text}, ${suffix}` : suffix;
@@ -93,11 +105,14 @@ export interface PromptDecoration {
   /** Only takes effect on V5 */
   transparentBackground: boolean;
   furryMode: boolean;
+  /** Remove `no text` from the quality tags (set only when the prompt draws text) */
+  stripNoText?: boolean;
 }
 
 /** Suffix added after the prompt: `transparent background` (V5) followed by the quality tags. */
 export function promptSuffix(d: PromptDecoration): string {
-  const quality = qualityTagsFor(d.model, d.qualityPreset, d.customQualityTags);
+  const tags = qualityTagsFor(d.model, d.qualityPreset, d.customQualityTags);
+  const quality = d.stripNoText ? withoutNoText(tags) : tags;
   const transparent = d.transparentBackground && isV5Model(d.model) ? TRANSPARENT_BACKGROUND_TAG : "";
   return [transparent, quality].filter(Boolean).join(", ");
 }
@@ -106,9 +121,12 @@ export function promptSuffix(d: PromptDecoration): string {
 export function decorateMainPrompt(prompt: string, d: PromptDecoration): string {
   const suffix = promptSuffix(d);
   const textAt = supportsText(d.model) ? prompt.search(TEXT_MARKER) : -1;
-  let out = textAt >= 0
-    ? appendTo(prompt.slice(0, textAt), suffix) + prompt.slice(textAt)
-    : appendTo(prompt, suffix);
+  let out = appendTo(textAt >= 0 ? prompt.slice(0, textAt) : prompt, suffix);
+  if (textAt >= 0) {
+    const textPart = prompt.slice(textAt);
+    // A prompt that starts with `Text:` has no separator of its own before it
+    out = out && !/^\s/.test(textPart) ? `${out} ${textPart}` : out + textPart;
+  }
   if (d.furryMode && !DATASET_PREFIXES.some((p) => out.startsWith(p))) {
     out = out ? `${FURRY_PREFIX}, ${out}` : FURRY_PREFIX;
   }
@@ -137,6 +155,10 @@ export function splitDecorations(
   prompt: string, model: string | null, customs: readonly CustomQualityTag[] = [],
 ): SplitPrompt {
   let text = prompt.trim();
+  // With a `Text:` part the decorations sit just before it: split it off and put it back at the end
+  const textAt = text.search(TEXT_MARKER);
+  const textPart = textAt > 0 ? text.slice(textAt).trim() : "";
+  if (textPart) text = text.slice(0, textAt).trim();
   let furryMode = false;
   if (text === FURRY_PREFIX || text.startsWith(`${FURRY_PREFIX}, `)) {
     furryMode = true;
@@ -167,5 +189,6 @@ export function splitDecorations(
     transparentBackground = true;
     text = rest;
   }
+  if (textPart) text = [text.replace(/,\s*$/, ""), textPart].filter(Boolean).join(", ");
   return { prompt: text, qualityPreset, transparentBackground, furryMode };
 }

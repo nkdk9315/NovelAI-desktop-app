@@ -234,6 +234,8 @@ export interface UiSnapshotV1 {
   qualityPreset?: QualityPresetId;  // 無ければ qualityTagsEnabled から standard / none に読み替え
   furryMode?: boolean;
   transparentBackground?: boolean;
+  stripNoTextWithDialogue?: boolean;         // テキスト描画時に no text を外す（無ければ false）
+  autoSfx?: boolean;                         // おまかせ効果音（`sound effects` タグ、無ければ false）
   normalizeVibeStrength: boolean;
   normalizeArtistStrength: boolean;
   characters: Character[];
@@ -715,6 +717,9 @@ export interface TargetPromptState {
   freeText: string;
   promptOverride: string | null;    // 入力欄のテキスト（送信内容の正）。null は旧スナップショット由来のみ
   negativeOverride: string | null;  // ネガティブ入力欄のテキスト（同上）
+  dialogue?: DialogueLine[];        // セリフ・画像内テキスト。送信時にこのターゲットのプロンプト末尾へ `Text:` として付く
+  sfx?: SfxLine[];                  // 効果音（描き文字）。セリフと同じ `Text:` にまとめる
+  effects?: string[];               // 有効な漫画エフェクト id（manga-effects.ts）
 }
 ```
 
@@ -1198,6 +1203,7 @@ interface CustomQualityTag { id: string; name: string; tags: string }  // settin
 interface PromptDecoration {
   model: string; qualityPreset: QualityPresetId; customQualityTags: readonly CustomQualityTag[];
   transparentBackground: boolean; furryMode: boolean;
+  stripNoText?: boolean;  // クオリティタグから `no text` を外す（テキストを描くときだけ true にする）
 }
 /** モデル別の公式クオリティタグ。light は V5 のみ（V4.5 curated / V4 / V4 curated は standard の中身が異なる） */
 export function builtinQualityTags(model: string): Partial<Record<"standard" | "light", string>>;
@@ -1207,9 +1213,72 @@ export function qualityTagsFor(model: string, preset: QualityPresetId, customs: 
 /** [fur dataset, ] + prompt + [, transparent background (V5)] + [, クオリティタグ]。
  *  V4.5 / V5 はプロンプト中の `Text:` の直前に接尾辞を入れる。先頭が fur dataset / background dataset なら接頭辞は付けない */
 export function decorateMainPrompt(prompt: string, d: PromptDecoration): string;
-/** decorateMainPrompt の逆（メタデータ読み込み用）。model が null なら全モデルの公式タグで照合 */
+/** decorateMainPrompt の逆（メタデータ読み込み用）。model が null なら全モデルの公式タグで照合。
+ *  `Text:` 部分があれば、その直前の装飾を外してから `Text:` 部分を末尾に戻す */
 export function splitDecorations(prompt: string, model: string | null, customs?: readonly CustomQualityTag[]): SplitPrompt;
+/** 公式サイトと同じ正規表現で `Text:` 部分の有無を判定 */
+export function hasTextMarker(prompt: string): boolean;
+/** カンマ区切りのタグ列から `no text` だけ除く */
+export function withoutNoText(tags: string): string;
 ```
+
+### セリフ・効果音・エフェクト (`src/lib/in-image-text.ts` ほか)
+
+各ターゲット（main / キャラクター）の `dialogue` / `sfx` / `effects` を、送信時にそのプロンプト末尾へ
+`, <エフェクトのタグ>, [sound effects (おまかせ・main のみ)], <各行のタグ>, "行1" <説明>, …, Text: 行1\n\n行2`
+として付ける（`Text:` 以降は文字として描かれるので必ず最後）。セリフと効果音は 1 つの `Text:` を共有し、文字数上限もまとめて数える。
+行ごとに引用＋説明を付けるので、種類の違う行が混ざってもそれぞれの形になる。キャラクターのセリフ・効果音・エフェクトは
+そのキャラの近くに描かれる。メインでは decorateMainPrompt がクオリティタグを `Text:` の直前に入れる。
+説明文・タグはすべて V5 実機で検証済み（2026-09-27）。
+
+```typescript
+// in-image-text.ts
+interface TextPart { text: string; tags: string[]; phrase: string }
+interface TargetExtras { dialogue?: DialogueLine[]; sfx?: SfxLine[]; effects?: string[] }
+export function appendTextParts(prompt: string, parts: readonly TextPart[], extraTags?: readonly string[]): string;
+export function appendTargetExtras(prompt: string, target: TargetExtras | undefined, customs?: readonly CustomBubbleStyle[], autoSfx?: boolean): string;
+export function hasTextContent(target): boolean;  export function hasSfx(target): boolean;
+/** 公式の文字数上限: V5 full 750 / V5 curated 374 / それ以外 118 */
+export function textCharLimit(model: string): number;
+export function textCharCount(target): number;   // セリフ＋効果音、空行区切り込み、コードポイント単位
+/** 警告（生成は止めない）: tooLong / needsV5（V5 以外で英語以外の文字）/ manualText（入力欄に Text: を直接記述） */
+export function textIssues(model: string, target, promptText: string): TextIssue[];
+
+// dialogue.ts — セリフ行 → TextPart
+type TextDirection = "auto" | "vertical" | "horizontal";          // なし / vertical text / horizontal text（行ごと）
+interface DialogueLine { id: string; text: string; style: BubbleStyleId; direction?: TextDirection; lettering?: LetteringStyle }
+export function cleanDialogueText(text: string): string;  // 行内の空行を詰める（空行は Text: の区切り）
+export function dialogueParts(lines, customs): TextPart[];
+
+// bubble-styles.ts — 種類（吹き出しの形・ナレーション枠・擬音・ゲーム画面の枠など、漫画 15 + 画面 6）
+interface BubbleStyleDef { shape: BubbleShape; tags: string[]; phrase: string; group?: "manga" | "screen" }
+type BubbleStyleId = BuiltinBubbleStyle | `custom:${string}`;
+interface CustomBubbleStyle { id: string; name: string; shape: BubbleShape; phrase: string; tags: string }  // settings の custom_bubble_styles
+export function resolveBubbleStyle(id: string, customs): BubbleStyleDef;  // 未知の id は speech
+// lettering-styles.ts — 文字の見た目（auto / bold / impact / mincho / brush / horror / wavy / cute）
+export function letteringPhrase(id: string | undefined): string;
+
+// sound-effects.ts — 効果音
+type SfxTexture = "standard" | "impact" | "sharp" | "light" | "liquid" | "ominous" | "silence";
+type SfxSize = "medium" | "large";   // 小さいものは消えやすいので中（はっきり見える）/ 大（巨大）のみ
+interface SfxLine { id: string; text: string; texture: SfxTexture; size: SfxSize }
+const SFX_TAG = "sound effects";  const SFX_PRESETS;   // 場面別の定型文
+export function sfxParts(lines): TextPart[];
+
+// manga-effects.ts — 漫画記号・線（タグのみ）
+type EffectScope = "character" | "main";   // 記号はキャラ、集中線・スピード線・花背景は main でしか効かない
+const MANGA_EFFECTS;   // unreliable: 飛び汗 / ！ / ？ / ♪（約半分）
+export function effectTags(ids): string[];  export function effectsForScope(scope): MangaEffectId[];
+```
+
+`generation-request.ts` の `promptDrawsText(characters?, targets?)` は、どこかにセリフがあるか、メインに `Text:` があれば true。
+`shouldStripNoText(params?, targets?)` は、効果音がある／おまかせ効果音が ON なら常に true（`no text` が控えめな効果音や
+自動の効果音を消すため）、それ以外は `stripNoTextWithDialogue && promptDrawsText()`。`currentPromptDecoration()` はこれを使う。
+UI: メインとキャラクターカードに `DialogueEditor`（文字数・警告・メイン側に no text 除去）、`SfxEditor` → `SfxRow`
+（質感の見本一覧 / 中・大 / 入力欄、定型文、メイン側におまかせ効果音）、`EffectPalette`（アイコンの ON/OFF、△ は出にくいもの）。
+`DialogueEditor` → `DialogueLineRow.tsx`
+（`BubbleStylePicker` 図形一覧 / `LetteringPicker` 見本一覧 / 向き / 大きめの入力欄）。カスタムの種類は
+`modals/BubbleStylesDialog.tsx` + `stores/bubble-style-store.ts`。アイコンは `shared/BubbleShapeIcon.tsx` / `LetteringIcon.tsx`。
 
 ### アーティスト抽出 (`src/lib/artist-extract.ts`)
 
