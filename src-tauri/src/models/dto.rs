@@ -498,6 +498,21 @@ pub struct UpscaleImageRequest {
     pub source: ImageSourceRequest,
 }
 
+/// A typeset (text overlay) image made in the app, to add to the history.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveTypesetRequest {
+    pub project_id: String,
+    /// The flattened PNG (base64, optionally a data URL)
+    pub image_base64: String,
+    /// History image the text was drawn on (kept for re-editing)
+    #[serde(default)]
+    pub source_image_id: Option<String>,
+    /// The text boxes as edited (opaque to the backend, stored in the snapshot)
+    #[serde(default)]
+    pub layers: serde_json::Value,
+}
+
 /// Result of an augment / upscale run (the output is added to the history).
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

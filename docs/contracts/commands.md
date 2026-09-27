@@ -403,6 +403,10 @@ pub async fn upscale_image(
 // → image_tools_service::upscale_image(&state.db, &state.api_client, req).await（2x）
 
 #[tauri::command]
+pub fn save_typeset_image(state: State<'_, AppState>, req: SaveTypesetRequest) -> Result<ImageToolResponse, String>;
+// → image_tools_service::save_typeset(&state.db, req)（API 呼び出しなし。アプリで写植した PNG を履歴に追加）
+
+#[tauri::command]
 pub fn get_image_data(state: State<'_, AppState>, image_id: String) -> Result<ImageDataDto, String>;
 // → image_output::read_history_image → image_output::to_image_data
 // 履歴画像のバイト列（キャンバスエディタ / キャラ参照 / Director Tools 入力用）

@@ -13,5 +13,7 @@ describe("historyActionOf", () => {
     expect(historyActionOf({ action: { type: "augment", tool: "lineart" } })).toEqual({ kind: "augment", tool: "lineart" });
     expect(isToolOutput({ action: { type: "upscale" } })).toBe(true);
     expect(isToolOutput({ action: { type: "img2img" } })).toBe(false);
+    expect(historyActionOf({ action: { type: "typeset" } }).kind).toBe("typeset");
+    expect(isToolOutput({ action: { type: "typeset" } })).toBe(true);
   });
 });

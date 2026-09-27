@@ -7,7 +7,7 @@ import type {
   CreateGenreRequest, UpdateGenreRequest,
   GenerateImageResponse, PromptGroupDto,
   AugmentImageRequest, UpscaleImageRequest, ImageToolResponse, ImageDataDto, ImageMetadataDto,
-  ImportVibeEncodingRequest, ImportedVibeDto, EncodeVibeImageRequest, VibeDto,
+  ImportVibeEncodingRequest, ImportedVibeDto, EncodeVibeImageRequest, VibeDto, SaveTypesetRequest,
 } from "@/types";
 
 // ---- Re-exports from domain-specific IPC modules ----
@@ -87,6 +87,7 @@ export function saveAllImages(projectId: string): Promise<void> { return invoke(
 export function deleteImage(imageId: string): Promise<void> { return invoke("delete_image", { imageId }); }
 export function getProjectImages(projectId: string, savedOnly?: boolean): Promise<GeneratedImageDto[]> { return invoke("get_project_images", { projectId, savedOnly }); }
 export function augmentImage(req: AugmentImageRequest): Promise<ImageToolResponse> { return invoke("augment_image", { req }); }
+export function saveTypesetImage(req: SaveTypesetRequest): Promise<ImageToolResponse> { return invoke("save_typeset_image", { req }); }
 export function upscaleImage(req: UpscaleImageRequest): Promise<ImageToolResponse> { return invoke("upscale_image", { req }); }
 export function getImageData(imageId: string): Promise<ImageDataDto> { return invoke("get_image_data", { imageId }); }
 export function readImageFile(path: string): Promise<ImageDataDto> { return invoke("read_image_file", { path }); }

@@ -1,7 +1,7 @@
 use tauri::State;
 
 use crate::models::dto::{
-    AugmentImageRequest, ImageDataDto, ImageMetadataDto, ImageToolResponse, UpscaleImageRequest,
+    AugmentImageRequest, ImageDataDto, ImageMetadataDto, ImageToolResponse, SaveTypesetRequest, UpscaleImageRequest,
 };
 use crate::state::AppState;
 
@@ -23,6 +23,12 @@ pub async fn upscale_image(
     crate::services::image_tools::upscale_image(&state.db, &state.api_client, req)
         .await
         .map_err(|e| e.into())
+}
+
+/// Add an image typeset in the app (text drawn over a history image) to the history.
+#[tauri::command]
+pub fn save_typeset_image(state: State<'_, AppState>, req: SaveTypesetRequest) -> Result<ImageToolResponse, String> {
+    crate::services::image_tools::save_typeset(&state.db, req).map_err(|e| e.into())
 }
 
 /// Bytes of a history image (for the canvas editor / character reference).

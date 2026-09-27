@@ -8,7 +8,7 @@ import { useHistoryStore } from "@/stores/history-store";
 import { useProjectStore } from "@/stores/project-store";
 import { useGenerationStore } from "@/stores/generation-store";
 import { restoreFromSnapshot } from "@/lib/restore-generation";
-import { historyActionOf } from "@/lib/history-action";
+import { historyActionOf, isToolOutput } from "@/lib/history-action";
 import { toolKey } from "@/components/modals/director-tools/tool-defs";
 import type { AugmentTool } from "@/types";
 import ThumbnailContextMenu from "./ThumbnailContextMenu";
@@ -64,7 +64,7 @@ export default function ThumbnailGrid() {
           : action.kind === "augment" && action.tool
             ? t(`tools.names.${toolKey(action.tool as AugmentTool)}`)
             : t(`history.badge.${action.kind}`);
-        const canRestore = action.kind !== "augment" && action.kind !== "upscale";
+        const canRestore = !isToolOutput(img.promptSnapshot);
 
         return (
           <div key={img.id} className="group relative aspect-square">

@@ -332,6 +332,15 @@ export type ImageSourceRequest =
   | { type: "history"; imageId: string }
   | { type: "base64"; data: string };
 
+export interface SaveTypesetRequest {
+  projectId: string;
+  /** Flattened PNG (base64) */
+  imageBase64: string;
+  sourceImageId?: string;
+  /** Text boxes as edited (stored in the snapshot for re-editing) */
+  layers?: unknown;
+}
+
 export interface AugmentImageRequest {
   projectId: string;
   source: ImageSourceRequest;
