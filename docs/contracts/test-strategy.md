@@ -385,6 +385,15 @@ Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
 | `manga effects: *` | タグの順序、未知 id 無視、キャラ / 全体の分割 |
 | `shouldStripNoText: always drops no text with sound effects, otherwise only when opted in` | 効果音・おまかせで常に外す、セリフのみは設定次第 |
 
+### 4.4.4 Frontend テスト (`lib/manga-compose.ts` / `manga-layouts.ts` / `manga-page.ts`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `composeMangaPage: describes the page and each panel in the main prompt` | タグ・人数・説明文・コマごとの文、コマの文字は `in panel n` 付きで Text: へ |
+| `composeMangaPage: gives each appearance its own character prompt at the panel's center, skipping deleted characters` | 登場ごとのキャラプロンプトと座標、削除済みキャラは無視 |
+| `composeMangaPage: uses monochrome tags and works without any cast` | モノクロのタグ、登場なし |
+| `manga helpers: *` | 人数タグ、キャラの呼び名、コマ内の配置、レイアウト変更時の中身保持、全レイアウトのコマ範囲とサイズ |
+
 ### 4.5 Frontend テスト (`lib/nai-metadata.ts`)
 
 | テストケース | 検証内容 |

@@ -17,6 +17,7 @@ import { useHistoryStore } from "@/stores/history-store";
 import { useDirectorToolsStore } from "@/stores/director-tools-store";
 import { useProjectStore } from "@/stores/project-store";
 import { useProjectPromptPersistence } from "@/hooks/use-project-prompt-persistence";
+import { useProjectMangaPersistence } from "@/hooks/use-project-manga-persistence";
 
 const VIBE_EXTENSIONS = [".naiv4vibe"];
 const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp"];
@@ -37,7 +38,9 @@ export default function GenerationPage() {
   const setRightSidebarWidth = useLayoutStore((s) => s.setRightSidebarWidth);
 
   const projectId = useProjectStore((s) => s.currentProject?.id ?? null);
+  const projectType = useProjectStore((s) => s.currentProject?.projectType ?? null);
   useProjectPromptPersistence(projectId);
+  useProjectMangaPersistence(projectId, projectType);
 
   // The viewed image and history selection belong to this project; drop them
   // on leave so the next project doesn't show (or delete) a stale image.

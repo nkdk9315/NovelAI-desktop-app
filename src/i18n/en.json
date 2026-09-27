@@ -1031,5 +1031,37 @@
       "speedLines": "Speed lines",
       "flowers": "Flowers"
     }
+  },
+  "manga": {
+    "mode": "Manga",
+    "modeTooltip": "Manga mode: pick a panel layout and fill each panel's scene, characters and lines to generate a page (for V5)",
+    "title": "Manga page",
+    "layout": "Layout",
+    "layoutName": {
+      "koma4": "4koma",
+      "two": "2 panels",
+      "three": "3 panels",
+      "tall": "Tall + 2",
+      "grid": "2×2 grid"
+    },
+    "color": {
+      "mono": "Mono",
+      "color": "Color"
+    },
+    "panelN": "Panel {{n}}",
+    "scene": "Scene",
+    "scenePlaceholder": "Scene / background (e.g. classroom after school)",
+    "action": "Action",
+    "actionPlaceholder": "Action / expression (e.g. waving hand, smiling)",
+    "addCast": "Add character",
+    "removeCast": "Remove from panel",
+    "addLine": "Line",
+    "addSfx": "Sound effect",
+    "addText": "Narration / text",
+    "missingCharacter": "Deleted character (ignored)",
+    "noCharacters": "Add characters first to put them in panels",
+    "characterHint": "Manga mode: this card defines the look. Lines and positions are set in each panel of the manga page",
+    "needsV5": "Manga mode is meant for V5 (Japanese lines and free positions need V5)",
+    "tooManyAppearances": "Too many character appearances ({{count}}/{{max}})"
   }
 }

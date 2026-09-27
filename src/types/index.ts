@@ -424,6 +424,8 @@ export interface UiSnapshotV1 {
   }>;
   sidebarArtistTags: ArtistTag[];
   sidebarPromptTargets: Record<string, unknown>;
+  /** Manga mode page (layout, panels); missing = not manga mode */
+  mangaPage?: unknown;
 }
 
 export interface CharacterRequest {

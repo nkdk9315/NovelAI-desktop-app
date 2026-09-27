@@ -22,6 +22,8 @@ import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { useBubbleStyleStore } from "@/stores/bubble-style-store";
 import DialogueEditor from "./DialogueEditor";
 import SfxEditor from "./SfxEditor";
+import { useMangaStore } from "@/stores/manga-store";
+import { composeCurrentMangaPage } from "@/lib/manga-request";
 import EffectPalette from "./EffectPalette";
 
 const MAIN_TARGET_ID = "main";
@@ -40,6 +42,7 @@ export default function MainPromptSection() {
   const bubbleStyles = useBubbleStyleStore((s) => s.customBubbleStyles);
   const stripNoText = useGenerationParamsStore((s) => s.stripNoTextWithDialogue);
   const autoSfx = useGenerationParamsStore((s) => s.autoSfx);
+  const mangaPage = useMangaStore((s) => s.page);
   const customQualityTags = useQualityTagStore((s) => s.customQualityTags);
   const targets = useSidebarPromptStore((s) => s.targets);
   const initTarget = useSidebarPromptStore((s) => s.initTarget);
@@ -81,25 +84,30 @@ export default function MainPromptSection() {
 
   const presetInstances = useSidebarPresetGroupStore((s) => s.instances);
   const allPresets = usePresetStore((s) => s.presets);
-  const lineFor = (targetId: string): string => {
+  const baseFor = (targetId: string): string => {
     const target = targets[targetId];
     const base = target
       ? (target.promptOverride ?? assembleFullPrompt("", target.groups))
       : "";
-    const contrib = getPresetContributionsForCharacter(targetId, presetInstances, allPresets);
-    return appendTargetExtras(
-      appendContributions(base, contrib.positive), target, bubbleStyles, targetId === MAIN_TARGET_ID && autoSfx,
-    );
+    return appendContributions(base, getPresetContributionsForCharacter(targetId, presetInstances, allPresets).positive);
   };
-  const mainLine = decorateMainPrompt(lineFor(MAIN_TARGET_ID), {
+  const lineFor = (targetId: string): string => appendTargetExtras(
+    baseFor(targetId), targets[targetId], bubbleStyles, targetId === MAIN_TARGET_ID && autoSfx,
+  );
+  // Manga mode: the page replaces the dialogue and character lines
+  const composed = mangaPage.enabled ? composeCurrentMangaPage(baseFor(MAIN_TARGET_ID), false) : null;
+  const mainLine = decorateMainPrompt(composed ? composed.main : lineFor(MAIN_TARGET_ID), {
     model, qualityPreset, customQualityTags, transparentBackground, furryMode,
-    stripNoText: shouldStripNoText({ characters, autoSfx, stripNoTextWithDialogue: stripNoText }, targets),
+    stripNoText: shouldStripNoText({ characters, autoSfx, stripNoTextWithDialogue: stripNoText }, targets, mangaPage),
   });
-  const charLines = characters.map((c) => ({
-    id: c.id,
-    name: c.genreName,
-    line: lineFor(c.id),
-  }));
+  const genreName = (id: string) => characters.find((c) => c.id === id)?.genreName ?? "";
+  const charLines = composed
+    ? composed.characters.map((c, i) => ({
+      id: `${c.characterId}-${i}`,
+      name: `${genreName(c.characterId)} · ${t("manga.panelN", { n: c.panel })}`,
+      line: c.prompt,
+    }))
+    : characters.map((c) => ({ id: c.id, name: c.genreName, line: lineFor(c.id) }));
 
   return (
     <div className="space-y-2">
@@ -127,9 +135,13 @@ export default function MainPromptSection() {
         placeholder={t("generation.prompt")}
       />
 
-      <DialogueEditor targetId={MAIN_TARGET_ID} isMain />
-      <SfxEditor targetId={MAIN_TARGET_ID} isMain />
-      <EffectPalette targetId={MAIN_TARGET_ID} scope="main" />
+      {!mangaPage.enabled && (
+        <>
+          <DialogueEditor targetId={MAIN_TARGET_ID} isMain />
+          <SfxEditor targetId={MAIN_TARGET_ID} isMain />
+          <EffectPalette targetId={MAIN_TARGET_ID} scope="main" />
+        </>
+      )}
 
       <button
         type="button"

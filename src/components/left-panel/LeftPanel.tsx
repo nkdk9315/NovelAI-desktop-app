@@ -6,9 +6,12 @@ import ArtistStyleSection from "./ArtistStyleSection";
 import VibeSection from "./VibeSection";
 import CharacterReferenceSection from "./CharacterReferenceSection";
 import SidebarPresetGroups from "./sidebar-preset-groups/SidebarPresetGroups";
+import MangaSection from "./manga/MangaSection";
+import { useMangaStore } from "@/stores/manga-store";
 
 export default function LeftPanel() {
   const characters = useGenerationParamsStore((s) => s.characters);
+  const mangaOn = useMangaStore((s) => s.page.enabled);
 
   // Flat sections separated by hairlines — no card-in-panel stacking.
   const sectionCls = "border-b border-border px-4 py-4 last:border-b-0";
@@ -28,6 +31,11 @@ export default function LeftPanel() {
           </div>
         )}
       </section>
+      {mangaOn && (
+        <section className={sectionCls}>
+          <MangaSection />
+        </section>
+      )}
       <section className={sectionCls}>
         <SidebarPresetGroups />
       </section>

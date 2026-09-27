@@ -4,6 +4,8 @@ import { useSidebarArtistTagsStore } from "@/stores/sidebar-artist-tags-store";
 import type { NegativePresetId } from "@/lib/constants";
 import type { QualityPresetId } from "@/lib/prompt-decoration";
 import { isToolOutput } from "@/lib/history-action";
+import { isMangaPage } from "@/lib/manga-page";
+import { useMangaStore } from "@/stores/manga-store";
 
 export type RestoreResult = "full" | "partial" | "none";
 
@@ -69,6 +71,9 @@ export function restoreFromSnapshot(
   }
   params.setParam("stripNoTextWithDialogue", u.stripNoTextWithDialogue === true);
   params.setParam("autoSfx", u.autoSfx === true);
+  const manga = useMangaStore.getState();
+  if (isMangaPage(u.mangaPage)) manga.setPage(u.mangaPage);
+  else manga.setEnabled(false);
   if (typeof u.normalizeVibeStrength === "boolean") {
     params.setParam("normalizeVibeStrength", u.normalizeVibeStrength);
   }

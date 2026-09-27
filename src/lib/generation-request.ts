@@ -8,7 +8,7 @@ import { useCharRefStore } from "@/stores/char-ref-store";
 import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { useBubbleStyleStore } from "@/stores/bubble-style-store";
 import {
-  MAX_TOTAL_VIBES, NEGATIVE_PRESETS, isV5Model, supportsCharacterReference,
+  MAX_TOTAL_VIBES, NEGATIVE_PRESETS, isV5Model, maxCharactersFor, supportsCharacterReference,
 } from "@/lib/constants";
 import { normalizeStrengths } from "@/lib/normalize-strength";
 import { buildArtistPrefix, isArtistTagOn } from "@/lib/artist-tag";
@@ -17,6 +17,9 @@ import { appendContributions, getPresetContributionsForCharacter } from "@/lib/p
 import { buildUiSnapshot } from "@/lib/build-ui-snapshot";
 import { decorateMainPrompt, hasTextMarker, type PromptDecoration } from "@/lib/prompt-decoration";
 import { appendTargetExtras, hasSfx, hasTextContent } from "@/lib/in-image-text";
+import { composeCurrentMangaPage, mangaModeOn } from "@/lib/manga-request";
+import { mangaDrawsText, mangaHasSfx, type MangaPage } from "@/lib/manga-page";
+import { useMangaStore } from "@/stores/manga-store";
 import { positiveTextOf } from "@/stores/sidebar-prompt-text-sync";
 import { stripDataUrl } from "@/lib/canvas-image";
 import type { SelectedVibe } from "@/stores/generation-params-store";
@@ -106,7 +109,10 @@ export function promptDrawsText(
 export function shouldStripNoText(
   params: Pick<ParamsState, "characters" | "autoSfx" | "stripNoTextWithDialogue"> = useGenerationParamsStore.getState(),
   targets: Targets = useSidebarPromptStore.getState().targets,
+  manga: MangaPage = useMangaStore.getState().page,
 ): boolean {
+  // Manga mode draws only what its panels hold
+  if (manga.enabled) return mangaHasSfx(manga) || (params.stripNoTextWithDialogue && mangaDrawsText(manga));
   if (params.autoSfx || liveTargets(params.characters, targets).some(hasSfx)) return true;
   return params.stripNoTextWithDialogue && promptDrawsText(params.characters, targets);
 }
@@ -157,9 +163,14 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
   const mainContrib = getPresetContributionsForCharacter("main", presetInstances, allPresets);
   const bubbleStyles = useBubbleStyleStore.getState().customBubbleStyles;
   const mainRolled = mainTarget ? rollTargetForGeneration(mainTarget) : { positive: "", negative: "" };
-  const assembledMain = appendTargetExtras(
-    appendContributions(mainRolled.positive, mainContrib.positive), mainTarget, bubbleStyles, params.autoSfx,
-  );
+  const userMain = appendContributions(mainRolled.positive, mainContrib.positive);
+  // Manga mode: the page and its panels replace the usual dialogue / character prompts
+  const manga = mangaModeOn() ? composeCurrentMangaPage(userMain, true) : null;
+  const maxChars = maxCharactersFor(params.model);
+  if (manga && manga.characters.length > maxChars) {
+    return { ok: false, errorKey: "manga.tooManyAppearances", errorArgs: { max: maxChars, count: manga.characters.length } };
+  }
+  const assembledMain = manga ? manga.main : appendTargetExtras(userMain, mainTarget, bubbleStyles, params.autoSfx);
   const fullPrompt = decorateMainPrompt(artistPrefix + assembledMain, currentPromptDecoration(params));
 
   let enabledVibes = allVibes.map((v) => ({ vibeId: v.vibeId, strength: v.strength }));
@@ -174,7 +185,11 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
     ? (mainNegBase ? `${negPresetText}, ${mainNegBase}` : negPresetText)
     : mainNegBase;
 
-  const characters = params.characters.length > 0
+  const characters = manga
+    ? (manga.characters.length > 0
+      ? manga.characters.map(({ prompt, centerX, centerY, negativePrompt }) => ({ prompt, centerX, centerY, negativePrompt }))
+      : undefined)
+    : params.characters.length > 0
     ? params.characters.map((c) => {
         const charTarget = sidebarState.targets[c.id];
         const charContrib = getPresetContributionsForCharacter(c.id, presetInstances, allPresets);
@@ -210,7 +225,7 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
       noiseSchedule: params.noiseSchedule,
       model: params.model,
       action: overrides.action ?? { type: "generate" },
-      uiSnapshot: buildUiSnapshot(params, sidebarArtistTags, sidebarState.targets),
+      uiSnapshot: buildUiSnapshot(params, sidebarArtistTags, sidebarState.targets, useMangaStore.getState().page),
       transparentBackground: isV5 ? params.transparentBackground : undefined,
       characterReference,
     },
