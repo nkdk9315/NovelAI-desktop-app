@@ -352,7 +352,38 @@ Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
 | `decorateMainPrompt: puts transparent background before the quality tags, on V5 only` | 透過タグの位置、V4.5 では付けない |
 | `decorateMainPrompt: prefixes fur dataset in furry mode unless already there` | `fur dataset` / `background dataset` 始まりは二重に付けない |
 | `decorateMainPrompt: inserts the quality tags before a Text: part` | 公式サイトと同じ `Text:` 前への挿入 |
+| `decorateMainPrompt: keeps a space before a leading Text:` | プロンプトが `Text:` で始まってもクオリティタグと連結しない |
+| `decorateMainPrompt: splits decorations placed before a Text: part` | `Text:` 直前の装飾も分離し、`Text:` 部分を戻す |
 | `decorateMainPrompt: round-trips through splitDecorations` | 装飾 → 分離で元に戻る |
+
+### 4.4.2 Frontend テスト (`lib/dialogue.ts`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `cleanDialogueText: keeps single line breaks but never a blank line` | 行内の空行を詰める、空白だけの行は空 |
+| `appendDialogue: adds the kind's tags, a phrase bound to the text and a trailing Text: block` | タグ＋`"文" 説明`＋`Text:` |
+| `appendDialogue: keeps each line's own shape and separates the texts with a blank line` | 行ごとの形、空行区切り、タグ重複除去 |
+| `appendDialogue: adds the direction per line` | 行ごとの向きタグ・説明 |
+| `appendDialogue: adds the lettering between the kind's phrase and the direction` | 文字スタイルの位置、画面系の種類 |
+| `appendDialogue: uses custom kinds and falls back to the normal bubble for unknown ones` | カスタム種類、削除済みは通常 |
+| `appendDialogue: flattens line breaks and double quotes inside the phrase only` | 説明内の改行・`"` だけ整形 |
+| `appendDialogue: leaves the prompt alone without non-empty lines` | 空行のみ・未設定なら変更なし |
+| `appendDialogue: keeps Text: last after the site's quality-tag insertion` | 品質タグが `Text:` の前、stripNoText で `no text` が消える |
+| `limits and issues: *` | モデル別上限、文字数（空行込み・コードポイント単位）、tooLong / needsV5 / manualText |
+| `withoutNoText: drops only the no text tag` | `no text` のみ除去 |
+| `bubble styles: *` | 組み込み種類の図形・説明、漫画 / 画面グループ、未知の文字スタイルは無視 |
+
+### 4.4.3 Frontend テスト (`lib/sound-effects.ts` / `manga-effects.ts`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `sound effects: binds each effect to its texture and size and shares the Text: block with dialogue` | 質感・大きさの説明、セリフと同じ `Text:` |
+| `sound effects: keeps the verified ominous phrase whatever the size` | 不穏は大きさなしの検証済み表現 |
+| `sound effects: flattens whitespace, drops empty effects and counts them with the dialogue` | 空白整理、空は除外、文字数はセリフと合算 |
+| `sound effects: adds the automatic sound effects tag` | おまかせで `sound effects` |
+| `sound effects: only offers known textures in the presets` | 定型文の質感が既知 |
+| `manga effects: *` | タグの順序、未知 id 無視、キャラ / 全体の分割 |
+| `shouldStripNoText: always drops no text with sound effects, otherwise only when opted in` | 効果音・おまかせで常に外す、セリフのみは設定次第 |
 
 ### 4.5 Frontend テスト (`lib/nai-metadata.ts`)
 

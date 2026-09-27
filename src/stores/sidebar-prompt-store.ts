@@ -12,6 +12,8 @@ import {
   migrateTargets,
 } from "./sidebar-prompt-utils";
 import { newTarget, updateTargetSynced } from "./sidebar-prompt-text-sync";
+import { newDialogueLine, type DialogueLine } from "@/lib/dialogue";
+import { newSfxLine, type SfxLine, type SfxTexture } from "@/lib/sound-effects";
 
 export type { SidebarPromptTag, SidebarPromptGroup, TargetPromptState };
 
@@ -39,6 +41,13 @@ interface SidebarPromptActions {
   clearPromptOverride: (targetId: string) => void;
   setNegativeOverride: (targetId: string, text: string) => void;
   clearNegativeOverride: (targetId: string) => void;
+  addDialogueLine: (targetId: string) => void;
+  updateDialogueLine: (targetId: string, lineId: string, partial: Partial<Omit<DialogueLine, "id">>) => void;
+  removeDialogueLine: (targetId: string, lineId: string) => void;
+  addSfx: (targetId: string, preset?: { text: string; texture: SfxTexture }) => void;
+  updateSfx: (targetId: string, sfxId: string, partial: Partial<Omit<SfxLine, "id">>) => void;
+  removeSfx: (targetId: string, sfxId: string) => void;
+  toggleEffect: (targetId: string, effectId: string) => void;
   saveSidebarPromptState: (projectId: string) => void;
   loadSidebarPromptState: (projectId: string) => Promise<void>;
   setTargets: (targets: Record<string, TargetPromptState>) => void;
@@ -200,6 +209,42 @@ export const useSidebarPromptStore = create<SidebarPromptState & SidebarPromptAc
 
   clearNegativeOverride: (targetId) =>
     set((state) => updateTarget(state, targetId, (target) => ({ ...target, negativeOverride: null }))),
+
+  addDialogueLine: (targetId) =>
+    set((state) => updateTarget(state, targetId, (target) => ({
+      ...target, dialogue: [...(target.dialogue ?? []), newDialogueLine()],
+    }))),
+
+  updateDialogueLine: (targetId, lineId, partial) =>
+    set((state) => updateTarget(state, targetId, (target) => ({
+      ...target, dialogue: (target.dialogue ?? []).map((l) => (l.id === lineId ? { ...l, ...partial } : l)),
+    }))),
+
+  removeDialogueLine: (targetId, lineId) =>
+    set((state) => updateTarget(state, targetId, (target) => ({
+      ...target, dialogue: (target.dialogue ?? []).filter((l) => l.id !== lineId),
+    }))),
+
+  addSfx: (targetId, preset) =>
+    set((state) => updateTarget(state, targetId, (target) => ({
+      ...target, sfx: [...(target.sfx ?? []), newSfxLine(preset?.text, preset?.texture)],
+    }))),
+
+  updateSfx: (targetId, sfxId, partial) =>
+    set((state) => updateTarget(state, targetId, (target) => ({
+      ...target, sfx: (target.sfx ?? []).map((l) => (l.id === sfxId ? { ...l, ...partial } : l)),
+    }))),
+
+  removeSfx: (targetId, sfxId) =>
+    set((state) => updateTarget(state, targetId, (target) => ({
+      ...target, sfx: (target.sfx ?? []).filter((l) => l.id !== sfxId),
+    }))),
+
+  toggleEffect: (targetId, effectId) =>
+    set((state) => updateTarget(state, targetId, (target) => {
+      const on = target.effects ?? [];
+      return { ...target, effects: on.includes(effectId) ? on.filter((e) => e !== effectId) : [...on, effectId] };
+    })),
 
   saveSidebarPromptState: (projectId) => {
     const { targets } = useSidebarPromptStore.getState();

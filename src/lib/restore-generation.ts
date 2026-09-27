@@ -67,6 +67,8 @@ export function restoreFromSnapshot(
   if (typeof u.transparentBackground === "boolean") {
     params.setParam("transparentBackground", u.transparentBackground);
   }
+  params.setParam("stripNoTextWithDialogue", u.stripNoTextWithDialogue === true);
+  params.setParam("autoSfx", u.autoSfx === true);
   if (typeof u.normalizeVibeStrength === "boolean") {
     params.setParam("normalizeVibeStrength", u.normalizeVibeStrength);
   }

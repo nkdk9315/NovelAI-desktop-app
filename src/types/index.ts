@@ -398,6 +398,8 @@ export interface UiSnapshotV1 {
   qualityPreset?: string;
   furryMode?: boolean;
   transparentBackground?: boolean;
+  stripNoTextWithDialogue?: boolean;
+  autoSfx?: boolean;
   normalizeVibeStrength: boolean;
   normalizeArtistStrength: boolean;
   characters: Array<{

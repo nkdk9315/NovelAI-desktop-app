@@ -1,4 +1,6 @@
 import type { PromptGroupDto } from "@/types";
+import type { DialogueLine } from "@/lib/dialogue";
+import type { SfxLine } from "@/lib/sound-effects";
 
 // ---- Types ----
 
@@ -33,6 +35,12 @@ export interface TargetPromptState {
   freeText: string;
   promptOverride: string | null;
   negativeOverride: string | null;
+  /** Dialogue / in-image text lines, appended as `Text:` at the end of this target's prompt */
+  dialogue?: DialogueLine[];
+  /** Written sound effects, drawn from the same `Text:` block as the dialogue */
+  sfx?: SfxLine[];
+  /** Enabled manga effect ids (sweat drops, emphasis lines…), see `manga-effects.ts` */
+  effects?: string[];
 }
 
 // ---- Pure helpers ----

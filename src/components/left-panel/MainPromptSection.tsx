@@ -16,7 +16,13 @@ import { usePresetStore } from "@/stores/preset-store";
 import { NEGATIVE_PRESETS, type NegativePresetId } from "@/lib/constants";
 import { loadDefaultGroupsForGenre } from "@/lib/default-groups";
 import { decorateMainPrompt } from "@/lib/prompt-decoration";
+import { appendTargetExtras } from "@/lib/in-image-text";
+import { shouldStripNoText } from "@/lib/generation-request";
 import { useQualityTagStore } from "@/stores/quality-tag-store";
+import { useBubbleStyleStore } from "@/stores/bubble-style-store";
+import DialogueEditor from "./DialogueEditor";
+import SfxEditor from "./SfxEditor";
+import EffectPalette from "./EffectPalette";
 
 const MAIN_TARGET_ID = "main";
 
@@ -31,6 +37,9 @@ export default function MainPromptSection() {
   const qualityPreset = useGenerationParamsStore((s) => s.qualityPreset);
   const furryMode = useGenerationParamsStore((s) => s.furryMode);
   const transparentBackground = useGenerationParamsStore((s) => s.transparentBackground);
+  const bubbleStyles = useBubbleStyleStore((s) => s.customBubbleStyles);
+  const stripNoText = useGenerationParamsStore((s) => s.stripNoTextWithDialogue);
+  const autoSfx = useGenerationParamsStore((s) => s.autoSfx);
   const customQualityTags = useQualityTagStore((s) => s.customQualityTags);
   const targets = useSidebarPromptStore((s) => s.targets);
   const initTarget = useSidebarPromptStore((s) => s.initTarget);
@@ -78,10 +87,13 @@ export default function MainPromptSection() {
       ? (target.promptOverride ?? assembleFullPrompt("", target.groups))
       : "";
     const contrib = getPresetContributionsForCharacter(targetId, presetInstances, allPresets);
-    return appendContributions(base, contrib.positive);
+    return appendTargetExtras(
+      appendContributions(base, contrib.positive), target, bubbleStyles, targetId === MAIN_TARGET_ID && autoSfx,
+    );
   };
   const mainLine = decorateMainPrompt(lineFor(MAIN_TARGET_ID), {
     model, qualityPreset, customQualityTags, transparentBackground, furryMode,
+    stripNoText: shouldStripNoText({ characters, autoSfx, stripNoTextWithDialogue: stripNoText }, targets),
   });
   const charLines = characters.map((c) => ({
     id: c.id,
@@ -114,6 +126,10 @@ export default function MainPromptSection() {
         textareaRows={8}
         placeholder={t("generation.prompt")}
       />
+
+      <DialogueEditor targetId={MAIN_TARGET_ID} isMain />
+      <SfxEditor targetId={MAIN_TARGET_ID} isMain />
+      <EffectPalette targetId={MAIN_TARGET_ID} scope="main" />
 
       <button
         type="button"

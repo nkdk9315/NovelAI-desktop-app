@@ -55,7 +55,7 @@ main.rs, state.rs, error.rs, db.rs
 main.tsx, App.tsx
 ├── lib/            # 6 IPC (ipc, ipc-assets, ipc-preset, ipc-prompt, ipc-tags, ipc-nax) + ユーティリティ
 ├── types/          # 型定義
-├── stores/         # 18 stores（layout / theme / image-edit / char-ref / director-tools / nax / nax-view / quality-tag 含む）
+├── stores/         # 19 stores（layout / theme / image-edit / char-ref / director-tools / nax / nax-view / quality-tag / bubble-style 含む）
 ├── hooks/          # use-debounce, use-autocomplete, use-cost-estimate,
 │                    # use-artist-tag-input, use-prompt-token-counts,
 │                    # use-generation-plan, use-run-generation, use-image-source-actions,

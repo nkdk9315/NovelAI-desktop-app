@@ -9,6 +9,8 @@ interface SnapshotSource {
   qualityPreset: QualityPresetId;
   furryMode: boolean;
   transparentBackground: boolean;
+  stripNoTextWithDialogue: boolean;
+  autoSfx: boolean;
   normalizeVibeStrength: boolean;
   normalizeArtistStrength: boolean;
   characters: Character[];
@@ -30,6 +32,8 @@ export function buildUiSnapshot(
     qualityPreset: src.qualityPreset,
     furryMode: src.furryMode,
     transparentBackground: src.transparentBackground,
+    stripNoTextWithDialogue: src.stripNoTextWithDialogue,
+    autoSfx: src.autoSfx,
     normalizeVibeStrength: src.normalizeVibeStrength,
     normalizeArtistStrength: src.normalizeArtistStrength,
     characters: src.characters,

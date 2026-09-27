@@ -55,6 +55,21 @@ describe("decorateMainPrompt", () => {
       .toBe("sign,, very aesthetic, masterpiece, no text Text: HELLO");
   });
 
+  it("keeps a space before a leading Text:", () => {
+    expect(decorateMainPrompt("Text: HELLO", { ...base, qualityPreset: "standard" }))
+      .toBe("very aesthetic, masterpiece, no text Text: HELLO");
+    expect(decorateMainPrompt("Text: HELLO", base)).toBe("Text: HELLO");
+  });
+
+  it("splits decorations placed before a Text: part", () => {
+    const d = { ...base, qualityPreset: "standard" as const, transparentBackground: true };
+    for (const prompt of ["sign, speech bubble, Text: やあ\n\nまたね", "Text: HELLO"]) {
+      expect(splitDecorations(decorateMainPrompt(prompt, d), d.model)).toEqual({
+        prompt, qualityPreset: "standard", transparentBackground: true, furryMode: false,
+      });
+    }
+  });
+
   it("round-trips through splitDecorations", () => {
     const d = { ...base, qualityPreset: "custom:q1" as const, transparentBackground: true, furryMode: true };
     expect(splitDecorations(decorateMainPrompt("artist:a, fox", d), d.model, customs)).toEqual({

@@ -819,5 +819,217 @@
       "added": "{{count}} 件を追加しました",
       "skipped": "{{count}} 件は既にあるためスキップしました"
     }
+  },
+  "dialogue": {
+    "mainLabel": "テキスト・セリフ",
+    "charLabel": "セリフ",
+    "add": "追加",
+    "remove": "削除",
+    "placeholder": "セリフや文字を入力（例: こんにちは！）",
+    "hint": "吹き出しのセリフや看板の文字を画像に描きます。キャラクターのセリフ欄に入れるとそのキャラが話します（日本語は V5 のみ）",
+    "style": {
+      "speech": "通常",
+      "shout": "叫び",
+      "surprise": "驚き",
+      "weak": "弱々しい",
+      "whisper": "ささやき",
+      "thought": "心の声",
+      "narration": "ナレーション",
+      "flash": "ウニフラ",
+      "electronic": "電話・通信",
+      "dark": "黒吹き出し",
+      "square": "角ばった",
+      "heart": "ハート",
+      "sfx": "擬音",
+      "handwritten": "手書き",
+      "plain": "文字のみ",
+      "gameWindow": "ノベルゲーム",
+      "rpgWindow": "RPG風",
+      "chat": "チャット",
+      "subtitle": "字幕",
+      "telop": "テロップ",
+      "hologram": "ホログラム"
+    },
+    "directionLabel": "文字の向き",
+    "direction": {
+      "auto": "おまかせ（吹き出しの日本語はたいてい縦書き）",
+      "vertical": "縦書き",
+      "horizontal": "横書き"
+    },
+    "stripNoText": "no text を外す",
+    "stripNoTextHint": "品質タグの no text を送信しません。通常は残す方が、指定していない文字や擬音が勝手に描かれにくくなります",
+    "issue": {
+      "tooLong": "文字数がモデルの上限を超えています（{{count}}/{{limit}}）",
+      "needsV5": "英語以外の文字（日本語など）は V5 でのみ描けます",
+      "manualText": "プロンプトに Text: が直接書かれています。セリフ欄と重なるので、どちらか一方にしてください"
+    },
+    "textLabel": "セリフ・文字",
+    "styleLabel": "種類（吹き出しの形など）",
+    "styleHint": {
+      "speech": "丸い吹き出し",
+      "shout": "大きなギザギザの吹き出し（叫び・怒鳴り声）",
+      "surprise": "少しギザギザ（驚き・動揺）",
+      "weak": "ニョロニョロ震える線（弱気・泣き声）",
+      "whisper": "点線の吹き出し（小声・内緒話）",
+      "thought": "雲形の吹き出し（考え事・心の声）",
+      "narration": "四角い枠（解説・状況説明）",
+      "flash": "放射状の線（衝撃のモノローグ）",
+      "electronic": "稲妻型の尻尾（電話・無線・機械越しの声）",
+      "dark": "黒地に白文字（怒り・恐怖・人外の声）",
+      "square": "角ばった吹き出し（無機質・冷静な声）",
+      "heart": "ハート型（好意・甘え）",
+      "sfx": "吹き出しなしの描き文字（ドーン・ゴゴゴなど）",
+      "handwritten": "小さな手書きの書き込み",
+      "plain": "場所はおまかせ（看板・服など）",
+      "gameWindow": "画面下のメッセージウィンドウ（ノベルゲーム風）",
+      "rpgWindow": "黒地に白枠のレトロ RPG 風ウィンドウ",
+      "chat": "スマホのチャットアプリ風の吹き出し",
+      "subtitle": "画面下に出る映画・アニメの字幕",
+      "telop": "カラフルで縁取りの太いバラエティ番組のテロップ",
+      "hologram": "空中に浮かぶ SF 風のホログラム画面"
+    },
+    "shape": {
+      "round": "丸",
+      "spiky": "ギザギザ",
+      "jagged": "少しギザギザ",
+      "wavy": "ニョロニョロ",
+      "dashed": "点線",
+      "cloud": "雲",
+      "rect": "四角",
+      "flash": "放射線",
+      "electric": "稲妻",
+      "dark": "黒",
+      "square": "角ばった",
+      "heart": "ハート",
+      "sfx": "描き文字",
+      "handwritten": "手書き",
+      "plain": "文字",
+      "window": "メッセージ枠",
+      "rpg": "RPG枠",
+      "chat": "チャット",
+      "subtitle": "字幕",
+      "telop": "テロップ",
+      "hud": "SF画面"
+    },
+    "directionShort": {
+      "auto": "自動",
+      "vertical": "縦",
+      "horizontal": "横"
+    },
+    "customGroup": "カスタム",
+    "addCustom": "種類を追加",
+    "manageCustom": "追加・編集",
+    "customDialog": {
+      "title": "カスタムの種類",
+      "description": "吹き出しの形や文字の描き方を登録できます。描き方はセリフの直後に入る英語の説明で、例のように書くと効きやすくなります。",
+      "empty": "カスタムの種類はまだありません",
+      "name": "名前",
+      "namePlaceholder": "例: 星形",
+      "shape": "一覧に表示する図形",
+      "phrase": "描き方（英語推奨）",
+      "phrasePlaceholder": "例: in a star-shaped speech bubble",
+      "tags": "追加タグ（任意）",
+      "tagsPlaceholder": "例: speech bubble",
+      "add": "追加",
+      "deleteConfirm": "「{{name}}」を削除しますか？この種類を使っているセリフは「通常」になります。",
+      "newHeading": "新しい種類"
+    },
+    "group": {
+      "manga": "漫画",
+      "screen": "ゲーム・画面（メインプロンプト向き）"
+    },
+    "letteringLabel": "文字のスタイル",
+    "lettering": {
+      "auto": "おまかせ",
+      "bold": "太字",
+      "impact": "極太・荒れ",
+      "mincho": "明朝",
+      "brush": "毛筆",
+      "horror": "ホラー",
+      "wavy": "震え文字",
+      "cute": "丸文字"
+    },
+    "letteringHint": {
+      "auto": "文字の見た目はモデルにおまかせ",
+      "bold": "太い文字",
+      "impact": "荒々しい極太の叫び文字",
+      "mincho": "上品な明朝体（丁寧・和風）",
+      "brush": "毛筆の書道文字（決め台詞・和風）",
+      "horror": "血がしたたるようなホラー文字",
+      "wavy": "ニョロニョロ震える文字（効果は控えめ）",
+      "cute": "丸くかわいい文字（効果は控えめ）"
+    },
+    "stripNoTextBySfx": "効果音があるため no text を外しています（控えめな効果音やおまかせ効果音が消されないように）",
+    "stripNoTextBySfxShort": "効果音のため自動"
+  },
+  "sfx": {
+    "label": "効果音",
+    "hint": "ブンッ・チョロロロなどの描き文字。キャラクターに入れるとそのキャラの動きのそばに描かれます",
+    "add": "追加",
+    "remove": "削除",
+    "presets": "定型文",
+    "placeholder": "例: ブンッ",
+    "textLabel": "効果音の文字",
+    "textureLabel": "質感",
+    "texture": {
+      "standard": "標準",
+      "impact": "衝撃",
+      "sharp": "鋭い",
+      "light": "軽い",
+      "liquid": "液体",
+      "ominous": "不穏",
+      "silence": "静寂"
+    },
+    "textureHint": {
+      "standard": "ふつうの描き文字（ドキッ・パタパタ）",
+      "impact": "太く重い、ギザギザ縁の描き文字（ドカッ・ドーン）",
+      "sharp": "斜めに鋭い描き文字＋スピード線（ブンッ・シュッ）",
+      "light": "軽くくだけた描き文字（ガチャ・スカッ）",
+      "liquid": "やわらかく波打つ描き文字（チョロロロ・ザーッ）",
+      "ominous": "背景に並ぶ重く不穏な描き文字（ゴゴゴゴ）",
+      "silence": "余白に置かれる静かな描き文字（シーン）"
+    },
+    "sizeLabel": "大きさ",
+    "size": {
+      "medium": "中",
+      "large": "大"
+    },
+    "sizeHint": {
+      "medium": "中くらい（はっきり見える大きさ）",
+      "large": "画面いっぱいの巨大な描き文字"
+    },
+    "category": {
+      "motion": "動き",
+      "impact": "打撃・衝撃",
+      "miss": "空振り・失敗",
+      "liquid": "水・液体",
+      "mind": "心理",
+      "daily": "日常"
+    },
+    "auto": "おまかせ効果音",
+    "autoHint": "sound effects タグを追加し、絵に合った効果音をモデルに描かせます（内容はおまかせ）"
+  },
+  "effects": {
+    "label": "エフェクト",
+    "hint": {
+      "main": "画面全体にかかる線や背景（キャラクターに付けても効きません）",
+      "character": "このキャラクターのまわりに描く漫画記号"
+    },
+    "unreliable": "出ないことがあります",
+    "item": {
+      "sweat": "汗",
+      "flyingSweat": "飛び汗",
+      "anger": "怒りマーク",
+      "heart": "ハート",
+      "sparkle": "キラキラ",
+      "pale": "青ざめ",
+      "sigh": "ため息",
+      "exclamation": "！",
+      "question": "？",
+      "note": "♪",
+      "emphasisLines": "集中線",
+      "speedLines": "スピード線",
+      "flowers": "花背景"
+    }
   }
 }

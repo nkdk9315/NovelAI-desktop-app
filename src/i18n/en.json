@@ -819,5 +819,217 @@
       "added": "Added {{count}}",
       "skipped": "Skipped {{count}} already in the group"
     }
+  },
+  "dialogue": {
+    "mainLabel": "Text / Dialogue",
+    "charLabel": "Dialogue",
+    "add": "Add",
+    "remove": "Remove",
+    "placeholder": "Type the line or text (e.g. Hello!)",
+    "hint": "Draws speech-bubble lines or sign text into the image. Lines in a character's dialogue are spoken by that character (Japanese needs V5)",
+    "style": {
+      "speech": "Normal",
+      "shout": "Shout",
+      "surprise": "Surprise",
+      "weak": "Weak",
+      "whisper": "Whisper",
+      "thought": "Thought",
+      "narration": "Narration",
+      "flash": "Flash",
+      "electronic": "Phone/radio",
+      "dark": "Dark",
+      "square": "Angular",
+      "heart": "Heart",
+      "sfx": "Sound FX",
+      "handwritten": "Handwritten",
+      "plain": "Text only",
+      "gameWindow": "Visual novel",
+      "rpgWindow": "RPG box",
+      "chat": "Chat",
+      "subtitle": "Subtitles",
+      "telop": "TV caption",
+      "hologram": "Hologram"
+    },
+    "directionLabel": "Text direction",
+    "direction": {
+      "auto": "Auto (Japanese in bubbles is usually vertical)",
+      "vertical": "Vertical",
+      "horizontal": "Horizontal"
+    },
+    "stripNoText": "Remove no text",
+    "stripNoTextHint": "Don't send the quality tag \"no text\". Keeping it usually prevents unrequested text and sound effects",
+    "issue": {
+      "tooLong": "Text exceeds the model's limit ({{count}}/{{limit}})",
+      "needsV5": "Non-English text (e.g. Japanese) can only be drawn on V5",
+      "manualText": "The prompt already contains Text:. It overlaps with the dialogue lines — use only one of them"
+    },
+    "textLabel": "Line text",
+    "styleLabel": "Kind (bubble shape etc.)",
+    "styleHint": {
+      "speech": "Round speech bubble",
+      "shout": "Big spiky bubble (shouting)",
+      "surprise": "Slightly jagged (surprised, flustered)",
+      "weak": "Thin wavy trembling outline (weak, crying)",
+      "whisper": "Dashed outline (whispering)",
+      "thought": "Cloud-shaped thought bubble",
+      "narration": "Rectangular caption box (narration)",
+      "flash": "Radiating flash lines (dramatic monologue)",
+      "electronic": "Lightning-shaped tail (phone, radio, machine)",
+      "dark": "Black bubble, white text (anger, fear, monsters)",
+      "square": "Sharp-cornered bubble (cold, flat voice)",
+      "heart": "Heart-shaped (affection)",
+      "sfx": "Drawn sound effect, no bubble",
+      "handwritten": "Small handwritten note",
+      "plain": "Placement left to the model (signs, clothes…)",
+      "gameWindow": "Message window at the bottom (visual novel)",
+      "rpgWindow": "Retro RPG box, white border on black",
+      "chat": "Smartphone chat-app bubbles",
+      "subtitle": "Movie / anime subtitles at the bottom",
+      "telop": "Colorful TV variety-show caption",
+      "hologram": "Floating sci-fi holographic window"
+    },
+    "shape": {
+      "round": "Round",
+      "spiky": "Spiky",
+      "jagged": "Jagged",
+      "wavy": "Wavy",
+      "dashed": "Dashed",
+      "cloud": "Cloud",
+      "rect": "Box",
+      "flash": "Flash",
+      "electric": "Lightning",
+      "dark": "Dark",
+      "square": "Angular",
+      "heart": "Heart",
+      "sfx": "Drawn text",
+      "handwritten": "Handwritten",
+      "plain": "Text",
+      "window": "Message box",
+      "rpg": "RPG box",
+      "chat": "Chat",
+      "subtitle": "Subtitles",
+      "telop": "Caption",
+      "hud": "Sci-fi panel"
+    },
+    "directionShort": {
+      "auto": "Auto",
+      "vertical": "V",
+      "horizontal": "H"
+    },
+    "customGroup": "Custom",
+    "addCustom": "Add kind",
+    "manageCustom": "Add / edit",
+    "customDialog": {
+      "title": "Custom kinds",
+      "description": "Register your own bubble shapes or text styles. The description is placed right after the quoted line; phrasing it like the example works best.",
+      "empty": "No custom kinds yet",
+      "name": "Name",
+      "namePlaceholder": "e.g. Star",
+      "shape": "Icon",
+      "phrase": "Description",
+      "phrasePlaceholder": "e.g. in a star-shaped speech bubble",
+      "tags": "Extra tags (optional)",
+      "tagsPlaceholder": "e.g. speech bubble",
+      "add": "Add",
+      "deleteConfirm": "Delete \"{{name}}\"? Lines using it switch to Normal.",
+      "newHeading": "New kind"
+    },
+    "group": {
+      "manga": "Manga",
+      "screen": "Game / screen (best in the main prompt)"
+    },
+    "letteringLabel": "Lettering",
+    "lettering": {
+      "auto": "Auto",
+      "bold": "Bold",
+      "impact": "Impact",
+      "mincho": "Serif",
+      "brush": "Brush",
+      "horror": "Horror",
+      "wavy": "Shaky",
+      "cute": "Rounded"
+    },
+    "letteringHint": {
+      "auto": "Let the model choose",
+      "bold": "Thick bold letters",
+      "impact": "Huge rough shouting letters",
+      "mincho": "Elegant serif (mincho)",
+      "brush": "Brush calligraphy",
+      "horror": "Dripping horror letters",
+      "wavy": "Shaky wavy letters (subtle)",
+      "cute": "Cute rounded letters (subtle)"
+    },
+    "stripNoTextBySfx": "\"no text\" is removed because sound effects are used (so soft and automatic ones aren't suppressed)",
+    "stripNoTextBySfxShort": "auto: sound effects"
+  },
+  "sfx": {
+    "label": "Sound effects",
+    "hint": "Drawn onomatopoeia (whoosh, splash…). In a character, it is drawn next to that character's action",
+    "add": "Add",
+    "remove": "Remove",
+    "presets": "Presets",
+    "placeholder": "e.g. WHOOSH",
+    "textLabel": "Sound effect text",
+    "textureLabel": "Texture",
+    "texture": {
+      "standard": "Standard",
+      "impact": "Impact",
+      "sharp": "Sharp",
+      "light": "Light",
+      "liquid": "Liquid",
+      "ominous": "Ominous",
+      "silence": "Silence"
+    },
+    "textureHint": {
+      "standard": "Plain drawn sound effect",
+      "impact": "Heavy bold jagged letters",
+      "sharp": "Sharp slanted letters with speed lines",
+      "light": "Light casual letters",
+      "liquid": "Soft wavy letters",
+      "ominous": "Repeated ominous letters in the background",
+      "silence": "Quiet letters in empty space"
+    },
+    "sizeLabel": "Size",
+    "size": {
+      "medium": "M",
+      "large": "L"
+    },
+    "sizeHint": {
+      "medium": "Medium, clearly visible",
+      "large": "Huge"
+    },
+    "category": {
+      "motion": "Motion",
+      "impact": "Impact",
+      "miss": "Miss",
+      "liquid": "Liquid",
+      "mind": "Feelings",
+      "daily": "Everyday"
+    },
+    "auto": "Automatic sound effects",
+    "autoHint": "Adds the \"sound effects\" tag so the model draws fitting ones itself (content is up to the model)"
+  },
+  "effects": {
+    "label": "Effects",
+    "hint": {
+      "main": "Lines and backgrounds for the whole picture",
+      "character": "Manga symbols drawn around this character"
+    },
+    "unreliable": "May not appear",
+    "item": {
+      "sweat": "Sweat",
+      "flyingSweat": "Flying sweat",
+      "anger": "Anger vein",
+      "heart": "Heart",
+      "sparkle": "Sparkle",
+      "pale": "Pale",
+      "sigh": "Sigh",
+      "exclamation": "!",
+      "question": "?",
+      "note": "♪",
+      "emphasisLines": "Focus lines",
+      "speedLines": "Speed lines",
+      "flowers": "Flowers"
+    }
   }
 }
