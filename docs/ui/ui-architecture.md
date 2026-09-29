@@ -295,7 +295,7 @@ App
             │   │       ├── Button ("選択を保存")
             │   │       └── Button ("選択解除")
             │   └── ThumbnailGrid
-            │       └── NextPageTile (漫画モードのみ、先頭)
+            │       ├── NextPageTile (漫画モードのみ、先頭)
             │       └── ThumbnailItem × N (div wrapper, ThumbnailContextMenu で包む)
             │           ├── ThumbnailContextMenu (右クリック: 復元 / Img2Img / 落書き / Inpaint /
             │           │                         キャラ参照 / Director Tools / Upscale)
