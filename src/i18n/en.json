@@ -1040,6 +1040,8 @@
     "modeTooltip": "Manga mode: pick a panel layout and fill each panel's scene, characters and lines to generate a page (for V5)",
     "title": "Manga page",
     "layout": "Layout",
+    "layoutPreview": "Panel layout preview",
+    "layoutPreviewHint": "Numbers match the panels on the left (reading order)",
     "layoutName": {
       "koma4": "4koma",
       "two": "2 panels",

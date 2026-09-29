@@ -274,6 +274,7 @@ App
             │   │   ├── img (生成画像)
             │   │   ├── LoadingOverlay (生成中)
             │   │   ├── EmptyState (未生成)
+            │   │   ├── MangaLayoutPreview (漫画モードで画像未表示: 選択中のコマ割りを番号付きで表示)
             │   │   └── ImageToolbar (Img2Img / 落書き / Inpaint / Enhance / Director Tools / Upscale / キャラ参照)
             │   │       └── EnhancePopover (×1 / ×1.5, レベル 1–5, コスト表示)
             │   ├── BaseImagePanel (ベース画像ストリップ: モード切替, strength / noise, mask strength,
@@ -753,6 +754,7 @@ src/
 │   ├── center-panel/
 │   │   ├── CenterPanel.tsx               # 中央パネル全体
 │   │   ├── ImageDisplay.tsx              # 画像表示（loading/empty/image）
+│   │   ├── MangaLayoutPreview.tsx        # 漫画モードの空表示: コマ割りプレビュー
 │   │   ├── ActionBar.tsx                 # Generate/Save/Delete ボタン群
 │   │   └── ImageDetailOverlay.tsx        # S7 画像詳細オーバーレイ
 │   │

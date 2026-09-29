@@ -1040,6 +1040,8 @@
     "modeTooltip": "漫画モード：コマ割りを選び、コマごとに場面・登場キャラ・セリフを入力して 1 ページを生成します（V5 向け）",
     "title": "漫画ページ",
     "layout": "コマ割り",
+    "layoutPreview": "コマ割りのプレビュー",
+    "layoutPreviewHint": "番号は左のコマ番号（読む順）です",
     "layoutName": {
       "koma4": "4コマ",
       "two": "2コマ",

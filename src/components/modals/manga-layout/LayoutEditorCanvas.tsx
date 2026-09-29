@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { centroid, contains, insetShape, readingOrder, snapLine, type Point, type Shape } from "@/lib/manga-geometry";
-import { GUTTER } from "@/lib/manga-template";
+import { useRef, useState } from "react";
+import { contains, snapLine, type Point, type Shape } from "@/lib/manga-geometry";
+import MangaPageShapes, { useFitPage } from "@/components/shared/MangaPageShapes";
 
 interface LayoutEditorCanvasProps {
   shapes: Shape[];
@@ -16,24 +16,9 @@ const MIN_LINE = 0.03;
 
 /** The page: drag anywhere to draw a splitting line (snaps when nearly straight), click a panel to select it. */
 export default function LayoutEditorCanvas({ shapes, width, height, selected, onSplit, onToggleSelect }: LayoutEditorCanvasProps) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const { ref: wrapRef, size } = useFitPage(width, height);
   const svgRef = useRef<SVGSVGElement>(null);
-  const [size, setSize] = useState({ w: 300, h: 400 });
   const [line, setLine] = useState<{ a: Point; b: Point } | null>(null);
-  const order = readingOrder(shapes);
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const fit = () => {
-      const s = Math.min(el.clientWidth / width, el.clientHeight / height);
-      setSize({ w: width * s, h: height * s });
-    };
-    fit();
-    const ro = new ResizeObserver(fit);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [width, height]);
 
   const toPage = (e: React.PointerEvent): Point => {
     const r = svgRef.current!.getBoundingClientRect();
@@ -66,8 +51,6 @@ export default function LayoutEditorCanvas({ shapes, width, height, selected, on
     if (hit >= 0) onToggleSelect(hit);
   };
 
-  const pts = (s: Shape) => insetShape(s, GUTTER).map((p) => `${p.x * size.w},${p.y * size.h}`).join(" ");
-
   return (
     <div ref={wrapRef} className="flex min-h-0 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-md bg-muted/40 p-2">
       <svg
@@ -80,21 +63,7 @@ export default function LayoutEditorCanvas({ shapes, width, height, selected, on
         onPointerUp={onPointerUp}
         onPointerCancel={() => setLine(null)}
       >
-        {shapes.map((s, i) => {
-          const c = centroid(s);
-          const on = selected.includes(i);
-          return (
-            <g key={i}>
-              <polygon points={pts(s)} fill={on ? "#f59e0b33" : "#ffffff"} stroke={on ? "#f59e0b" : "#111111"} strokeWidth={on ? 3 : 2} />
-              <text
-                x={c.x * size.w} y={c.y * size.h} textAnchor="middle" dominantBaseline="central"
-                fontSize={Math.max(12, size.w * 0.06)} fontWeight={700} fill="#11111166" className="pointer-events-none select-none"
-              >
-                {order.indexOf(i) + 1}
-              </text>
-            </g>
-          );
-        })}
+        <MangaPageShapes shapes={shapes} size={size} selected={selected} />
         {line && (
           <line
             x1={line.a.x * size.w} y1={line.a.y * size.h} x2={line.b.x * size.w} y2={line.b.y * size.h}

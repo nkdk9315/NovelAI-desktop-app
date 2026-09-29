@@ -4,8 +4,10 @@ import { Check, Copy, ImageIcon, Loader2, Maximize, Minus, Plus, X } from "lucid
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useProjectStore } from "@/stores/project-store";
+import { useMangaStore } from "@/stores/manga-store";
 import { useZoomPan } from "@/hooks/use-zoom-pan";
 import ImageToolbar from "./ImageToolbar";
+import MangaLayoutPreview from "./MangaLayoutPreview";
 
 export default function ImageDisplay() {
   const { t } = useTranslation();
@@ -15,6 +17,7 @@ export default function ImageDisplay() {
   const error = useGenerationStore((s) => s.error);
   const currentProject = useProjectStore((s) => s.currentProject);
   const clearError = useGenerationStore((s) => s.clearError);
+  const mangaEnabled = useMangaStore((s) => s.page.enabled);
 
   const imageSrc = lastResult
     ? lastResult.base64Image
@@ -49,6 +52,8 @@ export default function ImageDisplay() {
             zoom.interacting ? "" : "transition-transform duration-75"
           }`}
         />
+      ) : mangaEnabled ? (
+        <MangaLayoutPreview />
       ) : (
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <ImageIcon className="h-10 w-10 opacity-60" />
