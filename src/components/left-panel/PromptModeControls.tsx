@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BadgeCheck, SquareDashed } from "lucide-react";
+import { BadgeCheck, BookOpen, SquareDashed } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useQualityTagStore } from "@/stores/quality-tag-store";
+import { useMangaStore } from "@/stores/manga-store";
+import { mangaLayout } from "@/lib/manga-layouts";
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -44,6 +46,17 @@ export default function PromptModeControls() {
   const loaded = useQualityTagStore((s) => s.loaded);
   const loadCustoms = useQualityTagStore((s) => s.loadCustomQualityTags);
   const [manageOpen, setManageOpen] = useState(false);
+  const mangaOn = useMangaStore((s) => s.page.enabled);
+  const toggleManga = () => {
+    const manga = useMangaStore.getState();
+    manga.setEnabled(!mangaOn);
+    if (!mangaOn) {
+      // A page layout has its own size
+      const { width, height } = mangaLayout(manga.page.layoutId);
+      setParam("width", width);
+      setParam("height", height);
+    }
+  };
 
   useEffect(() => { if (!loaded) loadCustoms(); }, [loaded, loadCustoms]);
 
@@ -120,6 +133,11 @@ export default function PromptModeControls() {
           {t("generation.transparentBackground")}
         </ModeButton>
       )}
+
+      <ModeButton active={mangaOn} onClick={toggleManga} title={t("manga.modeTooltip")}>
+        <BookOpen className="h-2.5 w-2.5" />
+        {t("manga.mode")}
+      </ModeButton>
 
       {manageOpen && <QualityTagsDialog open={manageOpen} onOpenChange={setManageOpen} />}
     </div>

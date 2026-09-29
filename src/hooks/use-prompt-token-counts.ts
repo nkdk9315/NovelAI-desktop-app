@@ -9,6 +9,8 @@ import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { buildArtistPrefix } from "@/lib/artist-tag";
 import { assembleFullPrompt, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 import { appendTargetExtras } from "@/lib/in-image-text";
+import { composeCurrentMangaPage, mangaModeOn } from "@/lib/manga-request";
+import { useMangaStore } from "@/stores/manga-store";
 import { useBubbleStyleStore } from "@/stores/bubble-style-store";
 import * as ipc from "@/lib/ipc";
 import { useDebounce } from "./use-debounce";
@@ -47,7 +49,10 @@ function buildPromptTexts(): { positives: string[]; negatives: string[] } {
 
   const mainTarget = sidebar.targets[MAIN_TARGET_ID];
   const bubbleStyles = useBubbleStyleStore.getState().customBubbleStyles;
-  const assembledMain = mainTarget
+  const manga = mangaModeOn()
+    ? composeCurrentMangaPage(mainTarget ? (mainTarget.promptOverride ?? assembleFullPrompt("", mainTarget.groups)) : "", false)
+    : null;
+  const assembledMain = manga ? manga.main : mainTarget
     ? appendTargetExtras(
       mainTarget.promptOverride ?? assembleFullPrompt("", mainTarget.groups), mainTarget, bubbleStyles, params.autoSfx,
     )
@@ -64,6 +69,14 @@ function buildPromptTexts(): { positives: string[]; negatives: string[] } {
 
   const positives: string[] = [mainPrompt];
   const negatives: string[] = [mainNegative];
+
+  if (manga) {
+    for (const c of manga.characters) {
+      positives.push(c.prompt);
+      negatives.push(c.negativePrompt);
+    }
+    return { positives, negatives };
+  }
 
   for (const c of params.characters) {
     const t = sidebar.targets[c.id];
@@ -94,6 +107,7 @@ export function usePromptTokenCounts(): PromptTokenCounts {
   const bubbleStyles = useBubbleStyleStore((s) => s.customBubbleStyles);
   const stripNoText = useGenerationParamsStore((s) => s.stripNoTextWithDialogue);
   const autoSfx = useGenerationParamsStore((s) => s.autoSfx);
+  const mangaPage = useMangaStore((s) => s.page);
   const customQualityTags = useQualityTagStore((s) => s.customQualityTags);
   const negativePreset = useGenerationParamsStore((s) => s.negativePreset);
   const sidebarPresets = useGenerationParamsStore((s) => s.sidebarPresets);
@@ -105,7 +119,7 @@ export function usePromptTokenCounts(): PromptTokenCounts {
     // buildPromptTexts reads from store state snapshots; these deps trigger recomputation
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
-      model, characters, qualityPreset, furryMode, transparentBackground, bubbleStyles, stripNoText, autoSfx,
+      model, characters, qualityPreset, furryMode, transparentBackground, bubbleStyles, stripNoText, autoSfx, mangaPage,
       customQualityTags, negativePreset, sidebarPresets, targets, artistTags,
     ],
   );

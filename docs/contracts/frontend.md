@@ -243,6 +243,7 @@ export interface UiSnapshotV1 {
   sidebarPresets: SidebarPreset[];
   sidebarArtistTags: ArtistTag[];
   sidebarPromptTargets: Record<string, unknown>; // sidebar-prompt-store の targets
+  mangaPage?: MangaPage;                         // 漫画モードのページ（無ければ漫画モード OFF で復元）
 }
 
 export interface CharacterRequest {
@@ -1279,6 +1280,40 @@ UI: メインとキャラクターカードに `DialogueEditor`（文字数・�
 `DialogueEditor` → `DialogueLineRow.tsx`
 （`BubbleStylePicker` 図形一覧 / `LetteringPicker` 見本一覧 / 向き / 大きめの入力欄）。カスタムの種類は
 `modals/BubbleStylesDialog.tsx` + `stores/bubble-style-store.ts`。アイコンは `shared/BubbleShapeIcon.tsx` / `LetteringIcon.tsx`。
+
+### 漫画モード (`src/lib/manga-*.ts`)
+
+1 回の生成で 1 ページ。コマ割りを選び、コマごとに場面・登場キャラ（動作・セリフ・効果音・エフェクト）・
+誰も言わない文字（ナレーション・効果音）を入力する。キャラクターカードは見た目の定義として使い、
+カード側のセリフ・位置は漫画モード中は表示しない。プロジェクト種別が manga なら最初から漫画モード。
+全レイアウト・読み順（右→左）・キャラの配置を V5 実機で検証済み（2026-09-27）。
+
+```typescript
+// manga-layouts.ts — 読み順のコマ矩形（0–1）とページサイズ（Opus 無料枠内）
+type MangaLayoutId = "koma4" | "two" | "three" | "tall" | "grid";
+interface MangaLayout { tags: string; description: string; panels: { label: string; rect: PanelRect }[]; width: number; height: number }
+export function castCenters(rect: PanelRect, count: number): { x: number; y: number }[];  // コマ内に横並び
+
+// manga-page.ts — 保存形式（settings の manga_page_<projectId>、UiSnapshotV1.mangaPage）
+interface MangaCast { id; characterId; action; dialogue: DialogueLine[]; sfx: SfxLine[]; effects: string[] }
+interface MangaPanel { id; scene; cast: MangaCast[]; text: DialogueLine[]; sfx: SfxLine[] }
+interface MangaPage { enabled; layoutId; colorMode: "color" | "mono"; panels: MangaPanel[] }
+export function fitPanels(panels, layoutId): MangaPanel[];  // レイアウト変更時は位置ごとに中身を保持
+export function mangaHasSfx(page): boolean;  export function mangaDrawsText(page): boolean;
+
+// manga-compose.ts — ページ → プロンプト
+/** main: ユーザーのメイン + comic, manga, 色, black panel borders, レイアウトタグ, 人数タグ. 説明文. Panel n (位置): 場面; a girl with … is 動作.
+ *  + コマの文字（phrase に "in panel n"）と Text:。各登場はキャラクタープロンプト（見た目, panel n, 動作 + セリフ等）をコマ中央に配置 */
+export function composeMangaPage(page, userMain, characters: MangaCharacterInput[], customs?): ComposedMangaPage;
+
+// manga-request.ts — store から組み立て（roll=true で生成用、false でプレビュー / トークン数）
+export function composeCurrentMangaPage(userMain: string, roll: boolean): ComposedMangaPage;
+```
+
+`buildGenerateRequest` は漫画モードでメインとキャラクターを composeMangaPage の結果で置き換え、登場数がモデル上限を超えると
+`manga.tooManyAppearances`。`shouldStripNoText` は漫画モードではページの効果音 / 文字で判定する。
+UI: `PromptModeControls` の「漫画」トグル（レイアウトのサイズを設定）、`left-panel/manga/`（`MangaSection` / `MangaLayoutThumb` /
+`MangaPanelCard` / `MangaCastCard`）、効果のトグルは `EffectToggleGrid` を共用。保存は `hooks/use-project-manga-persistence.ts`。
 
 ### アーティスト抽出 (`src/lib/artist-extract.ts`)
 

@@ -1031,5 +1031,37 @@
       "speedLines": "スピード線",
       "flowers": "花背景"
     }
+  },
+  "manga": {
+    "mode": "漫画",
+    "modeTooltip": "漫画モード：コマ割りを選び、コマごとに場面・登場キャラ・セリフを入力して 1 ページを生成します（V5 向け）",
+    "title": "漫画ページ",
+    "layout": "コマ割り",
+    "layoutName": {
+      "koma4": "4コマ",
+      "two": "2コマ",
+      "three": "3コマ",
+      "tall": "大ゴマ＋2",
+      "grid": "田の字"
+    },
+    "color": {
+      "mono": "モノクロ",
+      "color": "カラー"
+    },
+    "panelN": "{{n}}コマ目",
+    "scene": "場面",
+    "scenePlaceholder": "場面・背景（例: 放課後の教室、夕焼け）",
+    "action": "動作・表情",
+    "actionPlaceholder": "動作・表情（例: waving hand, smiling）",
+    "addCast": "キャラを登場",
+    "removeCast": "このコマから外す",
+    "addLine": "セリフ",
+    "addSfx": "効果音",
+    "addText": "ナレーション・文字",
+    "missingCharacter": "削除されたキャラクター（生成では無視）",
+    "noCharacters": "先にキャラクターを追加すると、コマに登場させられます",
+    "characterHint": "漫画モード：このカードは見た目の定義として使われます。セリフや位置は漫画ページの各コマで入力します",
+    "needsV5": "漫画モードは V5 向けです（日本語のセリフや自由な配置は V5 でのみ使えます）",
+    "tooManyAppearances": "コマへの登場が多すぎます（{{count}}/{{max}}）。キャラの登場を減らしてください"
   }
 }

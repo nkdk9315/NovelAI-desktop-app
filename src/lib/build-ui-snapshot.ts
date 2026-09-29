@@ -22,6 +22,7 @@ export function buildUiSnapshot(
   src: SnapshotSource,
   sidebarArtistTags: ArtistTag[],
   sidebarPromptTargets: Record<string, unknown>,
+  mangaPage?: unknown,
 ): UiSnapshotV1 {
   return {
     version: 1,
@@ -41,5 +42,6 @@ export function buildUiSnapshot(
     sidebarPresets: src.sidebarPresets,
     sidebarArtistTags,
     sidebarPromptTargets,
+    mangaPage,
   };
 }

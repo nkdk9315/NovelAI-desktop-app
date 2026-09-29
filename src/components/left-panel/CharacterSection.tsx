@@ -10,6 +10,7 @@ import CharacterPromptGroups from "./CharacterPromptGroups";
 import DialogueEditor from "./DialogueEditor";
 import SfxEditor from "./SfxEditor";
 import EffectPalette from "./EffectPalette";
+import { useMangaStore } from "@/stores/manga-store";
 import PromptGroupModal from "@/components/modals/PromptGroupModal";
 import { assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 
@@ -26,6 +27,7 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
   const targets = useSidebarPromptStore((s) => s.targets);
   const setNegativeOverride = useSidebarPromptStore((s) => s.setNegativeOverride);
   const [collapsed, setCollapsed] = useState(false);
+  const mangaOn = useMangaStore((s) => s.page.enabled);
   const [showNegative, setShowNegative] = useState(false);
   const [showGroupBrowser, setShowGroupBrowser] = useState(false);
 
@@ -72,9 +74,16 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
             onOpenGroupBrowser={() => setShowGroupBrowser(true)}
           />
 
-          <DialogueEditor targetId={character.id} />
-          <SfxEditor targetId={character.id} />
-          <EffectPalette targetId={character.id} scope="character" />
+          {/* Manga mode: the card only defines the look; lines and positions live in the panels */}
+          {mangaOn ? (
+            <p className="text-[9px] leading-snug text-muted-foreground">{t("manga.characterHint")}</p>
+          ) : (
+            <>
+              <DialogueEditor targetId={character.id} />
+              <SfxEditor targetId={character.id} />
+              <EffectPalette targetId={character.id} scope="character" />
+            </>
+          )}
 
           {/* Negative prompt */}
           <button
@@ -101,13 +110,15 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
           )}
 
           {/* Position */}
-          <PositionEditor
-            currentIndex={index}
-            centerX={character.centerX}
-            centerY={character.centerY}
-            onChangeX={(v) => updateCharacter(index, { centerX: v })}
-            onChangeY={(v) => updateCharacter(index, { centerY: v })}
-          />
+          {!mangaOn && (
+            <PositionEditor
+              currentIndex={index}
+              centerX={character.centerX}
+              centerY={character.centerY}
+              onChangeX={(v) => updateCharacter(index, { centerX: v })}
+              onChangeY={(v) => updateCharacter(index, { centerY: v })}
+            />
+          )}
         </>
       )}
 
