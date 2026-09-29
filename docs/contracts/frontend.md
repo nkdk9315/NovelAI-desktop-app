@@ -939,7 +939,17 @@ interface HistoryState {
 
 - `category` 未指定時: `ipc-tags.searchTags` → Tag DB FTS5 trigram 検索（全カテゴリ横断）
 - `category` 指定時: 従来の `ipc.searchSystemPrompts` にフォールバック（csv_category フィルタ対応）
-- 結果は統一的に `TagDto[]` 形状で返す
+- 結果は統一的に `TagDto[]` 形状で返す。`resultsFor` は結果が答えているクエリ（デバウンス分だけ入力に遅れる）。
+  `PromptTextarea` は `resultsFor` が今のクエリと一致するときだけ候補を出す（古い候補で Enter すると別のタグが入るため）
+- 入力中のタグは `src/lib/tag-query.ts` で取り出す:
+
+```typescript
+/** カーソル位置のタグ名。カンマ・改行・重み `::`・`{}` `[]`・`|` で区切るので `2::smi` → `smi`、`2::smile:: blu` → `blu`。
+ *  `artist:` / `artist#` の後や `artist#` グループ内の項目はアーティスト検索（artist: true）。`Text:` と入力中の重み（`1.5`）は対象外 */
+export function tagQueryAt(text: string, pos: number): TagQuery | null; // { query, start, end, artist }
+/** 入力中の名前（カーソル後の同じ単語まで）を候補で置き換える。重み・接頭辞はそのまま、直後にタグが続くときだけ ", " を足す */
+export function insertTagAt(text: string, q: TagQuery, tag: string): { text: string; cursor: number };
+```
 
 ## 6.6 Preset Store (`src/stores/preset-store.ts`)
 
@@ -1291,6 +1301,8 @@ UI: メインとキャラクターカードに `DialogueEditor`（文字数・�
  *  波括弧は区切りとして扱う（×1.05 しない）。remove(name) が true のものを本文から除き、空になったブロックや
  *  余分なカンマを整える（行末のカンマは残す） */
 export function extractArtistTags(prompt: string, remove?: (name: string) => boolean): { text: string; artistTags: ArtistTag[] };
+/** `before` の直後に書く項目が `artist#` グループ内か（オートコンプリート用） */
+export function inArtistGroup(before: string): boolean;
 ```
 
 ### 適用 (`src/lib/apply-metadata.ts`)

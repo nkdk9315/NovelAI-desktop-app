@@ -338,6 +338,10 @@ fn test_create_project_creates_directory() {
 | never glues a name ending in a digit to a close | `2equal8, ::` を `2equal8 ::` に整形（`8::` にしない） |
 | keeps line breaks | 行末のカンマと改行を保持 |
 
+`tag-query.test.ts`（オートコンプリートのタグ取り出し）: カンマ後 / 重みの中（`2::smi`、`-1.5::blu`）/ 閉じた重みの直後
+（カンマなしも）/ `{}`・改行の後、`artist:` / `artist#` / `artist#` グループ内はアーティスト検索（グループが閉じたら通常）、
+入力中の重み・2 文字未満・`Text:` は検索しない、カーソル後の同じ単語まで置換、重みと接頭辞を保ったまま挿入、直後にタグが続くときだけカンマを足す。
+
 `metadata-import-prefs.test.ts`: 既定値（settings / seed / withImage OFF、append）、保存値のマージと不正値の無視、
 prefs → チェックリスト、画像に無い項目は前回値を保持。`nai-metadata.test.ts`: `isImageBase64`（未エンコード Vibe 判定）。
 Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
@@ -439,6 +443,7 @@ src/
 │       ├── image-size.test.ts # fitGenerationSize / enhanceSize / alphaToMaskCells
 │       ├── history-action.test.ts
 │       ├── artist-extract.test.ts # 重み構文からのアーティスト抽出・除去
+│       ├── tag-query.test.ts      # オートコンプリートの入力中タグ取り出し・挿入
 │       └── nai-metadata.test.ts # メタデータのパース・プロンプト分割
 ├── stores/
 │   └── __tests__/
