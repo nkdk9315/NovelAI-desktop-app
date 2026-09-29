@@ -9,6 +9,8 @@ import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { buildArtistPrefix } from "@/lib/artist-tag";
 import { assembleFullPrompt, assembleNegativeFromGroups } from "@/lib/prompt-assembly";
 import { appendTargetExtras } from "@/lib/in-image-text";
+import { currentOutfitText } from "@/lib/character-look";
+import { joinPrompt } from "@/lib/outfits";
 import { composeCurrentMangaPage, mangaModeOn } from "@/lib/manga-request";
 import { useMangaStore } from "@/stores/manga-store";
 import { useBubbleStyleStore } from "@/stores/bubble-style-store";
@@ -80,12 +82,13 @@ function buildPromptTexts(): { positives: string[]; negatives: string[] } {
 
   for (const c of params.characters) {
     const t = sidebar.targets[c.id];
+    const outfit = currentOutfitText(c, sidebar.targets, false);
     const charPrompt = t
-      ? appendTargetExtras(t.promptOverride ?? assembleFullPrompt("", t.groups), t, bubbleStyles)
+      ? appendTargetExtras(joinPrompt(t.promptOverride ?? assembleFullPrompt("", t.groups), outfit?.positive), t, bubbleStyles)
       : c.prompt;
-    const charNeg = t
-      ? (t.negativeOverride ?? assembleNegativeFromGroups(t.groups))
-      : c.negativePrompt;
+    const charNeg = joinPrompt(
+      t ? (t.negativeOverride ?? assembleNegativeFromGroups(t.groups)) : c.negativePrompt, outfit?.negative,
+    );
     positives.push(charPrompt);
     negatives.push(charNeg);
   }

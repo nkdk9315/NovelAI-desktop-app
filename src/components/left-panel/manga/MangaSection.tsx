@@ -2,10 +2,12 @@ import { useTranslation } from "react-i18next";
 import { AlertTriangle, BookOpen } from "lucide-react";
 import { useMangaStore } from "@/stores/manga-store";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
-import { MANGA_LAYOUT_IDS, mangaLayout, type MangaLayoutId } from "@/lib/manga-layouts";
+import { pageShapes, pageSize } from "@/lib/manga-page";
+import { isAxisAligned } from "@/lib/manga-geometry";
+import { activeEditMode, useImageEditStore } from "@/stores/image-edit-store";
 import { isV5Model, maxCharactersFor } from "@/lib/constants";
 import type { MangaColorMode } from "@/lib/manga-page";
-import MangaLayoutThumb from "./MangaLayoutThumb";
+import MangaLayoutPicker from "./MangaLayoutPicker";
 import MangaPanelCard from "./MangaPanelCard";
 
 const COLOR_MODES: readonly MangaColorMode[] = ["mono", "color"];
@@ -14,18 +16,14 @@ const COLOR_MODES: readonly MangaColorMode[] = ["mono", "color"];
 export default function MangaSection() {
   const { t } = useTranslation();
   const page = useMangaStore((s) => s.page);
-  const setLayout = useMangaStore((s) => s.setLayout);
   const setColorMode = useMangaStore((s) => s.setColorMode);
   const characters = useGenerationParamsStore((s) => s.characters);
+  const editMode = useImageEditStore((s) => activeEditMode(s));
   const model = useGenerationParamsStore((s) => s.model);
-  const setParam = useGenerationParamsStore((s) => s.setParam);
 
-  const pickLayout = (id: MangaLayoutId) => {
-    setLayout(id);
-    const { width, height } = mangaLayout(id);
-    setParam("width", width);
-    setParam("height", height);
-  };
+  const shapes = pageShapes(page);
+  const slanted = page.layoutId === "custom" && !shapes.every(isAxisAligned);
+  const size = pageSize(page);
   const appearances = page.panels.reduce((n, p) => n + p.cast.length, 0);
   const max = maxCharactersFor(model);
 
@@ -51,31 +49,15 @@ export default function MangaSection() {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-1" role="radiogroup" aria-label={t("manga.layout")}>
-        {MANGA_LAYOUT_IDS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            role="radio"
-            aria-checked={page.layoutId === id}
-            title={t(`manga.layoutName.${id}`)}
-            onClick={() => pickLayout(id)}
-            className={`flex flex-col items-center gap-0.5 rounded-md border p-1 transition-colors ${
-              page.layoutId === id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-accent"
-            }`}
-          >
-            <MangaLayoutThumb layoutId={id} className="h-10 w-full" />
-            <span className="w-full truncate text-center text-[8.5px] leading-tight">{t(`manga.layoutName.${id}`)}</span>
-          </button>
-        ))}
-      </div>
+      <MangaLayoutPicker />
 
       {!isV5Model(model) && <Warning text={t("manga.needsV5")} />}
+      {slanted && editMode && <Warning text={t("mangaLayout.slantedWithEdit")} />}
       {appearances > max && <Warning text={t("manga.tooManyAppearances", { max, count: appearances })} />}
       {characters.length === 0 && <p className="text-[9px] text-muted-foreground">{t("manga.noCharacters")}</p>}
 
       {page.panels.map((panel, i) => (
-        <MangaPanelCard key={panel.id} panel={panel} index={i} layoutId={page.layoutId} characters={characters} />
+        <MangaPanelCard key={panel.id} panel={panel} index={i} shapes={shapes} size={size} characters={characters} />
       ))}
     </div>
   );

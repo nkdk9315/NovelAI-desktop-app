@@ -10,6 +10,8 @@ import CharacterPromptGroups from "./CharacterPromptGroups";
 import DialogueEditor from "./DialogueEditor";
 import SfxEditor from "./SfxEditor";
 import EffectPalette from "./EffectPalette";
+import OutfitEditor from "./OutfitEditor";
+import { outfitTargetId } from "@/lib/outfits";
 import { useMangaStore } from "@/stores/manga-store";
 import PromptGroupModal from "@/components/modals/PromptGroupModal";
 import { assembleNegativeFromGroups } from "@/lib/prompt-assembly";
@@ -53,6 +55,7 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
 
   const handleRemove = () => {
     removeTarget(character.id);
+    for (const o of character.outfits ?? []) removeTarget(outfitTargetId(o.id));
     removeCharacter(index);
   };
 
@@ -73,6 +76,8 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
             targetId={character.id}
             onOpenGroupBrowser={() => setShowGroupBrowser(true)}
           />
+
+          <OutfitEditor index={index} character={character} />
 
           {/* Manga mode: the card only defines the look; lines and positions live in the panels */}
           {mangaOn ? (

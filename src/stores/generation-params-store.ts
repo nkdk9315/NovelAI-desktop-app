@@ -14,6 +14,7 @@ import {
 } from "@/lib/constants";
 import type { NegativePresetId } from "@/lib/constants";
 import type { QualityPresetId } from "@/lib/prompt-decoration";
+import type { Outfit } from "@/lib/outfits";
 import type { ArtistTag, RandomPresetSettings, StylePresetDto, VibeDto } from "@/types";
 
 export interface Character {
@@ -26,6 +27,10 @@ export interface Character {
   genreId: string;
   genreIcon: string;
   genreColor: string;
+  /** Named outfits (their tags are prompt targets `outfit:<id>`) */
+  outfits?: Outfit[];
+  /** Outfit worn now (appended to the prompt); in manga mode the default for each panel */
+  outfitId?: string | null;
 }
 
 export interface SelectedVibe {

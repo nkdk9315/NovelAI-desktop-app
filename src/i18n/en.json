@@ -1055,7 +1055,7 @@
     "scene": "Scene",
     "scenePlaceholder": "Scene / background (e.g. classroom after school)",
     "action": "Action",
-    "actionPlaceholder": "Action / expression (e.g. waving hand, smiling)",
+    "actionPlaceholder": "Action / expression / items (e.g. waving hand, smiling)",
     "addCast": "Add character",
     "removeCast": "Remove from panel",
     "addLine": "Line",
@@ -1111,5 +1111,47 @@
     "save": "Save as new image",
     "saved": "Typeset image added to the history",
     "saveFailed": "Save failed: {{error}}"
+  },
+  "mangaLayout": {
+    "title": "Draw a panel layout",
+    "description": "Drag a line across the page to split the panels it passes through. Any angle works (nearly straight lines snap).",
+    "hint": "Click panels to select them. Select two and press Merge to join them. Numbers follow the reading order (right to left, top to bottom).",
+    "aspect": "Page shape",
+    "aspectName": {
+      "portrait": "Portrait",
+      "strip": "Strip",
+      "square": "Square",
+      "landscape": "Landscape"
+    },
+    "merge": "Merge",
+    "mergeHint": "Join the two selected panels",
+    "cannotMerge": "These two panels can't be merged into one convex panel",
+    "reset": "Reset",
+    "tooMany": "{{count}} panels — layouts over 6 panels often break",
+    "slanted": "With slanted panels, the outlines are sent as the img2img source (strength 0.9 followed them in tests)",
+    "slantedWithEdit": "Image editing (img2img / inpaint) is on, so the slanted layout's outline template is not used",
+    "saveTemplate": "Save as template",
+    "templateName": "Template name",
+    "templateSaved": "Saved \"{{name}}\"",
+    "removeTemplate": "Delete template \"{{name}}\"",
+    "panelCount": "{{count}} panels",
+    "apply": "Use this layout",
+    "custom": "Custom",
+    "create": "Draw",
+    "edit": "Edit",
+    "openEditorHint": "Draw your own layout by splitting panels with lines"
+  },
+  "outfit": {
+    "label": "Outfit",
+    "hint": "The card's prompt is the base look; the selected outfit is added to it. In manga mode each panel can pick another",
+    "add": "Add outfit",
+    "newName": "Outfit {{n}}",
+    "name": "Outfit name",
+    "remove": "Delete this outfit",
+    "placeholder": "Outfit tags (e.g. school uniform, red ribbon)",
+    "none": "None",
+    "default": "Default",
+    "exclude": "Switch off base tags",
+    "excludeHint": "Switch off the card's tags in this panel only (e.g. long hair when tied up)"
   }
 }

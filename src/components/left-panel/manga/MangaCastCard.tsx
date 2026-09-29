@@ -4,7 +4,10 @@ import { MessageSquareText, Plus, Sparkles, X, Zap } from "lucide-react";
 import { useMangaStore } from "@/stores/manga-store";
 import { newDialogueLine } from "@/lib/dialogue";
 import { newSfxLine } from "@/lib/sound-effects";
-import { patchById, withoutId, type MangaCast } from "@/lib/manga-page";
+import { castTargetId, patchById, withoutId, type MangaCast } from "@/lib/manga-page";
+import type { Character } from "@/stores/generation-params-store";
+import PromptTargetInput from "../PromptTargetInput";
+import CastLookControls from "./CastLookControls";
 import DialogueLineRow from "../DialogueLineRow";
 import SfxRow from "../SfxRow";
 import EffectToggleGrid from "../EffectToggleGrid";
@@ -12,9 +15,10 @@ import EffectToggleGrid from "../EffectToggleGrid";
 const SMALL_BTN = "flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground";
 
 /** One character's appearance in a panel: action, lines, sound effects and effects. */
-export default function MangaCastCard({ panelId, cast, name, missing }: {
-  panelId: string; cast: MangaCast; name: string; missing: boolean;
+export default function MangaCastCard({ panelId, cast, name, character }: {
+  panelId: string; cast: MangaCast; name: string; character: Character | undefined;
 }) {
+  const missing = character == null;
   const { t } = useTranslation();
   const updateCast = useMangaStore((s) => s.updateCast);
   const removeCast = useMangaStore((s) => s.removeCast);
@@ -37,13 +41,16 @@ export default function MangaCastCard({ panelId, cast, name, missing }: {
           <X className="h-3 w-3" />
         </button>
       </div>
-      <input
-        value={cast.action}
-        onChange={(e) => update((c) => ({ ...c, action: e.target.value }))}
-        placeholder={t("manga.actionPlaceholder")}
-        aria-label={t("manga.action")}
-        className="h-7 w-full rounded-md border border-input bg-background px-2 text-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring"
-      />
+      {character && (
+        <CastLookControls
+          character={character}
+          outfitId={cast.outfitId}
+          excludeTags={cast.excludeTags ?? []}
+          onOutfit={(outfitId) => update((c) => ({ ...c, outfitId }))}
+          onExclude={(excludeTags) => update((c) => ({ ...c, excludeTags }))}
+        />
+      )}
+      <PromptTargetInput targetId={castTargetId(cast.id)} placeholder={t("manga.actionPlaceholder")} initialText={cast.action} />
       {cast.dialogue.map((line) => (
         <DialogueLineRow
           key={line.id}

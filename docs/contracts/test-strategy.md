@@ -406,6 +406,16 @@ Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
 
 Rust `image_tools_tests`: `typeset_snapshot_keeps_source_and_layers`。
 
+### 4.4.6 Frontend テスト (`lib/manga-geometry.ts` / `outfits.ts` / 漫画のカスタム配置)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `splitting: *` | 水平・斜めの分割、細すぎる / 外れた線は無視、線が通るコマだけ分割、分割の逆としての結合 |
+| `reading order: *` | 行の右→左、左に縦長コマがあるときは右列を先に、斜めの境界は行順にフォールバック |
+| `labels and helpers: *` | 位置・大きさ・形のラベル、横並び判定、ガター用の内側オフセット、スナップ |
+| `outfits: *` | 衣装の選択解決、外せるタグ、タグの除去と連結 |
+| `per-panel look and custom layouts: *` | 既定 / 別の衣装 / なし と基本から外すタグ、場面・動作ターゲットと旧文字列、カスタム配置の説明文と斜めのテンプレート、カスタム配置への切り替えで中身を保持 |
+
 ### 4.5 Frontend テスト (`lib/nai-metadata.ts`)
 
 | テストケース | 検証内容 |

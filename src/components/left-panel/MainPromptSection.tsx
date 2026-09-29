@@ -17,6 +17,8 @@ import { NEGATIVE_PRESETS, type NegativePresetId } from "@/lib/constants";
 import { loadDefaultGroupsForGenre } from "@/lib/default-groups";
 import { decorateMainPrompt } from "@/lib/prompt-decoration";
 import { appendTargetExtras } from "@/lib/in-image-text";
+import { currentOutfitText } from "@/lib/character-look";
+import { joinPrompt } from "@/lib/outfits";
 import { shouldStripNoText } from "@/lib/generation-request";
 import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { useBubbleStyleStore } from "@/stores/bubble-style-store";
@@ -107,7 +109,13 @@ export default function MainPromptSection() {
       name: `${genreName(c.characterId)} · ${t("manga.panelN", { n: c.panel })}`,
       line: c.prompt,
     }))
-    : characters.map((c) => ({ id: c.id, name: c.genreName, line: lineFor(c.id) }));
+    : characters.map((c) => ({
+      id: c.id,
+      name: c.genreName,
+      line: appendTargetExtras(
+        joinPrompt(baseFor(c.id), currentOutfitText(c, targets, false)?.positive), targets[c.id], bubbleStyles,
+      ),
+    }));
 
   return (
     <div className="space-y-2">

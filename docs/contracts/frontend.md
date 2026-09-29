@@ -1310,6 +1310,22 @@ export function composeMangaPage(page, userMain, characters: MangaCharacterInput
 export function composeCurrentMangaPage(userMain: string, roll: boolean): ComposedMangaPage;
 ```
 
+**自由なコマ割り（`manga-geometry.ts`）**: コマは 0–1 座標の凸多角形。レイアウトエディタ（`modals/manga-layout/`）で
+ページ上をドラッグした直線が通るコマを分割（斜めも可、ほぼ水平 / 垂直はスナップ）、2 コマを結合（合わせて凸形のときのみ）、
+ページの形（縦長 / 4コマ用 / 正方形 / 横長）、テンプレート保存（`stores/manga-template-store.ts`、settings の
+`manga_layout_templates`）。`page.layoutId = "custom"` のとき各 `MangaPanel.shape` を使う。読み順は、コマを横切らない
+水平 → 垂直（右が先）の切れ目で再帰分割し、無ければ中心の行順（`readingOrder`）。説明文は形と位置から自動生成
+（`shapeLabel`: top/middle/bottom + left/right, large/small, wide/tall）。四角だけなら説明文のみ（V5 で 8/8）、
+斜めのコマがあると `ComposedMangaPage.template` を返し、`manga-template.ts` の線画を img2img（強さ 0.9）の下地にする（4/4）。
+ユーザーが画像編集（img2img / インペイント）を有効にしているときは線画を使わない。
+
+**コマごとの見た目**: キャラクターカードのプロンプトは基本の見た目、`Character.outfits` / `outfitId` が衣装
+（`outfits.ts`、タグは `outfit:<id>` ターゲット、通常モードでは着ている衣装をキャラプロンプトに足す）。
+`MangaCast.outfitId`（既定 / なし / 衣装 id）と `excludeTags`（基本から外す素のタグ）でコマごとに上書き。
+コマの場面と登場キャラの動作は `manga-scene:<panelId>` / `manga-cast:<castId>` のプロンプトターゲット
+（`PromptTargetInput` = タググループ付き入力、ランダム・ネガティブも有効）。旧データの `scene` / `action` 文字列は
+ターゲットの初期値として移行。コマ・登場キャラを消すとターゲットも削除。
+
 `buildGenerateRequest` は漫画モードでメインとキャラクターを composeMangaPage の結果で置き換え、登場数がモデル上限を超えると
 `manga.tooManyAppearances`。`shouldStripNoText` は漫画モードではページの効果音 / 文字で判定する。
 UI: `PromptModeControls` の「漫画」トグル（レイアウトのサイズを設定）、`left-panel/manga/`（`MangaSection` / `MangaLayoutThumb` /

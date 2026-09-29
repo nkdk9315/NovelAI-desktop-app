@@ -13,11 +13,14 @@ import {
 import { normalizeStrengths } from "@/lib/normalize-strength";
 import { buildArtistPrefix, isArtistTagOn } from "@/lib/artist-tag";
 import { rollTargetForGeneration } from "@/lib/prompt-roll";
+import { currentOutfitText } from "@/lib/character-look";
+import { joinPrompt } from "@/lib/outfits";
 import { appendContributions, getPresetContributionsForCharacter } from "@/lib/preset-contributions";
 import { buildUiSnapshot } from "@/lib/build-ui-snapshot";
 import { decorateMainPrompt, hasTextMarker, type PromptDecoration } from "@/lib/prompt-decoration";
 import { appendTargetExtras, hasSfx, hasTextContent } from "@/lib/in-image-text";
 import { composeCurrentMangaPage, mangaModeOn } from "@/lib/manga-request";
+import { MANGA_TEMPLATE_STRENGTH, renderLayoutTemplate } from "@/lib/manga-template";
 import { mangaDrawsText, mangaHasSfx, type MangaPage } from "@/lib/manga-page";
 import { useMangaStore } from "@/stores/manga-store";
 import { positiveTextOf } from "@/stores/sidebar-prompt-text-sync";
@@ -196,16 +199,28 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
         const charRolled = charTarget
           ? rollTargetForGeneration(charTarget)
           : { positive: c.prompt, negative: c.negativePrompt };
+        const outfit = currentOutfitText(c, sidebarState.targets, true);
         return {
           prompt: appendTargetExtras(
-            appendContributions(charRolled.positive, charContrib.positive), charTarget, bubbleStyles,
+            joinPrompt(appendContributions(charRolled.positive, charContrib.positive), outfit?.positive),
+            charTarget, bubbleStyles,
           ),
           centerX: c.centerX,
           centerY: c.centerY,
-          negativePrompt: appendContributions(charRolled.negative, charContrib.negative),
+          negativePrompt: joinPrompt(appendContributions(charRolled.negative, charContrib.negative), outfit?.negative),
         };
       })
     : undefined;
+
+  // Slanted manga panels: the outlines go as the img2img source (unless the user set up their own edit)
+  const template = manga?.template && !overrides.action ? manga.template : null;
+  const size = template ?? { width: overrides.width ?? params.width, height: overrides.height ?? params.height };
+  const action: GenerateActionRequest = overrides.action ?? (template
+    ? {
+      type: "img2Img", strength: MANGA_TEMPLATE_STRENGTH, noise: 0,
+      sourceImageBase64: renderLayoutTemplate(template.shapes, template.width, template.height),
+    }
+    : { type: "generate" });
 
   return {
     ok: true,
@@ -215,8 +230,8 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
       negativePrompt: combinedNeg || undefined,
       characters,
       vibes: enabledVibes.length > 0 ? enabledVibes : undefined,
-      width: overrides.width ?? params.width,
-      height: overrides.height ?? params.height,
+      width: size.width,
+      height: size.height,
       steps: params.steps,
       scale: params.scale,
       seed: params.seed ?? undefined,
@@ -224,7 +239,7 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
       sampler: params.sampler,
       noiseSchedule: params.noiseSchedule,
       model: params.model,
-      action: overrides.action ?? { type: "generate" },
+      action,
       uiSnapshot: buildUiSnapshot(params, sidebarArtistTags, sidebarState.targets, useMangaStore.getState().page),
       transparentBackground: isV5 ? params.transparentBackground : undefined,
       characterReference,
