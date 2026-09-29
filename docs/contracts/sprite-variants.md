@@ -93,6 +93,15 @@ interface SpriteAxis   { id; key; label; kind: "outfit" | "prompt"; regionIds: s
 interface AxisLevel    { id; key; label; prompt; negative; weight: number } // weight≠1 で `w::prompt::`
 ```
 
+### 2.2.1 プロンプトの置き場所
+
+ポーズ・パーツ・破損段階・段階のプロンプト本文は、プロンプトターゲット `sprite:<id>`（`sidebar-prompt-store`、プロジェクトごとに `settings.sidebar_prompts_<projectId>` へ保存）に置く。
+これで、左パネルと同じタググループ・オートコンプリート・ランダムが使える。
+
+- spec の `prompt` / `negative` は、ターゲットができるまでの初期値（テンプレート・複製）として使う。
+- 生成時は `rolledTextOf`（ランダムを引く）、表示・複製時は `displayTextOf` で読む（`src/lib/sprite/text.ts`）。
+- セットの複製・テンプレート保存では、本文を spec に焼き込み（`bakeTexts`）、全 id を振り直す（`withFreshIds`）。こうして元のセットとターゲットを共有しないようにする。
+
 ### 2.3 セルキー（`src/lib/sprite/cells.ts`）
 
 `poseId` に、段階 0 以外の軸だけを `|axisId=levelId` の形で軸 ID 順に連結する。
@@ -162,6 +171,16 @@ Blocker（生成できない理由）:
 - `noRegion`: 軸に領域が紐づいていない
 - `excluded`: 除外したセル
 - `orphan`: 孤立セル
+
+### 4.1 画面まわりの変更
+
+- `RequestOverrides` に `mainSuffix` / `negativeSuffix` / `seed` / `snapshotExtra` を追加した。
+  - `mainSuffix` はメインプロンプトの後ろ、`Text:` とクオリティタグの前に入る。
+  - `snapshotExtra` は `uiSnapshot` に混ぜて保存される（`{ sprite: { setId, cellKey } }`）。
+- `workspace-store`（`"generation" | "sprite"`）。差分ページでは次のものを隠す。
+  - ヘッダーのサイズ・シード・費用表示
+  - 漫画モードの切り替え
+- 履歴の種類に `sprite` を追加した（`composite` / `import` / `edit`）。プロンプトを持たないので復元の対象外。
 
 ---
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Play, Rows3, SquareCheck, SquareDashed } from "lucide-react";
+import { Eraser, Play, Rows3, SquareCheck, SquareDashed, Wand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -8,7 +8,10 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cellStateOf, useSpriteStore } from "@/stores/sprite-store";
-import { allCells, cellKey, levelsOf } from "@/lib/sprite/cells";
+import { allCells, cellKey, isOrphanKey, levelsOf } from "@/lib/sprite/cells";
+import * as spriteIpc from "@/lib/ipc-sprite";
+import { toastError } from "@/lib/toast-error";
+import PostProcessDialog from "./PostProcessDialog";
 import { withMissingAncestors } from "@/lib/sprite/plan";
 import { estimateSpriteCost } from "@/lib/sprite/cost";
 import { enqueueCells } from "@/lib/sprite/run";
@@ -29,6 +32,17 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
   const setView = useSpriteStore((s) => s.setView);
   const setChecked = useSpriteStore((s) => s.setChecked);
   const [confirm, setConfirm] = useState<{ keys: string[]; total: number } | null>(null);
+  const [postOpen, setPostOpen] = useState(false);
+  const [confirmOrphans, setConfirmOrphans] = useState(false);
+  // Cells whose pose / axis / level was removed from the definition
+  const orphans = useMemo(() => Object.keys(cells).filter((k) => isOrphanKey(spec, k)), [spec, cells]);
+  const removeOrphans = () => {
+    const setId = useSpriteStore.getState().activeSetId;
+    if (!setId) return;
+    spriteIpc.deleteSpriteCells(setId, orphans)
+      .then(() => useSpriteStore.getState().reloadCells())
+      .catch((e) => toastError(String(e)));
+  };
 
   const ungenerated = (keys: string[]) => keys.filter((k) => !cells[k]?.candidates.length && !cells[k]?.excluded);
   const everyKey = useMemo(() => allCells(spec).map(cellKey), [spec]);
@@ -98,6 +112,15 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
             {t("sprite.matrix.uncheck")}
           </Button>
         )}
+        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setPostOpen(true)}>
+          <Wand className="h-3.5 w-3.5" />{t("sprite.post.open")}
+        </Button>
+        {orphans.length > 0 && (
+          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-amber-600 dark:text-amber-400"
+            title={t("sprite.matrix.orphansHint")} onClick={() => setConfirmOrphans(true)}>
+            <Eraser className="h-3.5 w-3.5" />{t("sprite.matrix.orphans", { count: orphans.length })}
+          </Button>
+        )}
         <div className="flex-1" />
         {checkedKeys.length > 0 && (
           <span className="text-muted-foreground">
@@ -113,6 +136,19 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
         </Button>
       </div>
 
+      {postOpen && <PostProcessDialog open={postOpen} onOpenChange={setPostOpen} />}
+      <AlertDialog open={confirmOrphans} onOpenChange={setConfirmOrphans}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("sprite.matrix.orphansTitle", { count: orphans.length })}</AlertDialogTitle>
+            <AlertDialogDescription>{t("sprite.matrix.orphansBody")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={removeOrphans}>{t("common.delete")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!confirm} onOpenChange={(o) => { if (!o) setConfirm(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>

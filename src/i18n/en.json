@@ -1269,7 +1269,11 @@
       "queued": "Queued",
       "check": "Include in batch",
       "tileHint": "Click to select, double-click to generate",
-      "tileLabel": "Select cell"
+      "tileLabel": "Select cell",
+      "orphans": "{{count}} undefined cells",
+      "orphansHint": "Cells of removed poses, axes or levels",
+      "orphansTitle": "Delete {{count}} undefined cells?",
+      "orphansBody": "Their adoptions and candidate lists are removed. Images stay in the project history."
     },
     "cell": {
       "noSelection": "Select a cell in the matrix to see how it is made, its candidates and prompt.",
@@ -1453,6 +1457,26 @@
         }
       }
     },
-    "noActiveSet": "No sprite set is selected"
+    "noActiveSet": "No sprite set is selected",
+    "post": {
+      "open": "Process adopted",
+      "title": "Process adopted images",
+      "desc": "Each result is added as an edited candidate of its cell. The originals stay.",
+      "tool": "Process",
+      "tools": {
+        "bg-removal": "Remove background",
+        "upscale": "Upscale 2x"
+      },
+      "hint": {
+        "bg-removal": "Makes the background transparent. Costs Anlas even on Opus (on V5 the Transparent option on the left makes it transparent from the start).",
+        "upscale": "A finishing step before export. Adopting upscaled images makes inpainting, compositing and difference layers derived from them mismatch in size."
+      },
+      "onlyChecked": "Selected cells only ({{count}})",
+      "adopt": "Adopt the results",
+      "summary": "{{count}} images",
+      "tooLarge": "Too large to upscale (max 1024×1024)",
+      "run": "Run",
+      "done": "Processed {{count}} images"
+    }
   }
 }
