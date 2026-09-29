@@ -3,6 +3,7 @@ import { Brush, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PromptTargetInput from "@/components/left-panel/PromptTargetInput";
 import { useSpriteStore } from "@/stores/sprite-store";
+import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSpriteMaskEditorStore } from "@/stores/sprite-mask-editor-store";
 import { newPose, spriteTargetId } from "@/lib/sprite/spec";
 import { move, removePose, uniqueKey } from "@/lib/sprite/edit";
@@ -14,6 +15,7 @@ export default function PosesSection() {
   const spec = useSpriteStore((s) => s.spec)!;
   const poses = spec.poses;
   const cells = useSpriteStore((s) => s.cells);
+  const characters = useGenerationParamsStore((s) => s.characters);
   const cellsOfPose = (poseId: string) =>
     Object.values(cells).filter((c) => c.candidates.length > 0 && parseCellKey(c.cellKey).poseId === poseId).length;
 
@@ -62,6 +64,27 @@ export default function PosesSection() {
                             : p)),
                         }))}>
                         {a.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {characters.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1" title={t("sprite.define.poseCastHint")}>
+                  <span className="text-[10px] text-muted-foreground">{t("sprite.define.poseCast")}</span>
+                  {characters.map((c, ci) => {
+                    const on = pose.characterIds == null || pose.characterIds.includes(c.id);
+                    return (
+                      <button key={c.id} type="button" aria-pressed={on} className={chip(on)}
+                        onClick={() => updateSpec((s) => ({
+                          ...s,
+                          poses: s.poses.map((p) => {
+                            if (p.id !== pose.id) return p;
+                            const current = p.characterIds ?? characters.map((x) => x.id);
+                            return { ...p, characterIds: on ? current.filter((x) => x !== c.id) : [...current, c.id] };
+                          }),
+                        }))}>
+                        {t("character.label", { number: ci + 1, genre: c.genreName })}
                       </button>
                     );
                   })}

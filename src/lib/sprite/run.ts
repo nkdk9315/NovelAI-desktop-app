@@ -93,6 +93,7 @@ async function runGenerate(spec: SpriteSpec, setId: string, projectId: string, p
       seed: spec.seed != null ? (spec.seed + existing + i) % 4_294_967_296 : undefined,
       snapshotExtra: { sprite: { setId, cellKey: plan.key } },
       characterReference,
+      characterIds: spec.poses.find((p) => p.id === plan.coord.poseId)?.characterIds ?? undefined,
     });
     if (!built.ok) throw new CellError(built.errorKey);
     const res = await ipc.generateImage(built.req);

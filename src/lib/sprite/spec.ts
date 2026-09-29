@@ -23,6 +23,8 @@ export interface SpritePose {
   negative: string;
   /** Axes this pose doesn't vary (e.g. no fear levels for the attack pose) */
   skipAxes: string[];
+  /** Left-panel characters in this pose (e.g. the enemy holding her); null = every character */
+  characterIds: string[] | null;
 }
 
 export interface SpriteRegion {
@@ -119,7 +121,7 @@ export const newId = () => crypto.randomUUID();
 export const REGION_COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#eab308", "#a855f7", "#f97316", "#14b8a6", "#ec4899"];
 
 export function newPose(label: string, key: string, prompt = ""): SpritePose {
-  return { id: newId(), key, label, prompt, negative: "", skipAxes: [] };
+  return { id: newId(), key, label, prompt, negative: "", skipAxes: [], characterIds: null };
 }
 
 export function newRegion(label: string, key: string, index: number): SpriteRegion {
@@ -191,7 +193,7 @@ export function normalizeSpec(raw: unknown): SpriteSpec {
     ...base,
     ...r,
     version: SPRITE_SPEC_VERSION,
-    poses: (Array.isArray(r.poses) ? r.poses : base.poses).map((p) => ({ ...p, skipAxes: p.skipAxes ?? [] })),
+    poses: (Array.isArray(r.poses) ? r.poses : base.poses).map((p) => ({ ...p, skipAxes: p.skipAxes ?? [], characterIds: p.characterIds ?? null })),
     outfit: {
       parts: (Array.isArray(outfit.parts) ? outfit.parts : []).map((p) => ({ ...p, coveredBy: p.coveredBy ?? [] })),
       stages: (Array.isArray(outfit.stages) && outfit.stages.length > 0 ? outfit.stages : base.outfit.stages)

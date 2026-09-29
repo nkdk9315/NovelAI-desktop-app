@@ -93,6 +93,8 @@ export interface RequestOverrides {
   snapshotExtra?: Record<string, unknown>;
   /** Used instead of the character reference section's (sprite poses: the first pose's base) */
   characterReference?: CharacterReferenceRequest;
+  /** Only these left-panel characters take part (sprite poses); all when omitted */
+  characterIds?: string[];
 }
 
 export type BuildResult =
@@ -181,6 +183,7 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
   // Manga mode: the page and its panels replace the usual dialogue / character prompts
   const manga = mangaModeOn() ? composeCurrentMangaPage(userMain, true) : null;
   const maxChars = maxCharactersFor(params.model);
+  const cast = overrides.characterIds ? params.characters.filter((c) => overrides.characterIds!.includes(c.id)) : params.characters;
   if (manga && manga.characters.length > maxChars) {
     return { ok: false, errorKey: "manga.tooManyAppearances", errorArgs: { max: maxChars, count: manga.characters.length } };
   }
@@ -203,8 +206,8 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
     ? (manga.characters.length > 0
       ? manga.characters.map(({ prompt, centerX, centerY, negativePrompt }) => ({ prompt, centerX, centerY, negativePrompt }))
       : undefined)
-    : params.characters.length > 0
-    ? params.characters.map((c) => {
+    : cast.length > 0
+    ? cast.map((c) => {
         const charTarget = sidebarState.targets[c.id];
         const charContrib = getPresetContributionsForCharacter(c.id, presetInstances, allPresets);
         const charRolled = charTarget

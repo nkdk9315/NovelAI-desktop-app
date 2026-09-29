@@ -74,6 +74,7 @@ interface SpriteSpec {
   seed: number | null;           // null = ランダム
   candidatesPerCell: number;     // 1 回の生成で作る候補数（既定 2）
   inpaintStrength: number;       // 既定 1.0
+  poseReference: boolean;        // V4.5: 2 番目以降のポーズの素体に、最初のポーズの素体をキャラ参照として使う
   poses: SpritePose[];
   outfit: { parts: OutfitPart[]; stages: DamageStage[] };
   axes: SpriteAxis[];            // 派生の順番どおり。衣装軸（kind: "outfit"）は 0〜1 個
@@ -81,7 +82,9 @@ interface SpriteSpec {
   masks: Record<string /*poseId*/, Record<string /*regionId*/, string /*1/8 セルの白黒 PNG base64*/>>;
   export: SpriteExportSettings;
 }
-interface SpritePose   { id; key; label; prompt; negative }
+interface SpritePose   { id; key; label; prompt; negative;
+                         skipAxes: string[];            // このポーズでは変えない軸（セルを作らない）
+                         characterIds: string[] | null } // このポーズに出す左パネルのキャラ（null = 全員）
 interface SpriteRegion { id; key; label; color }
 interface OutfitPart   { id; name; prompt; negative; coveredBy: string[] }  // coveredBy が空でなければ「下に着ている物」
 type PartState = "intact" | "torn" | "exposed" | "gone";
@@ -166,6 +169,7 @@ interface AxisLevel    { id; key; label; prompt; negative; weight: number } // w
 
 Blocker（生成できない理由）:
 
+- `skipped`: このポーズでは使わない軸のセル（`skipAxes`）
 - `parentNotAdopted`: 親に採用画像がない
 - `maskMissing`: 領域のマスクが未作成
 - `noRegion`: 軸に領域が紐づいていない
@@ -181,6 +185,12 @@ Blocker（生成できない理由）:
   - ヘッダーのサイズ・シード・費用表示
   - 漫画モードの切り替え
 - 履歴の種類に `sprite` を追加した（`composite` / `import` / `edit`）。プロンプトを持たないので復元の対象外。
+
+### 4.2 状態の補助（`src/lib/sprite/status.ts`・`plan.ts`）
+
+- `isStale`: 採用画像の `parentImageId` が親の今の採用画像と違う。親を作り直したあとで、作り直すべきセルに印を付ける。
+- `batchProblems`: 一括生成の前に、マスクがないポーズ・領域がない軸を列挙する。
+- `withMissingAncestors`: 選んだセルに、まだ採用画像のない親・合成元・（`poseReference` 時は）最初のポーズの素体を足して、親 → 子の順に並べる。
 
 ---
 

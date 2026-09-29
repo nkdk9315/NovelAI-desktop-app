@@ -1161,7 +1161,7 @@
     "excludeHint": "Switch off the card's tags in this panel only (e.g. long hair when tied up)"
   },
   "sprite": {
-    "leftHint": "The main prompt, characters and art style on the left are the character's look and go into every variant. Poses, outfit and expressions are set in Definition.",
+    "leftHint": "The main prompt and art style on the left are the character's look and go into every variant. Characters (e.g. enemies) can be turned on per pose. Poses, outfit and expressions are set in Definition.",
     "loadFailed": "Could not load the sprite sets: {{error}}",
     "noSetYet": "No sprite set yet",
     "intro": "A sprite set holds one character's variant sprites. Start with New set and pick a template.",
@@ -1393,7 +1393,9 @@
       "poseReferenceV5": "V4.5 models only (V5 has no character reference). On V5, describe the outfit parts in detail and fix the seed.",
       "confirmDelete": "Delete?",
       "confirmPose": "This pose has {{count}} cells with images and its region masks. The cells become undefined (images stay in the history).",
-      "confirmAxis": "{{count}} cells using this axis become undefined (images stay in the history)."
+      "confirmAxis": "{{count}} cells using this axis become undefined (images stay in the history).",
+      "poseCast": "Characters:",
+      "poseCastHint": "Left-panel characters that appear in this pose (e.g. the enemy restraining her), in its base and variants"
     },
     "mask": {
       "titleRegions": "Region masks — {{pose}}",
