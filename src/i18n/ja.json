@@ -1229,14 +1229,16 @@
       "parentNotAdopted": "親セルに採用画像がありません。先に親セルを作って採用してください（一括生成では自動で先に作ります）。",
       "sourceNotAdopted": "合成元（この段階だけのセル）に採用画像がありません。",
       "maskMissing": "このポーズの領域マスクがまだ描かれていません。",
-      "noRegion": "この軸に領域が設定されていません。「定義」の軸で領域を選んでください。"
+      "noRegion": "この軸に領域が設定されていません。「定義」の軸で領域を選んでください。",
+      "skipped": "このポーズでは、この軸を使わない設定です（定義 → ポーズ）。"
     },
     "blockerShort": {
       "orphan": "定義にない",
       "parentNotAdopted": "親が未採用",
       "sourceNotAdopted": "合成元が未採用",
       "maskMissing": "マスク未作成",
-      "noRegion": "領域なし"
+      "noRegion": "領域なし",
+      "skipped": "使わない"
     },
     "noActiveSet": "差分セットが選ばれていません",
     "partState": {
@@ -1274,7 +1276,14 @@
       "orphans": "定義にないセル {{count}}",
       "orphansHint": "消したポーズ・軸・段階のセルです",
       "orphansTitle": "定義にないセル {{count}} 件を削除しますか？",
-      "orphansBody": "採用状態と候補の一覧を削除します。画像はプロジェクトの履歴に残ります。"
+      "orphansBody": "採用状態と候補の一覧を削除します。画像はプロジェクトの履歴に残ります。",
+      "stale": "親が作り直されています",
+      "staleHint": "親の採用画像が変わったあとも古い親から作ったままのセル",
+      "checkStale": "親が変わったセルを選択（{{count}}）",
+      "warnMasks": "領域マスクがないポーズのセルは作れません: {{poses}}",
+      "warnRegions": "領域のない軸のセルは作れません: {{axes}}",
+      "keys": "キー操作",
+      "keysHint": "矢印: セル移動 / Enter: 生成 / Space: 選択 / 1〜9: 候補を採用"
     },
     "cell": {
       "noSelection": "マトリクスのセルを選ぶと、作り方・候補・プロンプトがここに表示されます。",
@@ -1297,7 +1306,11 @@
       "prompt": "このセルで追加されるプロンプト",
       "promptNote": "左のメインプロンプトの後ろ、クオリティタグの前に入ります。",
       "note": "メモ",
-      "notePlaceholder": "例: 右手の剣が消えがち"
+      "notePlaceholder": "例: 右手の剣が消えがち",
+      "stale": "この画像は、親セルが作り直される前の画像から作られています。作り直すと差分がそろいます。",
+      "redo": "作り直す",
+      "sizeFitted": "取り込んだ画像に合わせて、セットのサイズを {{width}}×{{height}} にしました。",
+      "aspectMismatch": "取り込んだ画像（{{w}}×{{h}}）はセットのサイズ（{{sw}}×{{sh}}）と縦横比が違います。インペイントでは引き伸ばされます。"
     },
     "define": {
       "settings": "セット設定",
@@ -1373,7 +1386,15 @@
       "moveUp": "上へ",
       "moveDown": "下へ",
       "moveLeft": "左へ",
-      "moveRight": "右へ"
+      "moveRight": "右へ",
+      "poseAxes": "使う軸:",
+      "poseAxesHint": "オフにした軸の差分はこのポーズでは作らない（セル数が減る）",
+      "poseReference": "ポーズ違いの素体に、最初のポーズの素体をキャラクター参照として使う",
+      "poseReferenceHint": "顔と服がそろいやすくなります。キャラ参照は Opus でも Anlas がかかります（1 枚ごと）。",
+      "poseReferenceV5": "V4.5 のモデルでだけ使えます（V5 はキャラ参照に未対応）。V5 では衣装パーツを詳しく書き、シードを固定してください。",
+      "confirmDelete": "削除しますか？",
+      "confirmPose": "このポーズには画像のあるセル {{count}} 個と領域マスクがあります。セルは「定義にないセル」になります（画像は履歴に残ります）。",
+      "confirmAxis": "この軸を使ったセル {{count}} 個が「定義にないセル」になります（画像は履歴に残ります）。"
     },
     "mask": {
       "titleRegions": "領域マスク — {{pose}}",
@@ -1477,6 +1498,13 @@
       "tooLarge": "この大きさは拡大できません（1024×1024 以下）",
       "run": "実行",
       "done": "{{count}} 枚を加工しました"
+    },
+    "guide": {
+      "bases": "素体 {{done}}/{{total}}",
+      "checkBases": "未作成の素体を選択",
+      "masks": "領域マスク {{done}}/{{total}}",
+      "drawMasks": "「{{pose}}」に描く",
+      "variants": "差分 {{done}}/{{total}}"
     }
   }
 }

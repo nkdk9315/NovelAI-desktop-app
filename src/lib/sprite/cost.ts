@@ -3,6 +3,7 @@ import { calculateCost } from "@/lib/cost";
 import { collectActiveVibes, currentCharacterReference } from "@/lib/generation-request";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useSettingsStore } from "@/stores/settings-store";
+import { supportsCharacterReference } from "@/lib/constants";
 import { planCell, type CellLookup } from "./plan";
 import type { SpriteSpec } from "./spec";
 
@@ -26,12 +27,15 @@ export function estimateSpriteCost(spec: SpriteSpec, keys: string[], lookup: Cel
       continue;
     }
     const inpaint = plan.method === "inpaint";
+    // Other poses' bases may use the first pose's base as character reference
+    const poseRef = spec.poseReference && plan.method === "txt2img" && supportsCharacterReference(params.model)
+      && plan.coord.poseId !== spec.poses[0]?.id;
     const cost = calculateCost({
       width: spec.width,
       height: spec.height,
       steps: params.steps,
-      vibeCount,
-      hasCharacterReference: charRef,
+      vibeCount: poseRef ? 0 : vibeCount,
+      hasCharacterReference: charRef || poseRef,
       tier: anlas?.tier ?? 0,
       model: params.model,
       opusUsageExhausted: anlas?.opusUsage?.isExhausted ?? false,

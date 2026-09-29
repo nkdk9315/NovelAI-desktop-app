@@ -21,6 +21,8 @@ export interface SpritePose {
   label: string;
   prompt: string;
   negative: string;
+  /** Axes this pose doesn't vary (e.g. no fear levels for the attack pose) */
+  skipAxes: string[];
 }
 
 export interface SpriteRegion {
@@ -99,6 +101,8 @@ export interface SpriteSpec {
   seed: number | null;
   candidatesPerCell: number;
   inpaintStrength: number;
+  /** V4.5: other poses' bases use the first pose's adopted base as character reference */
+  poseReference: boolean;
   poses: SpritePose[];
   outfit: { parts: OutfitPart[]; stages: DamageStage[] };
   axes: SpriteAxis[];
@@ -115,7 +119,7 @@ export const newId = () => crypto.randomUUID();
 export const REGION_COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#eab308", "#a855f7", "#f97316", "#14b8a6", "#ec4899"];
 
 export function newPose(label: string, key: string, prompt = ""): SpritePose {
-  return { id: newId(), key, label, prompt, negative: "" };
+  return { id: newId(), key, label, prompt, negative: "", skipAxes: [] };
 }
 
 export function newRegion(label: string, key: string, index: number): SpriteRegion {
@@ -165,6 +169,7 @@ export function newSpec(characterKey = "chara"): SpriteSpec {
     seed: randomSeed(),
     candidatesPerCell: 2,
     inpaintStrength: 1,
+    poseReference: false,
     poses: [newPose("通常", "idle", "full body, standing, looking at viewer")],
     outfit: { parts: [], stages: [newStage("無傷", "d0")] },
     axes: [outfitAxis],
@@ -186,7 +191,7 @@ export function normalizeSpec(raw: unknown): SpriteSpec {
     ...base,
     ...r,
     version: SPRITE_SPEC_VERSION,
-    poses: Array.isArray(r.poses) ? r.poses : base.poses,
+    poses: (Array.isArray(r.poses) ? r.poses : base.poses).map((p) => ({ ...p, skipAxes: p.skipAxes ?? [] })),
     outfit: {
       parts: (Array.isArray(outfit.parts) ? outfit.parts : []).map((p) => ({ ...p, coveredBy: p.coveredBy ?? [] })),
       stages: (Array.isArray(outfit.stages) && outfit.stages.length > 0 ? outfit.stages : base.outfit.stages)
@@ -205,3 +210,17 @@ export function slugKey(text: string, fallback: string): string {
   const s = text.normalize("NFKD").replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").toLowerCase();
   return s || fallback;
 }
+
+/**
+ * A set size with the image's aspect ratio, in 64px steps, about as large as
+ * `area` (so an imported drawing isn't stretched when it is inpainted).
+ */
+export function sizeForAspect(width: number, height: number, area = 832 * 1216): { width: number; height: number } {
+  const ar = width / height;
+  const step = (v: number) => Math.min(2048, Math.max(256, Math.round(v / 64) * 64));
+  const w = step(Math.sqrt(area * ar));
+  return { width: w, height: step(w / ar) };
+}
+
+export const sameAspect = (a: { width: number; height: number }, b: { width: number; height: number }) =>
+  Math.abs(a.width / a.height - b.width / b.height) < 0.02;

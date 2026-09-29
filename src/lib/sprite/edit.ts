@@ -53,7 +53,11 @@ export function removeStage(spec: SpriteSpec, id: string): SpriteSpec {
 }
 
 export function removeAxis(spec: SpriteSpec, id: string): SpriteSpec {
-  return { ...spec, axes: spec.axes.filter((a) => a.id !== id) };
+  return {
+    ...spec,
+    axes: spec.axes.filter((a) => a.id !== id),
+    poses: spec.poses.map((p) => ({ ...p, skipAxes: p.skipAxes.filter((a) => a !== id) })),
+  };
 }
 
 export function removeLevel(spec: SpriteSpec, axisId: string, levelId: string): SpriteSpec {

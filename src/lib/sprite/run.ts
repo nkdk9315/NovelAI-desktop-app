@@ -18,7 +18,9 @@ import { planCell, type CellPlan } from "./plan";
 import { cellPrompt } from "./prompt";
 import type { SpriteSpec } from "./spec";
 import { rolledTextOf } from "./text";
-import type { GenerateActionRequest } from "@/types";
+import type { CharacterReferenceRequest, GenerateActionRequest } from "@/types";
+import { supportsCharacterReference } from "@/lib/constants";
+import { useGenerationParamsStore } from "@/stores/generation-params-store";
 
 class CellError extends Error {}
 
@@ -51,8 +53,19 @@ async function runComposite(spec: SpriteSpec, setId: string, plan: CellPlan) {
   await adoptIfFirst(setId, plan.key, cand.imageId);
 }
 
+/** The first pose's adopted base, as character reference for another pose's base (V4.5, opt-in). */
+export async function poseReferenceFor(spec: SpriteSpec, plan: CellPlan): Promise<CharacterReferenceRequest | undefined> {
+  const first = spec.poses[0];
+  if (!spec.poseReference || plan.method !== "txt2img" || !first || plan.coord.poseId === first.id) return undefined;
+  if (!supportsCharacterReference(useGenerationParamsStore.getState().model)) return undefined;
+  const id = cellStateOf(baseKeyOf(first.id))?.adoptedImageId;
+  if (!id) return undefined;
+  return { imageBase64: (await ipc.getImageData(id)).base64, strength: 1, fidelity: 1, mode: "character" };
+}
+
 async function runGenerate(spec: SpriteSpec, setId: string, projectId: string, plan: CellPlan, item: SpriteQueueItem) {
   let action: GenerateActionRequest = { type: "generate" };
+  const characterReference = item.customMaskBase64 ? undefined : await poseReferenceFor(spec, plan);
   let parentId: string | null = null;
   const method = item.customMaskBase64 ? "inpaint" : plan.method;
   if (method === "inpaint") {
@@ -79,6 +92,7 @@ async function runGenerate(spec: SpriteSpec, setId: string, projectId: string, p
       negativeSuffix: prompt.negative,
       seed: spec.seed != null ? (spec.seed + existing + i) % 4_294_967_296 : undefined,
       snapshotExtra: { sprite: { setId, cellKey: plan.key } },
+      characterReference,
     });
     if (!built.ok) throw new CellError(built.errorKey);
     const res = await ipc.generateImage(built.req);

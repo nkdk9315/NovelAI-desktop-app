@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Eraser, Play, Rows3, SquareCheck, SquareDashed, Wand } from "lucide-react";
+import { AlertTriangle, Eraser, Play, RefreshCcw, Rows3, SquareCheck, SquareDashed, Wand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -8,11 +8,13 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cellStateOf, useSpriteStore } from "@/stores/sprite-store";
-import { allCells, cellKey, isOrphanKey, levelsOf } from "@/lib/sprite/cells";
+import { allCells, cellKey, isOrphanKey, isSkipped, levelsOf, parseCellKey } from "@/lib/sprite/cells";
 import * as spriteIpc from "@/lib/ipc-sprite";
 import { toastError } from "@/lib/toast-error";
 import PostProcessDialog from "./PostProcessDialog";
-import { withMissingAncestors } from "@/lib/sprite/plan";
+import { batchProblems, withMissingAncestors } from "@/lib/sprite/plan";
+import { staleKeys } from "@/lib/sprite/status";
+import { useSpriteMaskEditorStore } from "@/stores/sprite-mask-editor-store";
 import { estimateSpriteCost } from "@/lib/sprite/cost";
 import { enqueueCells } from "@/lib/sprite/run";
 
@@ -44,7 +46,8 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
       .catch((e) => toastError(String(e)));
   };
 
-  const ungenerated = (keys: string[]) => keys.filter((k) => !cells[k]?.candidates.length && !cells[k]?.excluded);
+  const ungenerated = (keys: string[]) => keys.filter((k) =>
+    !cells[k]?.candidates.length && !cells[k]?.excluded && !isSkipped(spec, parseCellKey(k)));
   const everyKey = useMemo(() => allCells(spec).map(cellKey), [spec]);
   // Parents that aren't adopted yet are made first, in the same batch
   const batch = useMemo(
@@ -52,6 +55,8 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- cells: adoption / excluded flags change the batch
     [spec, checkedKeys, cells],
   );
+  const problems = useMemo(() => batchProblems(spec, batch), [spec, batch]);
+  const stale = useMemo(() => staleKeys(spec, cells), [spec, cells]);
   const estimate = useMemo(
     () => estimateSpriteCost(spec, batch, cellStateOf, spec.candidatesPerCell),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- cells: excluded flags change the plan
@@ -115,6 +120,12 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
         <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setPostOpen(true)}>
           <Wand className="h-3.5 w-3.5" />{t("sprite.post.open")}
         </Button>
+        {stale.length > 0 && (
+          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-amber-600 dark:text-amber-400"
+            title={t("sprite.matrix.staleHint")} onClick={() => setChecked(stale)}>
+            <RefreshCcw className="h-3.5 w-3.5" />{t("sprite.matrix.checkStale", { count: stale.length })}
+          </Button>
+        )}
         {orphans.length > 0 && (
           <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-amber-600 dark:text-amber-400"
             title={t("sprite.matrix.orphansHint")} onClick={() => setConfirmOrphans(true)}>
@@ -122,6 +133,7 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
           </Button>
         )}
         <div className="flex-1" />
+        <span className="hidden text-[10px] text-muted-foreground xl:inline" title={t("sprite.matrix.keysHint")}>⌨ {t("sprite.matrix.keys")}</span>
         {checkedKeys.length > 0 && (
           <span className="text-muted-foreground">
             {t("sprite.matrix.batchSummary", {
@@ -136,6 +148,23 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
         </Button>
       </div>
 
+      {(problems.maskMissing.length > 0 || problems.noRegion.length > 0) && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          {problems.maskMissing.length > 0 && (
+            <>
+              <span>{t("sprite.matrix.warnMasks", { poses: problems.maskMissing.map((id) => spec.poses.find((p) => p.id === id)?.label).join("・") })}</span>
+              <Button size="sm" variant="outline" className="h-6 text-[11px]"
+                onClick={() => useSpriteMaskEditorStore.getState().open({ kind: "regions", poseId: problems.maskMissing[0] })}>
+                {t("sprite.cell.drawRegions")}
+              </Button>
+            </>
+          )}
+          {problems.noRegion.length > 0 && (
+            <span>{t("sprite.matrix.warnRegions", { axes: problems.noRegion.map((id) => spec.axes.find((a) => a.id === id)?.label).join("・") })}</span>
+          )}
+        </div>
+      )}
       {postOpen && <PostProcessDialog open={postOpen} onOpenChange={setPostOpen} />}
       <AlertDialog open={confirmOrphans} onOpenChange={setConfirmOrphans}>
         <AlertDialogContent>

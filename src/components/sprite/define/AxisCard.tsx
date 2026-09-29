@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import PromptTargetInput from "@/components/left-panel/PromptTargetInput";
 import { useSpriteStore } from "@/stores/sprite-store";
+import { parseCellKey } from "@/lib/sprite/cells";
 import { newLevel, spriteTargetId, type AxisLevel, type SpriteAxis } from "@/lib/sprite/spec";
 import { move, ownedTargetIds, removeAxis, removeLevel, uniqueKey } from "@/lib/sprite/edit";
 import { CommitInput, KeyInput, RowActions, chip, dropTargets, updateSpec } from "./common";
@@ -16,6 +17,8 @@ export default function AxisCard({ axis, index, count }: { axis: SpriteAxis; ind
   const patchLevel = (id: string, p: Partial<AxisLevel>) =>
     patch((a) => ({ ...a, levels: a.levels.map((l) => (l.id === id ? { ...l, ...p } : l)) }));
   const outfit = axis.kind === "outfit";
+  const usedCells = useSpriteStore((s) =>
+    Object.values(s.cells).filter((c) => c.candidates.length > 0 && parseCellKey(c.cellKey).levels[axis.id] != null).length);
 
   return (
     <div className="space-y-2 rounded-md border border-border p-2">
@@ -27,6 +30,7 @@ export default function AxisCard({ axis, index, count }: { axis: SpriteAxis; ind
         {outfit && <span className="text-[10px] text-muted-foreground">{t("sprite.define.outfitAxisNote")}</span>}
         <div className="flex-1" />
         <RowActions index={index} count={count}
+          confirm={usedCells > 0 ? t("sprite.define.confirmAxis", { count: usedCells }) : undefined}
           onMove={(d) => updateSpec((s) => ({ ...s, axes: move(s.axes, index, d) }))}
           onRemove={() => { dropTargets(ownedTargetIds(spec, "axis", axis.id)); updateSpec((s) => removeAxis(s, axis.id)); }} />
       </div>

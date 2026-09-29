@@ -77,18 +77,27 @@ export function isOrphanKey(spec: SpriteSpec, key: string): boolean {
   });
 }
 
-/** Every cell of the spec (poses × all axis levels), in pose / axis order. */
+/** A cell that varies an axis its pose doesn't use. */
+export function isSkipped(spec: SpriteSpec, coord: CellCoord): boolean {
+  const skip = spec.poses.find((p) => p.id === coord.poseId)?.skipAxes ?? [];
+  return skip.some((axisId) => coord.levels[axisId] != null);
+}
+
+/** Every cell of the spec (poses × the levels of the axes each pose uses), in pose / axis order. */
 export function allCells(spec: SpriteSpec): CellCoord[] {
-  let combos: Record<string, number>[] = [{}];
-  for (const axis of spec.axes) {
-    const n = Math.max(1, levelsOf(spec, axis).length);
-    combos = combos.flatMap((c) => Array.from({ length: n }, (_, i) => ({ ...c, [axis.id]: i })));
-  }
-  return spec.poses.flatMap((p) => combos.map((c) => coordOf(spec, p.id, c)));
+  return spec.poses.flatMap((pose) => {
+    let combos: Record<string, number>[] = [{}];
+    for (const axis of spec.axes) {
+      const n = pose.skipAxes.includes(axis.id) ? 1 : Math.max(1, levelsOf(spec, axis).length);
+      combos = combos.flatMap((c) => Array.from({ length: n }, (_, i) => ({ ...c, [axis.id]: i })));
+    }
+    return combos.map((c) => coordOf(spec, pose.id, c));
+  });
 }
 
 export function cellCount(spec: SpriteSpec): number {
-  return spec.poses.length * spec.axes.reduce((n, a) => n * Math.max(1, levelsOf(spec, a).length), 1);
+  return spec.poses.reduce((total, pose) => total + spec.axes.reduce(
+    (n, a) => n * (pose.skipAxes.includes(a.id) ? 1 : Math.max(1, levelsOf(spec, a).length)), 1), 0);
 }
 
 /** Human-readable label: `通常 / 破損2 / 恐怖1` */

@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useSpriteStore } from "@/stores/sprite-store";
+import { useGenerationParamsStore } from "@/stores/generation-params-store";
+import { supportsCharacterReference } from "@/lib/constants";
 import { randomSeed, slugKey } from "@/lib/sprite/spec";
 import { CommitInput, Section, updateSpec } from "./common";
 
@@ -15,6 +17,7 @@ export default function SetSettingsSection() {
   const { t } = useTranslation();
   const spec = useSpriteStore((s) => s.spec)!;
   const hasImages = useSpriteStore((s) => Object.values(s.cells).some((c) => c.candidates.length > 0));
+  const charRefOk = supportsCharacterReference(useGenerationParamsStore((s) => s.model));
 
   return (
     <Section title={t("sprite.define.settings")} hint={t("sprite.define.settingsHint")}>
@@ -59,6 +62,15 @@ export default function SetSettingsSection() {
           <Slider min={1} max={4} step={1} value={[spec.candidatesPerCell]}
             onValueChange={([v]) => updateSpec((s) => ({ ...s, candidatesPerCell: v }))} />
         </div>
+        <label className={`col-span-2 flex items-start gap-2 sm:col-span-3 ${charRefOk ? "" : "opacity-60"}`}>
+          <Switch checked={spec.poseReference} onCheckedChange={(v) => updateSpec((s) => ({ ...s, poseReference: v }))} />
+          <span>
+            {t("sprite.define.poseReference")}
+            <span className="block text-[10px] text-muted-foreground">
+              {charRefOk ? t("sprite.define.poseReferenceHint") : t("sprite.define.poseReferenceV5")}
+            </span>
+          </span>
+        </label>
         <div className="space-y-1">
           <Label className="text-xs">{t("sprite.define.inpaintStrength", { value: spec.inpaintStrength.toFixed(2) })}</Label>
           <Slider min={0.3} max={1} step={0.05} value={[spec.inpaintStrength]}

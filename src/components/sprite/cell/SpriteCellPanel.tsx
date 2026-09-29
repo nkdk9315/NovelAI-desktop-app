@@ -13,7 +13,12 @@ import { planCell } from "@/lib/sprite/plan";
 import { cellPrompt } from "@/lib/sprite/prompt";
 import { displayTextOf } from "@/lib/sprite/text";
 import { enqueueCells } from "@/lib/sprite/run";
+import { cellIsStale } from "@/lib/sprite/status";
 import { toastError } from "@/lib/toast-error";
+import { toast } from "sonner";
+import { loadImageElement } from "@/lib/canvas-image";
+import { projectImageUrl } from "@/lib/sprite/image-url";
+import { sameAspect, sizeForAspect } from "@/lib/sprite/spec";
 import CandidateGrid from "./CandidateGrid";
 
 /** The selected cell: how it is made, its prompt, actions and candidates. */
@@ -49,7 +54,21 @@ export default function SpriteCellPanel() {
     if (typeof path !== "string") return;
     const cand = await spriteIpc.importSpriteCandidate(setId, key, path);
     if (!adoptedImageId) await spriteIpc.adoptSpriteCandidate(setId, key, cand.imageId);
+    const firstImage = Object.values(useSpriteStore.getState().cells).every((c) => c.candidates.length === 0);
     await useSpriteStore.getState().reloadCells();
+    // Inpainting resizes the source to the set size: keep the drawing's proportions
+    const src = projectImageUrl(cand.filePath);
+    const img = src ? await loadImageElement(src).catch(() => null) : null;
+    if (!img) return;
+    const size = { width: img.naturalWidth, height: img.naturalHeight };
+    if (sameAspect(size, spec)) return;
+    if (firstImage) {
+      const fit = sizeForAspect(size.width, size.height, spec.width * spec.height);
+      useSpriteStore.getState().updateSpec((s) => ({ ...s, ...fit }));
+      toast.message(t("sprite.cell.sizeFitted", fit));
+    } else {
+      toast.warning(t("sprite.cell.aspectMismatch", { w: size.width, h: size.height, sw: spec.width, sh: spec.height }));
+    }
   });
   const toggleExcluded = guard(async () => {
     await spriteIpc.setSpriteCellState(setId, key, { excluded: !(cell?.excluded ?? false) });
@@ -81,6 +100,13 @@ export default function SpriteCellPanel() {
           )}
         </p>
       </div>
+
+      {cellIsStale(spec, key, cells) && (
+        <div className="space-y-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
+          <p>{t("sprite.cell.stale")}</p>
+          <Button size="sm" variant="outline" className="h-6 text-[11px]" onClick={() => generate()}>{t("sprite.cell.redo")}</Button>
+        </div>
+      )}
 
       {blockers.length > 0 && (
         <ul className="space-y-1 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">

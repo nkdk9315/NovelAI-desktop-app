@@ -1229,14 +1229,16 @@
       "parentNotAdopted": "The parent cell has no adopted image. Make and adopt it first (batches do this automatically).",
       "sourceNotAdopted": "The composite source (the single-axis cell) has no adopted image.",
       "maskMissing": "The region masks of this pose are not drawn yet.",
-      "noRegion": "This axis has no region. Pick one in Definition → axes."
+      "noRegion": "This axis has no region. Pick one in Definition → axes.",
+      "skipped": "This pose doesn't use this axis (Definition → Poses)."
     },
     "blockerShort": {
       "orphan": "Not defined",
       "parentNotAdopted": "Parent not adopted",
       "sourceNotAdopted": "Source not adopted",
       "maskMissing": "No mask",
-      "noRegion": "No region"
+      "noRegion": "No region",
+      "skipped": "Not used"
     },
     "partState": {
       "intact": "Intact",
@@ -1273,7 +1275,14 @@
       "orphans": "{{count}} undefined cells",
       "orphansHint": "Cells of removed poses, axes or levels",
       "orphansTitle": "Delete {{count}} undefined cells?",
-      "orphansBody": "Their adoptions and candidate lists are removed. Images stay in the project history."
+      "orphansBody": "Their adoptions and candidate lists are removed. Images stay in the project history.",
+      "stale": "Parent was redone",
+      "staleHint": "Cells still made from a parent image that is no longer adopted",
+      "checkStale": "Select cells with a new parent ({{count}})",
+      "warnMasks": "Cells of poses without region masks can't be made: {{poses}}",
+      "warnRegions": "Cells of axes without regions can't be made: {{axes}}",
+      "keys": "Keys",
+      "keysHint": "Arrows: move / Enter: generate / Space: select / 1–9: adopt candidate"
     },
     "cell": {
       "noSelection": "Select a cell in the matrix to see how it is made, its candidates and prompt.",
@@ -1296,7 +1305,11 @@
       "prompt": "Prompt added by this cell",
       "promptNote": "Goes after the main prompt, before the quality tags.",
       "note": "Note",
-      "notePlaceholder": "e.g. the sword in the right hand tends to vanish"
+      "notePlaceholder": "e.g. the sword in the right hand tends to vanish",
+      "stale": "This image was made from the parent's previous image. Redo it so the variants match.",
+      "redo": "Redo",
+      "sizeFitted": "The set size was set to {{width}}×{{height}} to fit the imported image.",
+      "aspectMismatch": "The imported image ({{w}}×{{h}}) has another aspect ratio than the set ({{sw}}×{{sh}}); inpainting will stretch it."
     },
     "define": {
       "settings": "Set settings",
@@ -1372,7 +1385,15 @@
       "moveUp": "Up",
       "moveDown": "Down",
       "moveLeft": "Left",
-      "moveRight": "Right"
+      "moveRight": "Right",
+      "poseAxes": "Axes used:",
+      "poseAxesHint": "Turned-off axes have no variants for this pose (fewer cells)",
+      "poseReference": "Use the first pose's base as character reference for the other poses' bases",
+      "poseReferenceHint": "Keeps face and clothes closer. Character reference costs Anlas even on Opus (per image).",
+      "poseReferenceV5": "V4.5 models only (V5 has no character reference). On V5, describe the outfit parts in detail and fix the seed.",
+      "confirmDelete": "Delete?",
+      "confirmPose": "This pose has {{count}} cells with images and its region masks. The cells become undefined (images stay in the history).",
+      "confirmAxis": "{{count}} cells using this axis become undefined (images stay in the history)."
     },
     "mask": {
       "titleRegions": "Region masks — {{pose}}",
@@ -1477,6 +1498,13 @@
       "tooLarge": "Too large to upscale (max 1024×1024)",
       "run": "Run",
       "done": "Processed {{count}} images"
+    },
+    "guide": {
+      "bases": "Bases {{done}}/{{total}}",
+      "checkBases": "Select missing bases",
+      "masks": "Region masks {{done}}/{{total}}",
+      "drawMasks": "Draw for \"{{pose}}\"",
+      "variants": "Variants {{done}}/{{total}}"
     }
   }
 }

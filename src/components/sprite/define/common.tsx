@@ -3,6 +3,10 @@ import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
 import { useSpriteStore } from "@/stores/sprite-store";
 import { slugKey, spriteTargetId, type SpriteSpec } from "@/lib/sprite/spec";
@@ -66,10 +70,13 @@ export function KeyInput({ value, taken, fallback, onCommit }: {
   );
 }
 
-export function RowActions({ index, count, onMove, onRemove, removeDisabled }: {
+export function RowActions({ index, count, onMove, onRemove, removeDisabled, confirm }: {
   index: number; count: number; onMove: (delta: number) => void; onRemove: () => void; removeDisabled?: boolean;
+  /** Ask before removing (the item has images / masks that would be orphaned) */
+  confirm?: string;
 }) {
   const { t } = useTranslation();
+  const [asking, setAsking] = useState(false);
   return (
     <div className="flex shrink-0 items-center">
       <Button size="icon" variant="ghost" className="h-6 w-6" disabled={index === 0} title={t("sprite.define.moveUp")} onClick={() => onMove(-1)}>
@@ -78,9 +85,22 @@ export function RowActions({ index, count, onMove, onRemove, removeDisabled }: {
       <Button size="icon" variant="ghost" className="h-6 w-6" disabled={index === count - 1} title={t("sprite.define.moveDown")} onClick={() => onMove(1)}>
         <ArrowDown className="h-3 w-3" />
       </Button>
-      <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" disabled={removeDisabled} title={t("common.delete")} onClick={onRemove}>
+      <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" disabled={removeDisabled} title={t("common.delete")}
+        onClick={() => (confirm ? setAsking(true) : onRemove())}>
         <Trash2 className="h-3 w-3" />
       </Button>
+      <AlertDialog open={asking} onOpenChange={setAsking}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("sprite.define.confirmDelete")}</AlertDialogTitle>
+            <AlertDialogDescription>{confirm}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={onRemove}>{t("common.delete")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

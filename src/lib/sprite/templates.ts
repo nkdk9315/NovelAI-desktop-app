@@ -132,7 +132,7 @@ export function withFreshIds(spec: SpriteSpec, keepMasks: boolean): SpriteSpec {
     return map.get(id)!;
   };
   const reKeys = <V>(o: Record<string, V>) => Object.fromEntries(Object.entries(o).map(([k, v]) => [re(k), v]));
-  const poses = spec.poses.map((p) => ({ ...p, id: re(p.id) }));
+  const poses = spec.poses.map((p) => ({ ...p, id: re(p.id), skipAxes: p.skipAxes.map(re) }));
   const regions = spec.regions.map((r) => ({ ...r, id: re(r.id) }));
   const parts = spec.outfit.parts.map((p) => ({ ...p, id: re(p.id), coveredBy: p.coveredBy.map(re) }));
   const stages = spec.outfit.stages.map((s) => ({ ...s, id: re(s.id), states: reKeys(s.states), overrides: reKeys(s.overrides) }));

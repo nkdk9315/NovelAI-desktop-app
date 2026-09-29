@@ -1,10 +1,13 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useSpriteStore } from "@/stores/sprite-store";
 import { useSpriteQueueStore } from "@/stores/sprite-queue-store";
 import { cellKey, coordOf, levelsOf } from "@/lib/sprite/cells";
 import { planCell } from "@/lib/sprite/plan";
 import { enqueueCells } from "@/lib/sprite/run";
+import * as spriteIpc from "@/lib/ipc-sprite";
+import { staleKeys } from "@/lib/sprite/status";
+import MatrixGuide from "./MatrixGuide";
 import SpriteCellTile from "./SpriteCellTile";
 import MatrixToolbar from "./MatrixToolbar";
 
@@ -41,6 +44,7 @@ export default function SpriteMatrix() {
   }, [cells]);
   const queuedKeys = useMemo(() => new Set(queued.map((q) => q.key)), [queued]);
   const checked = useMemo(() => new Set(checkedKeys), [checkedKeys]);
+  const stale = useMemo(() => new Set(staleKeys(spec, cells)), [spec, cells]);
 
   const onSelect = useCallback((k: string) => useSpriteStore.getState().selectCell(k), []);
   const onToggle = useCallback((k: string) => useSpriteStore.getState().toggleChecked(k), []);
@@ -51,11 +55,53 @@ export default function SpriteMatrix() {
     enqueueCells([{ key: k, count: s.candidatesPerCell, force: true }]);
   }, []);
 
+  // Keyboard: arrows move, Enter generates, Space checks, 1–9 adopt the n-th candidate (as listed on the right)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el?.closest("input, textarea, select, [contenteditable=true], [role=dialog]") || e.metaKey || e.ctrlKey || e.altKey) return;
+      const state = useSpriteStore.getState();
+      const key = state.selectedKey;
+      const r = key ? rows.findIndex((row) => row.keys.includes(key)) : -1;
+      const c = r >= 0 ? rows[r].keys.indexOf(key!) : -1;
+      const move = (dr: number, dc: number) => {
+        const nr = r < 0 ? 0 : Math.min(rows.length - 1, Math.max(0, r + dr));
+        const nc = c < 0 ? 0 : Math.min(rows[nr].keys.length - 1, Math.max(0, c + dc));
+        state.selectCell(rows[nr]?.keys[nc] ?? null);
+      };
+      const handlers: Record<string, () => void> = {
+        ArrowUp: () => move(-1, 0),
+        ArrowDown: () => move(1, 0),
+        ArrowLeft: () => move(0, -1),
+        ArrowRight: () => move(0, 1),
+        Enter: () => { if (key) onGenerate(key); },
+        " ": () => { if (key) state.toggleChecked(key); },
+      };
+      const n = Number(e.key);
+      if (key && n >= 1 && n <= 9) {
+        const list = [...(state.cells[key]?.candidates ?? [])].reverse();
+        const cand = list[n - 1];
+        if (cand && state.activeSetId) {
+          e.preventDefault();
+          void spriteIpc.adoptSpriteCandidate(state.activeSetId, key, cand.imageId).then(() => state.reloadCells());
+        }
+        return;
+      }
+      const h = handlers[e.key];
+      if (!h) return;
+      e.preventDefault();
+      h();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [rows, onGenerate]);
+
   const aspect = spec.width / spec.height;
   const colMin = columns.length > 4 ? 110 : 140;
 
   return (
     <div className="flex min-h-full flex-col">
+      <MatrixGuide />
       <MatrixToolbar visibleKeys={visibleKeys} />
       {spec.poses.length === 0 ? (
         <p className="p-6 text-center text-sm text-muted-foreground">{t("sprite.matrix.noPoses")}</p>
@@ -85,6 +131,7 @@ export default function SpriteMatrix() {
                         selected={selectedKey === k}
                         checked={checked.has(k)}
                         status={current === k ? "running" : queuedKeys.has(k) ? "queued" : null}
+                        stale={stale.has(k)}
                         aspect={aspect}
                         onSelect={onSelect}
                         onToggle={onToggle}

@@ -6,12 +6,16 @@ import { useSpriteStore } from "@/stores/sprite-store";
 import { useSpriteMaskEditorStore } from "@/stores/sprite-mask-editor-store";
 import { newPose, spriteTargetId } from "@/lib/sprite/spec";
 import { move, removePose, uniqueKey } from "@/lib/sprite/edit";
-import { CommitInput, KeyInput, RowActions, Section, dropTargets, updateSpec } from "./common";
+import { parseCellKey } from "@/lib/sprite/cells";
+import { CommitInput, KeyInput, RowActions, Section, chip, dropTargets, updateSpec } from "./common";
 
 export default function PosesSection() {
   const { t } = useTranslation();
   const spec = useSpriteStore((s) => s.spec)!;
   const poses = spec.poses;
+  const cells = useSpriteStore((s) => s.cells);
+  const cellsOfPose = (poseId: string) =>
+    Object.values(cells).filter((c) => c.candidates.length > 0 && parseCellKey(c.cellKey).poseId === poseId).length;
 
   const add = () => updateSpec((s) => ({
     ...s,
@@ -40,9 +44,29 @@ export default function PosesSection() {
                 </Button>
                 <div className="flex-1" />
                 <RowActions index={i} count={poses.length}
+                  confirm={cellsOfPose(pose.id) > 0 || masked > 0 ? t("sprite.define.confirmPose", { count: cellsOfPose(pose.id) }) : undefined}
                   onMove={(d) => updateSpec((s) => ({ ...s, poses: move(s.poses, i, d) }))}
                   onRemove={() => { dropTargets([pose.id]); updateSpec((s) => removePose(s, pose.id)); }} />
               </div>
+              {spec.axes.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1" title={t("sprite.define.poseAxesHint")}>
+                  <span className="text-[10px] text-muted-foreground">{t("sprite.define.poseAxes")}</span>
+                  {spec.axes.map((a) => {
+                    const on = !pose.skipAxes.includes(a.id);
+                    return (
+                      <button key={a.id} type="button" aria-pressed={on} className={chip(on)}
+                        onClick={() => updateSpec((s) => ({
+                          ...s,
+                          poses: s.poses.map((p) => (p.id === pose.id
+                            ? { ...p, skipAxes: on ? [...p.skipAxes, a.id] : p.skipAxes.filter((x) => x !== a.id) }
+                            : p)),
+                        }))}>
+                        {a.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <PromptTargetInput targetId={spriteTargetId(pose.id)} initialText={pose.prompt} placeholder={t("sprite.define.posePlaceholder")} />
             </div>
           );

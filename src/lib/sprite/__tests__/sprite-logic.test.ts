@@ -5,7 +5,7 @@ import {
 import { cellPrompt, outfitPromptAt, weighted } from "../prompt";
 import { orderForGeneration, planCell, type CellState } from "../plan";
 import {
-  newAxis, newLevel, newPart, newSpec, newStage, normalizeSpec, slugKey, type SpriteSpec,
+  newAxis, newLevel, newPart, newPose, newSpec, newStage, normalizeSpec, slugKey, type SpriteSpec,
 } from "../spec";
 
 /** Knight: jacket + blouse over underwear, damage 0–3, wounds (body) and fear (face, composite). */
@@ -217,5 +217,47 @@ describe("templates", async () => {
     const baked = copySpec(k.spec, (id, fb) => (id === k.pose.id ? { positive: "baked", negative: "" } : fb));
     expect(baked.poses[0].prompt).toBe("baked");
     expect(outfitPromptAt(copy, copy.outfit.stages[2]).positive).toContain("visible through tears");
+  });
+});
+
+describe("per-pose axes", () => {
+  it("skipped axes drop cells and block them", () => {
+    const k = knight();
+    k.pose.skipAxes = [k.fear.id];
+    expect(cellCount(k.spec)).toBe(4 * 2);
+    expect(allCells(k.spec)).toHaveLength(8);
+    const key = idx(k.spec, k.pose.id, { [k.fear.id]: 1 });
+    expect(planCell(k.spec, key, () => undefined).blockers).toEqual(["skipped"]);
+  });
+});
+
+describe("stale and batch problems", async () => {
+  const { batchProblems, isStale } = await import("../plan");
+  it("flags cells made from an old parent image", () => {
+    const k = knight();
+    const d1 = idx(k.spec, k.pose.id, { [k.outfit.id]: 1 });
+    const plan = planCell(k.spec, d1, () => undefined);
+    expect(isStale(plan, { parentImageId: "old", method: "inpaint" }, "new")).toBe(true);
+    expect(isStale(plan, { parentImageId: "new", method: "inpaint" }, "new")).toBe(false);
+    expect(isStale(plan, { parentImageId: "old", method: "import" }, "new")).toBe(false);
+  });
+  it("lists poses without masks and axes without regions", () => {
+    const k = knight();
+    k.wounds.regionIds = [];
+    const keys = [idx(k.spec, k.pose.id, { [k.outfit.id]: 1 }), idx(k.spec, k.pose.id, { [k.wounds.id]: 1 })];
+    expect(batchProblems(k.spec, keys)).toEqual({ maskMissing: [k.pose.id], noRegion: [k.wounds.id] });
+  });
+});
+
+describe("pose reference ordering", async () => {
+  const { withMissingAncestors } = await import("../plan");
+  it("makes the first pose's base before the others when the option is on", () => {
+    const k = knight();
+    const second = newPose("被弾", "hit", "being hit");
+    k.spec.poses.push(second);
+    const secondBase = cellKey({ poseId: second.id, levels: {} });
+    expect(withMissingAncestors(k.spec, [secondBase], () => undefined)).toEqual([secondBase]);
+    k.spec.poseReference = true;
+    expect(withMissingAncestors(k.spec, [secondBase], () => undefined)).toEqual([k.pose.id, secondBase]);
   });
 });

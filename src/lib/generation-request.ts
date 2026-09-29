@@ -91,6 +91,8 @@ export interface RequestOverrides {
   seed?: number;
   /** Merged into the UI snapshot (e.g. `{ sprite: { setId, cellKey } }`) */
   snapshotExtra?: Record<string, unknown>;
+  /** Used instead of the character reference section's (sprite poses: the first pose's base) */
+  characterReference?: CharacterReferenceRequest;
 }
 
 export type BuildResult =
@@ -145,7 +147,9 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
   const sidebarArtistTags = useSidebarArtistTagsStore.getState().sidebarArtistTags;
   const isV5 = isV5Model(params.model);
   const activePresets = params.sidebarPresets.filter((p) => p.enabled);
-  const characterReference = currentCharacterReference(params.model);
+  const characterReference = overrides.characterReference && supportsCharacterReference(params.model)
+    ? overrides.characterReference
+    : currentCharacterReference(params.model);
 
   // Vibe Transfer and Character Reference are mutually exclusive: the reference wins
   const allVibes = characterReference ? [] : collectActiveVibes(params);
