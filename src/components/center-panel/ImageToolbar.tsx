@@ -1,8 +1,9 @@
 import { forwardRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Brush, ImagePlay, ImageUp, Sparkles, SquareDashed, UserSquare, Wand2 } from "lucide-react";
+import { Brush, ImagePlay, ImageUp, Sparkles, SquareDashed, Type, UserSquare, Wand2 } from "lucide-react";
 import { useImageSourceActions } from "@/hooks/use-image-source-actions";
 import { useDirectorToolsStore } from "@/stores/director-tools-store";
+import { useTypesetStore } from "@/stores/typeset-store";
 import EnhancePopover from "./EnhancePopover";
 
 const ToolButton = forwardRef<HTMLButtonElement, React.ComponentProps<"button"> & { label: string }>(
@@ -26,6 +27,7 @@ export default function ImageToolbar({ imageId }: { imageId: string }) {
   const { t } = useTranslation();
   const { setAsBase, setAsCharacterReference } = useImageSourceActions();
   const openTools = useDirectorToolsStore((s) => s.openFor);
+  const openTypeset = useTypesetStore((s) => s.openFor);
   const divider = <div className="mx-0.5 h-5 w-px bg-border" />;
 
   return (
@@ -59,6 +61,10 @@ export default function ImageToolbar({ imageId }: { imageId: string }) {
       <ToolButton label={t("tools.names.upscale")} onClick={() => openTools(imageId, "upscale")}>
         <ImageUp className="h-4 w-4" />
         <span className="hidden lg:inline">{t("tools.upscaleShort")}</span>
+      </ToolButton>
+      <ToolButton label={t("typeset.openHint")} onClick={() => openTypeset(imageId)}>
+        <Type className="h-4 w-4" />
+        <span className="hidden lg:inline">{t("typeset.short")}</span>
       </ToolButton>
       {divider}
       <ToolButton label={t("charRef.useThis")} onClick={() => setAsCharacterReference({ imageId })}>

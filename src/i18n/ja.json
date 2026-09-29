@@ -15,7 +15,9 @@
     "copy": "コピー",
     "copied": "コピーしました！",
     "search": "検索...",
-    "select": "選択"
+    "select": "選択",
+    "undo": "元に戻す",
+    "redo": "やり直す"
   },
   "project": {
     "title": "プロジェクト",
@@ -184,7 +186,8 @@
     "badge": {
       "img2img": "i2i",
       "infill": "Inpaint",
-      "upscale": "×2"
+      "upscale": "×2",
+      "typeset": "写植"
     },
     "restoreMenu": "プロンプト・設定を復元"
   },
@@ -1063,5 +1066,50 @@
     "characterHint": "漫画モード：このカードは見た目の定義として使われます。セリフや位置は漫画ページの各コマで入力します",
     "needsV5": "漫画モードは V5 向けです（日本語のセリフや自由な配置は V5 でのみ使えます）",
     "tooManyAppearances": "コマへの登場が多すぎます（{{count}}/{{max}}）。キャラの登場を減らしてください"
+  },
+  "typeset": {
+    "title": "写植",
+    "short": "写植",
+    "openHint": "写植：正確な文字や吹き出しを画像の上に載せて、新しい画像として保存します",
+    "description": "AIが描いた文字が崩れたときに、正確なセリフを自分で載せます。画像をダブルクリックでテキストを追加、ドラッグで移動できます。",
+    "add": "テキストを追加",
+    "newText": "セリフ",
+    "declutter": "AIの文字を消す",
+    "declutterHint": "Director Tools の「吹き出しを残してデクラッター」で画像の文字を消します（吹き出しも消えることが多いので、枠付きのテキストで描き直してください）。結果は履歴にも追加されます",
+    "linesFromImage": "この画像のセリフ（クリックで追加）",
+    "hint": "テキストを選ぶと、ここで文字・向き・フォント・大きさ・吹き出しを編集できます。",
+    "text": "文字",
+    "textPlaceholder": "セリフや文字",
+    "vertical": "縦書き",
+    "horizontal": "横書き",
+    "font": {
+      "gothic": "ゴシック",
+      "mincho": "明朝",
+      "maru": "丸ゴシック"
+    },
+    "fontShort": {
+      "gothic": "ゴシ",
+      "mincho": "明朝",
+      "maru": "丸"
+    },
+    "size": "大きさ",
+    "color": "文字色",
+    "bold": "太字",
+    "outline": "白フチ",
+    "outlineHint": "文字のまわりに白いフチを付けて、背景の上でも読みやすくします",
+    "frameLabel": "吹き出し",
+    "frame": {
+      "none": "なし",
+      "round": "丸",
+      "rect": "四角",
+      "spiky": "ギザギザ",
+      "cloud": "雲"
+    },
+    "tail": "しっぽを付ける（丸い点をドラッグして話し手に向ける）",
+    "duplicate": "複製",
+    "delete": "削除",
+    "save": "新しい画像として保存",
+    "saved": "写植した画像を履歴に追加しました",
+    "saveFailed": "保存に失敗しました: {{error}}"
   }
 }

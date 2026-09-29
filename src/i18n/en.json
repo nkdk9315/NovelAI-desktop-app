@@ -15,7 +15,9 @@
     "copy": "Copy",
     "copied": "Copied!",
     "search": "Search...",
-    "select": "Select"
+    "select": "Select",
+    "undo": "Undo",
+    "redo": "Redo"
   },
   "project": {
     "title": "Projects",
@@ -184,7 +186,8 @@
     "badge": {
       "img2img": "i2i",
       "infill": "Inpaint",
-      "upscale": "×2"
+      "upscale": "×2",
+      "typeset": "Text"
     },
     "restoreMenu": "Restore prompt & settings"
   },
@@ -1063,5 +1066,50 @@
     "characterHint": "Manga mode: this card defines the look. Lines and positions are set in each panel of the manga page",
     "needsV5": "Manga mode is meant for V5 (Japanese lines and free positions need V5)",
     "tooManyAppearances": "Too many character appearances ({{count}}/{{max}})"
+  },
+  "typeset": {
+    "title": "Typesetting",
+    "short": "Text",
+    "openHint": "Typesetting: place exact text and bubbles over the image and save it as a new image",
+    "description": "Put exact lines over the image when the AI's text is wrong. Double-click the image to add text, drag to move.",
+    "add": "Add text",
+    "newText": "Text",
+    "declutter": "Erase AI text",
+    "declutterHint": "Runs Director Tools' declutter (keep bubbles). Bubbles are often removed too, so redraw them with framed text. The result is also added to the history",
+    "linesFromImage": "Lines of this image (click to add)",
+    "hint": "Select a text box to edit its text, direction, font, size and bubble here.",
+    "text": "Text",
+    "textPlaceholder": "Line or text",
+    "vertical": "Vertical",
+    "horizontal": "Horizontal",
+    "font": {
+      "gothic": "Gothic",
+      "mincho": "Serif (Mincho)",
+      "maru": "Rounded"
+    },
+    "fontShort": {
+      "gothic": "Sans",
+      "mincho": "Serif",
+      "maru": "Round"
+    },
+    "size": "Size",
+    "color": "Text color",
+    "bold": "Bold",
+    "outline": "Outline",
+    "outlineHint": "White outline around the letters for readability on busy art",
+    "frameLabel": "Bubble",
+    "frame": {
+      "none": "None",
+      "round": "Round",
+      "rect": "Box",
+      "spiky": "Spiky",
+      "cloud": "Cloud"
+    },
+    "tail": "Add a tail (drag the dot toward the speaker)",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "save": "Save as new image",
+    "saved": "Typeset image added to the history",
+    "saveFailed": "Save failed: {{error}}"
   }
 }

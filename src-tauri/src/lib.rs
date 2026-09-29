@@ -123,6 +123,7 @@ pub fn run() {
             commands::images::cleanup_unsaved_images,
             commands::image_tools::augment_image,
             commands::image_tools::upscale_image,
+            commands::image_tools::save_typeset_image,
             commands::image_tools::get_image_data,
             commands::image_tools::read_image_file,
             commands::image_tools::read_image_metadata,

@@ -55,13 +55,13 @@ main.rs, state.rs, error.rs, db.rs
 main.tsx, App.tsx
 ├── lib/            # 6 IPC (ipc, ipc-assets, ipc-preset, ipc-prompt, ipc-tags, ipc-nax) + ユーティリティ
 ├── types/          # 型定義
-├── stores/         # 20 stores（layout / theme / image-edit / char-ref / director-tools / nax / nax-view / quality-tag / bubble-style / manga 含む）
+├── stores/         # 21 stores（layout / theme / image-edit / char-ref / director-tools / nax / nax-view / quality-tag / bubble-style / manga / typeset 含む）
 ├── hooks/          # use-debounce, use-autocomplete, use-cost-estimate,
 │                    # use-artist-tag-input, use-prompt-token-counts,
 │                    # use-generation-plan, use-run-generation, use-image-source-actions,
 │                    # use-delete-images, use-project-prompt-persistence,
 │                    # use-project-manga-persistence, use-sidebar-style-persistence,
-│                    # use-token-drag, use-zoom-pan
+│                    # use-token-drag, use-zoom-pan, use-undoable
 ├── components/     # 100+ コンポーネント (ui/, header/, left-panel/, center-panel/,
 │                    # right-panel/, modals/, shared/, canvas-editor/)
 ├── pages/          # ProjectListPage, GenerationPage

@@ -1080,11 +1080,11 @@ export function buildGenerateRequest(projectId: string, overrides?: RequestOverr
 ### 履歴アクション (`src/lib/history-action.ts`)
 
 ```typescript
-export type HistoryActionKind = "generate" | "img2img" | "infill" | "augment" | "upscale";
+export type HistoryActionKind = "generate" | "img2img" | "infill" | "augment" | "upscale" | "typeset";
 export interface HistoryAction { kind: HistoryActionKind; tool?: string }
 /** prompt_snapshot.action.type から判定（無し / 未知は "generate"）。サムネイルのバッジ表示用 */
 export function historyActionOf(snapshot: Record<string, unknown> | null | undefined): HistoryAction;
-/** augment / upscale 出力はプロンプトを持たないため復元対象外 */
+/** augment / upscale / typeset 出力はプロンプトを持たないため復元対象外 */
 export function isToolOutput(snapshot: Record<string, unknown> | null | undefined): boolean;
 ```
 
@@ -1314,6 +1314,32 @@ export function composeCurrentMangaPage(userMain: string, roll: boolean): Compos
 `manga.tooManyAppearances`。`shouldStripNoText` は漫画モードではページの効果音 / 文字で判定する。
 UI: `PromptModeControls` の「漫画」トグル（レイアウトのサイズを設定）、`left-panel/manga/`（`MangaSection` / `MangaLayoutThumb` /
 `MangaPanelCard` / `MangaCastCard`）、効果のトグルは `EffectToggleGrid` を共用。保存は `hooks/use-project-manga-persistence.ts`。
+
+### 写植 (`src/lib/typeset.ts` / `typeset-render.ts`)
+
+AI の文字が崩れたときに、正確な文字（と吹き出し）を画像に載せて新しい画像として保存する。画像ツールバーの「写植」と
+履歴の右クリックから開く（`stores/typeset-store.ts` → `modals/typeset/TypesetDialog`）。プレビューと保存は同じ描画関数を使う。
+「AIの文字を消す」は declutter-keep-bubbles を実行してベース画像を差し替える（V5 実機では吹き出しも消えることが多いため、
+枠付きテキストで描き直す前提）。保存は `ipc.saveTypesetImage`（`save_typeset_image`）で、スナップショットに
+`typeset: TypesetLayers` を残し、写植画像を開き直すと元のベース画像とテキストボックスを復元して再編集できる。
+
+```typescript
+type TypesetFont = "gothic" | "mincho" | "maru";
+type TypesetFrame = "none" | "round" | "rect" | "spiky" | "cloud";   // round / spiky / cloud はしっぽ可
+interface TypesetBox { id; text; x; y /* 中心 0–1 */; size /* 画像幅比 */; vertical; font; bold; color; outline; frame; tail: {x,y} | null }
+interface TypesetLayers { version: 1; baseImageId: string; boxes: TypesetBox[] }
+/** 縦書き: 右の列から、長音・括弧・ダッシュは 90° 回転、句読点は右上、小書き仮名は少し右上。横書き: 行ごとに中央揃え */
+export function layoutText(text: string, vertical: boolean, measure: (line: string) => number): TextLayout;
+/** スナップショットの ui_snapshot（通常のセリフ・効果音、漫画ページ）から文字を集める（クリックで追加用） */
+export function snapshotTexts(snapshot): string[];
+export function snapshotLayers(snapshot): TypesetLayers | null;
+// typeset-render.ts
+export function drawBox(ctx, box, w, h): BoxGeometry;   // 枠（線 → 白塗りでしっぽと一体化）→ 白フチ → 文字
+export function renderTypeset(ctx, image, boxes, w, h): void;
+export function hitTest(ctx, boxes, w, h, px, py): string | null;
+```
+
+`hooks/use-undoable.ts`: 元に戻す / やり直す付きの state。同じ key の連続変更（入力・ドラッグ）は 1 ステップにまとめる。
 
 ### アーティスト抽出 (`src/lib/artist-extract.ts`)
 

@@ -9,12 +9,14 @@ import VibeImportDialog from "@/components/modals/VibeImportDialog";
 import VibeEncodeDialog from "@/components/modals/VibeEncodeDialog";
 import ImageDropChoiceDialog from "@/components/modals/ImageDropChoiceDialog";
 import DirectorToolsDialog from "@/components/modals/director-tools/DirectorToolsDialog";
+import TypesetDialog from "@/components/modals/typeset/TypesetDialog";
 import CanvasEditorDialog from "@/components/canvas-editor/CanvasEditorDialog";
 import NaxExplorerDialog from "@/components/modals/nax/NaxExplorerDialog";
 import { useLayoutStore } from "@/stores/layout-store";
 import { useGenerationStore } from "@/stores/generation-store";
 import { useHistoryStore } from "@/stores/history-store";
 import { useDirectorToolsStore } from "@/stores/director-tools-store";
+import { useTypesetStore } from "@/stores/typeset-store";
 import { useProjectStore } from "@/stores/project-store";
 import { useProjectPromptPersistence } from "@/hooks/use-project-prompt-persistence";
 import { useProjectMangaPersistence } from "@/hooks/use-project-manga-persistence";
@@ -47,6 +49,7 @@ export default function GenerationPage() {
   useEffect(() => () => {
     useGenerationStore.getState().clearResult();
     useDirectorToolsStore.getState().close();
+    useTypesetStore.getState().close();
     useHistoryStore.setState({ images: [], selectedImageIds: [] });
   }, []);
 
@@ -146,6 +149,7 @@ export default function GenerationPage() {
 
       <CanvasEditorDialog />
       <DirectorToolsDialog />
+      <TypesetDialog />
       <NaxExplorerDialog />
 
       {/* Vibe Encode Dialog */}

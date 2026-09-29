@@ -1,5 +1,5 @@
 /** Kind of operation that produced a history image, read from its prompt snapshot. */
-export type HistoryActionKind = "generate" | "img2img" | "infill" | "augment" | "upscale";
+export type HistoryActionKind = "generate" | "img2img" | "infill" | "augment" | "upscale" | "typeset";
 
 export interface HistoryAction {
   kind: HistoryActionKind;
@@ -14,6 +14,7 @@ export function historyActionOf(snapshot: Record<string, unknown> | null | undef
     case "img2img":
     case "infill":
     case "upscale":
+    case "typeset":
       return { kind: type };
     case "augment":
       return { kind: "augment", tool: typeof action?.tool === "string" ? action.tool : undefined };
@@ -25,5 +26,5 @@ export function historyActionOf(snapshot: Record<string, unknown> | null | undef
 /** Tool outputs carry no prompt, so there is nothing to restore. */
 export function isToolOutput(snapshot: Record<string, unknown> | null | undefined): boolean {
   const kind = historyActionOf(snapshot).kind;
-  return kind === "augment" || kind === "upscale";
+  return kind === "augment" || kind === "upscale" || kind === "typeset";
 }

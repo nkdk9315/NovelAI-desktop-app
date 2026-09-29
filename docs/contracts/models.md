@@ -391,6 +391,16 @@ pub struct UpscaleImageRequest {
     pub source: ImageSourceRequest,
 }
 
+/// アプリで写植した画像を履歴に追加する要求
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveTypesetRequest {
+    pub project_id: String,
+    pub image_base64: String,                  // 合成済み PNG（data URL 可）
+    #[serde(default)] pub source_image_id: Option<String>,  // 文字を載せた元の履歴画像
+    #[serde(default)] pub layers: serde_json::Value,        // テキストボックス（スナップショットに保存、再編集用）
+}
+
 /// augment / upscale の結果（出力は履歴に追加済み）
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

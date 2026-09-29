@@ -394,6 +394,18 @@ Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
 | `composeMangaPage: uses monochrome tags and works without any cast` | モノクロのタグ、登場なし |
 | `manga helpers: *` | 人数タグ、キャラの呼び名、コマ内の配置、レイアウト変更時の中身保持、全レイアウトのコマ範囲とサイズ |
 
+### 4.4.5 Frontend テスト (`lib/typeset.ts` / `hooks/use-undoable.ts`)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `layoutText: stacks vertical text in columns from right to left` | 列の順序・サイズ |
+| `layoutText: rotates long vowels and brackets and nudges punctuation in vertical text` | 回転・句読点の位置 |
+| `layoutText: centers horizontal lines using the measured width` | 横書きの行 |
+| `snapshot helpers: *` | 通常 / 漫画スナップショットからの文字収集、重複除去、レイヤーの検証 |
+| `useUndoable: *` | 元に戻す / やり直す、同じ key の連続変更の統合、新しい変更で redo を破棄 |
+
+Rust `image_tools_tests`: `typeset_snapshot_keeps_source_and_layers`。
+
 ### 4.5 Frontend テスト (`lib/nai-metadata.ts`)
 
 | テストケース | 検証内容 |

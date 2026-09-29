@@ -256,6 +256,12 @@ pub async fn upscale_image(
     api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     req: UpscaleImageRequest,
 ) -> Result<ImageToolResponse, AppError>;
+
+/// 写植（アプリで文字を載せた画像）を履歴に追加する。API は呼ばない。
+/// model = "typeset", seed = 0, prompt_snapshot = typeset_snapshot(source_image_id, layers)
+pub fn save_typeset(db: &Mutex<Connection>, req: SaveTypesetRequest) -> Result<ImageToolResponse, AppError>;
+/// {"action":{"type":"typeset"},"source_image_id","typeset": layers}（layers はフロントのテキストボックス。再編集用）
+pub fn typeset_snapshot(source_image_id: Option<&str>, layers: &serde_json::Value) -> serde_json::Value;
 ```
 
 `source_image_id` は `ImageSourceRequest::History` のときのみ値が入り、Base64 入力では `null`。

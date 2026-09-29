@@ -7,7 +7,7 @@ use novelai_api::schemas::{AugmentParams, ImageInput, SaveTarget, UpscaleParams}
 use rusqlite::Connection;
 
 use crate::error::AppError;
-use crate::models::dto::{AugmentImageRequest, ImageToolResponse, UpscaleImageRequest};
+use crate::models::dto::{AugmentImageRequest, ImageToolResponse, SaveTypesetRequest, UpscaleImageRequest};
 use crate::services::image_output::{self, OutputMeta};
 
 type Db = std::sync::Mutex<Connection>;
@@ -109,6 +109,24 @@ pub async fn upscale_image(db: &Db, api_client: &Client, req: UpscaleImageReques
     store(db, &req.project_id, &project_dir, result.image_data, result.output_width, result.output_height, "upscale".to_string(), snapshot, result.anlas_remaining, result.anlas_consumed)
 }
 
+/// Snapshot of a typeset image: its source and the text boxes, so it can be opened again for editing.
+pub fn typeset_snapshot(source_image_id: Option<&str>, layers: &serde_json::Value) -> serde_json::Value {
+    serde_json::json!({
+        "action": { "type": "typeset" },
+        "source_image_id": source_image_id,
+        "typeset": layers,
+    })
+}
+
+/// Add an image typeset in the app (text drawn over a history image) to the history. No API call.
+pub fn save_typeset(db: &Db, req: SaveTypesetRequest) -> Result<ImageToolResponse, AppError> {
+    let project_dir = image_output::project_dir(db, &req.project_id)?;
+    let bytes = image_output::decode_base64(&req.image_base64)?;
+    let (width, height) = image_dimensions(&bytes)?;
+    let snapshot = typeset_snapshot(req.source_image_id.as_deref(), &req.layers);
+    store(db, &req.project_id, &project_dir, bytes, width, height, "typeset".to_string(), snapshot, None, None)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn store(
     db: &Db,
@@ -166,6 +184,16 @@ mod tests {
         assert!(validate_augment_request(&req("colorize", None, Some(6))).is_err());
         assert!(validate_augment_request(&req("emotion", None, None)).is_err());
         assert!(validate_augment_request(&req("emotion", Some("  "), None)).is_err());
+    }
+
+    #[test]
+    fn typeset_snapshot_keeps_source_and_layers() {
+        let layers = serde_json::json!({ "boxes": [{ "text": "やあ" }] });
+        let s = typeset_snapshot(Some("img-1"), &layers);
+        assert_eq!(s["action"]["type"], "typeset");
+        assert_eq!(s["source_image_id"], "img-1");
+        assert_eq!(s["typeset"]["boxes"][0]["text"], "やあ");
+        assert!(typeset_snapshot(None, &serde_json::Value::Null)["source_image_id"].is_null());
     }
 
     #[test]
