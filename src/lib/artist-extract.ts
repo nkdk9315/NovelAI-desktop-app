@@ -132,3 +132,24 @@ export function extractArtistTags(prompt: string, remove: (name: string) => bool
   }
   return { text: tidy(kept.join("")), artistTags: found };
 }
+
+/**
+ * Whether an item typed right after `before` belongs to an `artist#` group
+ * (`0.8::artist#a, b, ` → the next item is an artist too).
+ */
+export function inArtistGroup(before: string): boolean {
+  const stack: number[] = [];
+  let groupDepth: number | null = null;
+  const toks = tokenize(before);
+  for (const [i, t] of toks.entries()) {
+    if (t.k === "open") stack.push(t.w);
+    else if (t.k === "close" || t.k === "rb") stack.pop();
+    else if (t.k === "lb") stack.push(toks[i + 1]?.k === "open" ? 1 : BRACE);
+    else if (t.k === "text") {
+      if (groupDepth !== null && stack.length < groupDepth) groupDepth = null;
+      const m = t.raw.trim().match(ARTIST);
+      if (m && m[1] === "#" && stack.length > 0) groupDepth = stack.length;
+    }
+  }
+  return groupDepth !== null && stack.length === groupDepth;
+}

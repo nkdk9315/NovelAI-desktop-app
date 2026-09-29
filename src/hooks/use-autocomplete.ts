@@ -15,16 +15,17 @@ import * as tagIpc from "@/lib/ipc-tags";
  */
 export function useAutocomplete(delay = 300, category?: number, excludeCategories?: number[]) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<TagDto[]>([]);
+  const [found, setFound] = useState<{ query: string; results: TagDto[] }>({ query: "", results: [] });
   const debouncedQuery = useDebounce(query, delay);
 
   const excludeKey = excludeCategories?.join(",") ?? "";
   useEffect(() => {
     const q = debouncedQuery.trim();
     if (!q) {
-      setResults([]);
+      setFound({ query: "", results: [] });
       return;
     }
+    const setResults = (results: TagDto[]) => setFound({ query: q, results });
     if (category !== undefined) {
       ipc.searchSystemPrompts(q, category).then((tags) =>
         setResults(
@@ -46,5 +47,6 @@ export function useAutocomplete(delay = 300, category?: number, excludeCategorie
     }
   }, [debouncedQuery, category, excludeKey]);
 
-  return { results, search: setQuery };
+  // `resultsFor`: the query the results answer (they lag behind typing by the debounce)
+  return { results: found.results, resultsFor: found.query, search: setQuery };
 }
