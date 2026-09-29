@@ -17,3 +17,5 @@ pub mod nax_favorite;
 pub mod prompt_preset;
 pub mod preset_folder;
 pub mod sidebar_preset_group;
+pub mod sprite_set;
+pub mod sprite_cell;

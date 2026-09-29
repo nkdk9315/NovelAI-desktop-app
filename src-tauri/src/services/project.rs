@@ -50,7 +50,7 @@ pub fn create_project(
     if name.is_empty() {
         return Err(AppError::Validation("project name is required".to_string()));
     }
-    let valid_types = ["simple", "manga", "cg"];
+    let valid_types = ["simple", "manga", "cg", "sprite"];
     if !valid_types.contains(&req.project_type.as_str()) {
         return Err(AppError::Validation(format!(
             "invalid project_type: {}",

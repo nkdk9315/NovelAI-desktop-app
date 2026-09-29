@@ -30,6 +30,7 @@ const MIGRATION_025: &str = include_str!("../migrations/025_preset_slot_position
 const MIGRATION_026: &str = include_str!("../migrations/026_prompt_preset_sort_key.sql");
 const MIGRATION_027: &str = include_str!("../migrations/027_nax_explorer.sql");
 const MIGRATION_028: &str = include_str!("../migrations/028_nax_first_seen.sql");
+const MIGRATION_029: &str = include_str!("../migrations/029_sprite_sets.sql");
 
 pub fn init_db(path: &str) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;
@@ -277,6 +278,14 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         conn.execute(
             "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
             rusqlite::params!["schema_version", "28"],
+        )?;
+    }
+
+    if version < 29 {
+        conn.execute_batch(MIGRATION_029)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+            rusqlite::params!["schema_version", "29"],
         )?;
     }
 

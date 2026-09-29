@@ -19,7 +19,7 @@ novelai-api = { path = "../novelai_api_client/rust-api" }
 chrono = "0.4"
 base64 = "0.22"
 rand = "0.8"
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 flate2 = "1"
 sha2 = "0.10"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
