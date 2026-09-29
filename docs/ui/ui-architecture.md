@@ -295,6 +295,7 @@ App
             │   │       ├── Button ("選択を保存")
             │   │       └── Button ("選択解除")
             │   └── ThumbnailGrid
+            │       └── NextPageTile (漫画モードのみ、先頭)
             │       └── ThumbnailItem × N (div wrapper, ThumbnailContextMenu で包む)
             │           ├── ThumbnailContextMenu (右クリック: 復元 / Img2Img / 落書き / Inpaint /
             │           │                         キャラ参照 / Director Tools / Upscale)
@@ -761,6 +762,7 @@ src/
 │   ├── right-panel/
 │   │   ├── RightPanel.tsx                # 右パネル全体（ScrollArea）
 │   │   ├── HistoryHeader.tsx             # "History" + フィルタ
+│   │   ├── NextPageTile.tsx              # 漫画モード: 履歴先頭の「次のページ」（クリックで中央をコマ割りプレビューに）
 │   │   └── ThumbnailGrid.tsx             # サムネイルグリッド
 │   │
 │   ├── modals/

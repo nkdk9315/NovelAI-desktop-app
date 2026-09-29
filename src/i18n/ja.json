@@ -164,6 +164,8 @@
     "costConfirmNone": "なし"
   },
   "history": {
+    "nextPage": "次のページ",
+    "nextPageHint": "生成する次のページ：クリックするとコマ割りを中央に表示",
     "title": "履歴",
     "all": "すべて",
     "saved": "保存済み",

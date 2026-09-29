@@ -11,7 +11,9 @@ import { restoreFromSnapshot } from "@/lib/restore-generation";
 import { historyActionOf, isToolOutput } from "@/lib/history-action";
 import { toolKey } from "@/components/modals/director-tools/tool-defs";
 import type { AugmentTool } from "@/types";
+import { useMangaStore } from "@/stores/manga-store";
 import ThumbnailContextMenu from "./ThumbnailContextMenu";
+import NextPageTile from "./NextPageTile";
 
 export default function ThumbnailGrid() {
   const { t } = useTranslation();
@@ -23,6 +25,7 @@ export default function ThumbnailGrid() {
   const currentProject = useProjectStore((s) => s.currentProject);
   const lastResult = useGenerationStore((s) => s.lastResult);
   const selectImage = useGenerationStore((s) => s.selectImage);
+  const mangaEnabled = useMangaStore((s) => s.page.enabled);
 
   useEffect(() => {
     if (projectId) {
@@ -30,7 +33,7 @@ export default function ThumbnailGrid() {
     }
   }, [projectId, loadImages]);
 
-  if (images.length === 0) {
+  if (images.length === 0 && !mangaEnabled) {
     return (
       <div className="px-4 py-8 text-center text-xs text-muted-foreground">
         {t("history.emptyState")}
@@ -40,6 +43,7 @@ export default function ThumbnailGrid() {
 
   return (
     <div className="grid grid-cols-2 gap-1 px-2 pb-2">
+      {mangaEnabled && <NextPageTile />}
       {images.map((img) => {
         const fullPath = currentProject
           ? `${currentProject.directoryPath}/${img.filePath}`

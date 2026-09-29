@@ -164,6 +164,8 @@
     "costConfirmNone": "None"
   },
   "history": {
+    "nextPage": "Next page",
+    "nextPageHint": "The page to generate next: click to show its panel layout in the center",
     "title": "History",
     "all": "All",
     "saved": "Saved",
