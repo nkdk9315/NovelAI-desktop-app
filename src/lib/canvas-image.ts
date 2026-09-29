@@ -68,7 +68,7 @@ export function maskCellsOf(mask: HTMLCanvasElement, targetW: number, targetH: n
   return alphaToMaskCells(data, mask.width, mask.height, targetW, targetH);
 }
 
-/** Render mask cells as the black / white PNG the API expects (1/8 size). */
+/** Render mask cells as a black / white PNG, one pixel per cell (the API client scales it to full size). */
 export function maskCellsToBase64(m: MaskCells): string {
   const c = createCanvas(m.cols, m.rows);
   const ctx = c.getContext("2d")!;
