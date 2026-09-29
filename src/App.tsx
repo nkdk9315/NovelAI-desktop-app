@@ -5,6 +5,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import ToastAutoDismiss from "@/components/shared/ToastAutoDismiss";
 import ProjectListPage from "@/pages/ProjectListPage";
 import GenerationPage from "@/pages/GenerationPage";
+import SpritePage from "@/pages/SpritePage";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Routes>
             <Route path="/" element={<ProjectListPage />} />
             <Route path="/project/:id" element={<GenerationPage />} />
+            <Route path="/sprite/:id" element={<SpritePage />} />
           </Routes>
           <Toaster position="bottom-right" richColors closeButton />
           <ToastAutoDismiss />

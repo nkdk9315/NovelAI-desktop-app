@@ -190,6 +190,7 @@ export default function CreateProjectDialog({
                 <SelectItem value="simple">Simple</SelectItem>
                 <SelectItem value="manga">Manga</SelectItem>
                 <SelectItem value="cg">CG</SelectItem>
+                <SelectItem value="sprite">{t("project.typeSprite")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

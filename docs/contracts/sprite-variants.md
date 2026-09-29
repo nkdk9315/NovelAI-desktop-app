@@ -173,7 +173,6 @@ Blocker（生成できない理由）:
 | `create_sprite_set` | `CreateSpriteSetRequest { projectId, name, spec }` → `SpriteSetDto` |
 | `update_sprite_set` | `UpdateSpriteSetRequest { id, name?, spec? }` → `SpriteSetDto` |
 | `delete_sprite_set` | `id` → `()`（候補画像は残す） |
-| `duplicate_sprite_set` | `id, name` → `SpriteSetDto`（定義だけ複製） |
 | `list_sprite_cells` | `setId` → `SpriteCellDto[]`（候補付き） |
 | `add_sprite_candidate` | `AddSpriteCandidateRequest { setId, cellKey, imageId, parentImageId?, method }` → `SpriteCandidateDto` |
 | `import_sprite_candidate` | `ImportSpriteCandidateRequest { setId, cellKey, path }` → `SpriteCandidateDto`（ファイルをプロジェクトに取り込む） |

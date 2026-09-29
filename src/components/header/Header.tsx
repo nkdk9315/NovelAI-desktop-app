@@ -9,12 +9,14 @@ import GenerationParams from "./GenerationParams";
 import ThemeToggle from "./ThemeToggle";
 import SettingsDialog from "@/components/modals/SettingsDialog";
 import { useProjectStore } from "@/stores/project-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 
 export default function Header() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const currentProject = useProjectStore((s) => s.currentProject);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const workspace = useWorkspaceStore((s) => s.workspace);
 
   return (
     <>
@@ -32,8 +34,13 @@ export default function Header() {
           </span>
           <Separator orientation="vertical" className="h-5" />
           <AnlasDisplay />
-          <Separator orientation="vertical" className="h-5" />
-          <CostDisplay />
+          {/* The sprite page shows the cost of its own queue */}
+          {workspace !== "sprite" && (
+            <>
+              <Separator orientation="vertical" className="h-5" />
+              <CostDisplay />
+            </>
+          )}
         </div>
 
         <div className="flex-1" />

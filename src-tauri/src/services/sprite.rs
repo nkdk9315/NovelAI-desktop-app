@@ -105,14 +105,6 @@ pub fn delete_set(conn: &Connection, id: &str) -> Result<(), AppError> {
     crate::repositories::sprite_set::delete(conn, id)
 }
 
-/// Copy a set's definition (not its images) under a new name.
-pub fn duplicate_set(conn: &Connection, id: &str, name: &str) -> Result<SpriteSetDto, AppError> {
-    let src = crate::repositories::sprite_set::find_by_id(conn, id)?;
-    let spec: serde_json::Value = serde_json::from_str(&src.spec)
-        .map_err(|e| AppError::Validation(format!("broken sprite spec: {e}")))?;
-    create_set(conn, CreateSpriteSetRequest { project_id: src.project_id, name: name.to_string(), spec })
-}
-
 // ---- Cells ----
 
 pub fn list_cells(conn: &Connection, set_id: &str) -> Result<Vec<SpriteCellDto>, AppError> {

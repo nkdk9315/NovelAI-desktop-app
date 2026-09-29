@@ -40,7 +40,8 @@
     "search": "Search projects...",
     "filterByType": "Filter by type",
     "allTypes": "All",
-    "editProject": "Edit Project"
+    "editProject": "Edit Project",
+    "typeSprite": "Sprite"
   },
   "generation": {
     "generate": "Generate",
@@ -189,7 +190,8 @@
       "img2img": "i2i",
       "infill": "Inpaint",
       "upscale": "×2",
-      "typeset": "Text"
+      "typeset": "Text",
+      "sprite": "Sprite"
     },
     "restoreMenu": "Restore prompt & settings"
   },
@@ -1157,5 +1159,300 @@
     "default": "Default",
     "exclude": "Switch off base tags",
     "excludeHint": "Switch off the card's tags in this panel only (e.g. long hair when tied up)"
+  },
+  "sprite": {
+    "leftHint": "The main prompt, characters and art style on the left are the character's look and go into every variant. Poses, outfit and expressions are set in Definition.",
+    "loadFailed": "Could not load the sprite sets: {{error}}",
+    "noSetYet": "No sprite set yet",
+    "intro": "A sprite set holds one character's variant sprites. Start with New set and pick a template.",
+    "set": "Sprite set",
+    "noSet": "Select a set",
+    "newSet": "New set",
+    "setName": "Set name",
+    "setNamePlaceholder": "e.g. Hero",
+    "rename": "Rename",
+    "duplicate": "Duplicate the definition (without images)",
+    "copyName": "Copy of {{name}}",
+    "duplicated": "Definition duplicated",
+    "saveTemplate": "Save the definition as a template",
+    "templateSaved": "Saved \"{{name}}\" as a template",
+    "deleteSet": "Delete set",
+    "deleteSetTitle": "Delete \"{{name}}\"?",
+    "deleteSetBody": "The definition, adoptions and candidate lists are removed. Generated images stay in the project history.",
+    "saving": "Saving",
+    "tab": {
+      "matrix": "Matrix",
+      "define": "Definition",
+      "export": "Export"
+    },
+    "template": {
+      "label": "Template",
+      "size": "{{poses}} poses",
+      "user": "Saved template",
+      "rpg-battle": {
+        "name": "RPG battle sprites",
+        "desc": "Idle, attack, hit, down, bound × 4 clothing-damage stages (with underwear) × wounds × fatigue × fear"
+      },
+      "novel": {
+        "name": "Visual novel sprites",
+        "desc": "1 front pose × 3 outfits × 6 expressions"
+      },
+      "expressions": {
+        "name": "Expressions only",
+        "desc": "6 expressions, face only"
+      },
+      "blank": {
+        "name": "Blank",
+        "desc": "One pose with clothes / face regions"
+      }
+    },
+    "queue": {
+      "progress": "Generating {{done}}/{{total}}",
+      "stop": "Stop",
+      "stopping": "Stopping…",
+      "failures": "{{count}} cells skipped",
+      "clearFailures": "Clear list"
+    },
+    "method": {
+      "txt2img": "Base (new)",
+      "inpaint": "Inpaint",
+      "composite": "Composite"
+    },
+    "methodLong": {
+      "txt2img": "Base: generated from the prompt",
+      "inpaint": "Inpaints the axis' regions of the parent's adopted image",
+      "composite": "Pastes the single-axis cell's region onto the parent's adopted image (no Anlas)"
+    },
+    "blocker": {
+      "orphan": "This cell's axis or level no longer exists in the definition.",
+      "excluded": "This cell is excluded.",
+      "parentNotAdopted": "The parent cell has no adopted image. Make and adopt it first (batches do this automatically).",
+      "sourceNotAdopted": "The composite source (the single-axis cell) has no adopted image.",
+      "maskMissing": "The region masks of this pose are not drawn yet.",
+      "noRegion": "This axis has no region. Pick one in Definition → axes."
+    },
+    "blockerShort": {
+      "orphan": "Not defined",
+      "parentNotAdopted": "Parent not adopted",
+      "sourceNotAdopted": "Source not adopted",
+      "maskMissing": "No mask",
+      "noRegion": "No region"
+    },
+    "partState": {
+      "intact": "Intact",
+      "torn": "Torn",
+      "exposed": "Torn open (shows beneath)",
+      "gone": "Gone"
+    },
+    "candidateMethod": {
+      "txt2img": "Generated",
+      "inpaint": "Inpaint",
+      "composite": "Composite",
+      "import": "Imported",
+      "edit": "Edited"
+    },
+    "matrix": {
+      "columns": "Columns",
+      "noColumns": "None (poses only)",
+      "noPoses": "No poses. Add them in Definition.",
+      "checkUngeneratedHere": "Select empty cells shown",
+      "checkUngeneratedAll": "Select all empty cells ({{count}})",
+      "uncheck": "Clear selection",
+      "batchSummary": "{{cells}} cells ({{images}} images, {{composites}} composites)",
+      "free": "Free",
+      "anlas": "{{count}} Anlas",
+      "generateChecked": "Make selected cells ({{count}})",
+      "costTitle": "This uses Anlas",
+      "costBody": "Making {{cells}} cells costs about {{count}} Anlas. Continue?",
+      "generate": "Generate",
+      "excluded": "Excluded",
+      "queued": "Queued",
+      "check": "Include in batch",
+      "tileHint": "Click to select, double-click to generate",
+      "tileLabel": "Select cell"
+    },
+    "cell": {
+      "noSelection": "Select a cell in the matrix to see how it is made, its candidates and prompt.",
+      "generate": "Generate ({{count}})",
+      "composite": "Composite",
+      "inpaintInstead": "Inpaint instead",
+      "retouch": "Paint an area and redo",
+      "retouchHint": "Regenerate only a painted part of this image",
+      "import": "Import image",
+      "exclude": "Exclude",
+      "include": "Include",
+      "drawRegions": "Draw region masks",
+      "openDefine": "Open Definition",
+      "noCandidates": "No candidates yet",
+      "adopt": "Click to adopt",
+      "unadopt": "Click to un-adopt",
+      "adopted": "Adopted",
+      "zoom": "Enlarge",
+      "deleteCandidate": "Delete candidate (and its image)",
+      "prompt": "Prompt added by this cell",
+      "promptNote": "Goes after the main prompt, before the quality tags.",
+      "note": "Note",
+      "notePlaceholder": "e.g. the sword in the right hand tends to vanish"
+    },
+    "define": {
+      "settings": "Set settings",
+      "settingsHint": "Size and seed are shared by the set (the header's size and seed are not used). A fixed seed keeps face and clothes closer across poses.",
+      "characterKey": "Character key (file names)",
+      "size": "Size",
+      "sizeWarning": "Changing the size after generating shifts inpainting and compositing.",
+      "seed": "Seed",
+      "seedFixed": "Fix the seed",
+      "seedRandom": "Random each time",
+      "newSeed": "New seed",
+      "candidates": "Candidates per run: {{count}}",
+      "inpaintStrength": "Inpaint strength: {{value}}",
+      "poses": "Poses (bases)",
+      "posesHint": "Each pose's base is generated from its prompt; every variant derives from it.",
+      "addPose": "Add pose",
+      "newPose": "Pose {{n}}",
+      "posePlaceholder": "e.g. full body, standing, fighting stance",
+      "regionMasks": "Region masks {{done}}/{{total}}",
+      "regions": "Regions",
+      "regionsHint": "Named masks drawn per pose. An axis only repaints inside its regions. Regions that don't overlap (face, clothes) can be combined by compositing.",
+      "addRegion": "Add region",
+      "newRegion": "Region {{n}}",
+      "color": "Colour",
+      "outfit": "Outfit",
+      "outfitHint": "Describe the outfit part by part so every variant wears the same clothes. Parts worn under others (underwear) stay out of the prompt until a part over them is torn open or gone.",
+      "addPart": "Add part",
+      "newPart": "Part {{n}}",
+      "partName": "Part name",
+      "partPlaceholder": "e.g. navy blue jacket with gold trim, long sleeves",
+      "coveredBy": "Worn under:",
+      "coveredByHint": "Make this part hidden under the selected parts",
+      "hiddenPart": "Left out of the prompt until a part over it is torn open or gone.",
+      "noParts": "No parts (not needed without a clothing-damage axis)",
+      "stages": "Damage stages",
+      "stagesHint": "Pick each part's state per stage. Torn / torn open add torn / heavily torn automatically; write your own wording in the field below if you prefer.",
+      "addStage": "Add stage",
+      "newStage": "Damage {{n}}",
+      "baseStage": "Base clothes (unchanged)",
+      "stagePlaceholder": "Stage-wide tags (e.g. torn clothes)",
+      "part": "Part",
+      "override": "Wording at this stage",
+      "overridePlaceholder": {
+        "torn": "Auto: torn …",
+        "exposed": "Auto: heavily torn …",
+        "gone": "Empty: nothing"
+      },
+      "result": "Resulting outfit prompt",
+      "axes": "Variant axes",
+      "axesHint": "Derived top to bottom: a cell is made from the cell with its last changed axis one level lower, by inpainting that axis' regions.",
+      "addAxis": "Add axis",
+      "addOutfitAxis": "Add clothing-damage axis",
+      "newAxis": "Axis {{n}}",
+      "outfitAxis": "Clothing damage",
+      "outfitAxisNote": "Uses the damage stages above",
+      "axisRegions": "Repaints:",
+      "axisNoRegion": "Pick at least one region.",
+      "chain": "Build up levels",
+      "chainHint": "On: level n is made from level n-1 (progressing damage). Off: every level from level 0",
+      "composite": "Combine by compositing",
+      "compositeHint": "Cells combined with other axes are made by pixel compositing (no Anlas). Only when the regions don't overlap other axes'",
+      "levelNone": "None",
+      "newLevel": "Level {{n}}",
+      "addLevel": "Add level",
+      "levelNonePlaceholder": "No change (may be empty)",
+      "levelPlaceholder": "e.g. scared, tears",
+      "weight": "Weight",
+      "weightHint": "Other than 1 emphasizes as 1.5::tags::",
+      "defaultLevel": "Default (same as base)",
+      "label": "Label",
+      "key": "Key",
+      "keyHint": "Letters / digits used in exported file names",
+      "moveUp": "Up",
+      "moveDown": "Down",
+      "moveLeft": "Left",
+      "moveRight": "Right"
+    },
+    "mask": {
+      "titleRegions": "Region masks — {{pose}}",
+      "titleCustom": "Paint an area and redo",
+      "noImage": "This pose's base has no adopted image yet. Generate or import it first to paint over it.",
+      "region": "Region",
+      "tool": "Tool",
+      "tools": {
+        "brush": "Brush",
+        "eraser": "Eraser",
+        "rect": "Fill rectangle",
+        "rectErase": "Erase rectangle"
+      },
+      "brushSize": "Brush size: {{size}}",
+      "invert": "Invert",
+      "clear": "Clear",
+      "fillAll": "Fill all",
+      "copyFrom": "Copy from another pose",
+      "hintRegions": "Painted in 8px cells (what the API uses). Make clothes a little wider than what may tear; for the face, cover eyes and mouth without the hair.",
+      "hintCustom": "Only the painted area is inpainted with this cell's prompt.",
+      "regenerate": "Regenerate ({{count}})"
+    },
+    "export": {
+      "target": "Target",
+      "options": "Options",
+      "nameTemplate": "File name",
+      "scale": "Scale",
+      "layers": "Difference layers",
+      "atlasSize": "Max atlas size",
+      "layersHint": "Export variants as transparent PNGs holding only their difference from the base",
+      "layersNote": "Variants become overlays for the base; outside the axis regions they are transparent.",
+      "contents": "Images",
+      "summary": "{{count}} adopted images ({{missing}} cells not adopted)",
+      "nothing": "No adopted images",
+      "files": "Files ({{count}})",
+      "run": "Choose a folder and export",
+      "done": "Wrote {{count}} files to {{dir}}",
+      "targets": {
+        "generic": {
+          "name": "Generic / own engine",
+          "desc": "PNGs plus manifest.json / manifest.csv mapping pose and axis levels to files — ready for browser games and custom engines."
+        },
+        "rpgmaker-mz": {
+          "name": "RPG Maker MZ",
+          "desc": "Images in img/pictures and a plugin in js/plugins that shows the sprite chosen by variables (plugin command \"Show sprite\")."
+        },
+        "rpgmaker-mv": {
+          "name": "RPG Maker MV",
+          "desc": "Images in img/pictures and a plugin (plugin command: NaiSprite_Name show id x y)."
+        },
+        "wolf": {
+          "name": "WOLF RPG Editor",
+          "desc": "Images in Data/Picture, a CSV for the user database and a readme."
+        },
+        "tyrano": {
+          "name": "TyranoScript",
+          "desc": "Images in data/fgimage/chara and a .ks with chara_new / chara_face (chara_layer with difference layers)."
+        },
+        "kirikiri": {
+          "name": "KiriKiri Z (KAG)",
+          "desc": "Images in fgimage and a .ks macro that shows a sprite by id."
+        },
+        "renpy": {
+          "name": "Ren'Py",
+          "desc": "Images in game/images and an .rpy with image statements (Composite with difference layers). show name pose axis_level …"
+        },
+        "unity": {
+          "name": "Unity",
+          "desc": "Images and manifest in Assets/NaiSprites plus NaiSpriteLibrary.cs to get a Sprite by id."
+        },
+        "godot": {
+          "name": "Godot",
+          "desc": "Images in sprites plus a GDScript that loads a texture by id."
+        },
+        "unreal": {
+          "name": "Unreal Engine",
+          "desc": "Images in Sprites and a CSV for a DataTable."
+        },
+        "web-atlas": {
+          "name": "Web (Phaser / PixiJS)",
+          "desc": "Trimmed texture atlases (TexturePacker JSON Hash, more pages when needed) and manifest.json."
+        }
+      }
+    },
+    "noActiveSet": "No sprite set is selected"
   }
 }

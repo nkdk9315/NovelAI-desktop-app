@@ -38,11 +38,6 @@ pub fn delete_sprite_set(state: State<'_, AppState>, id: String) -> Result<(), S
 }
 
 #[tauri::command]
-pub fn duplicate_sprite_set(state: State<'_, AppState>, id: String, name: String) -> Result<SpriteSetDto, String> {
-    with_conn!(state, conn => sprite::duplicate_set(&conn, &id, &name))
-}
-
-#[tauri::command]
 pub fn list_sprite_cells(state: State<'_, AppState>, set_id: String) -> Result<Vec<SpriteCellDto>, String> {
     with_conn!(state, conn => sprite::list_cells(&conn, &set_id))
 }
@@ -96,11 +91,8 @@ pub fn delete_sprite_cells(state: State<'_, AppState>, set_id: String, cell_keys
     with_conn!(state, conn => sprite::delete_cells(&conn, &set_id, &cell_keys))
 }
 
-/// Async so the pixel work (decode / diff / pack) does not block the main thread.
-#[tauri::command]
-pub async fn export_sprite_set(
-    state: State<'_, AppState>,
-    plan: SpriteExportPlan,
-) -> Result<SpriteExportResultDto, String> {
-    tokio::task::block_in_place(|| crate::services::sprite_export::export(&state.db, plan)).map_err(|e| e.into())
+/// Runs off the main thread (`async`) so the pixel work (decode / diff / pack) doesn't freeze the window.
+#[tauri::command(async)]
+pub fn export_sprite_set(state: State<'_, AppState>, plan: SpriteExportPlan) -> Result<SpriteExportResultDto, String> {
+    crate::services::sprite_export::export(&state.db, plan).map_err(|e| e.into())
 }

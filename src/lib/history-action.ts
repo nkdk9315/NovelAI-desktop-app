@@ -1,5 +1,5 @@
 /** Kind of operation that produced a history image, read from its prompt snapshot. */
-export type HistoryActionKind = "generate" | "img2img" | "infill" | "augment" | "upscale" | "typeset";
+export type HistoryActionKind = "generate" | "img2img" | "infill" | "augment" | "upscale" | "typeset" | "sprite";
 
 export interface HistoryAction {
   kind: HistoryActionKind;
@@ -18,6 +18,11 @@ export function historyActionOf(snapshot: Record<string, unknown> | null | undef
       return { kind: type };
     case "augment":
       return { kind: "augment", tool: typeof action?.tool === "string" ? action.tool : undefined };
+    // Made in the sprite (差分) page without a prompt: composite / imported file / hand edit
+    case "composite":
+    case "import":
+    case "edit":
+      return { kind: "sprite" };
     default:
       return { kind: "generate" };
   }
@@ -26,5 +31,5 @@ export function historyActionOf(snapshot: Record<string, unknown> | null | undef
 /** Tool outputs carry no prompt, so there is nothing to restore. */
 export function isToolOutput(snapshot: Record<string, unknown> | null | undefined): boolean {
   const kind = historyActionOf(snapshot).kind;
-  return kind === "augment" || kind === "upscale" || kind === "typeset";
+  return kind === "augment" || kind === "upscale" || kind === "typeset" || kind === "sprite";
 }

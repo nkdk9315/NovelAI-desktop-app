@@ -40,7 +40,8 @@
     "search": "プロジェクト名で検索...",
     "filterByType": "タイプで絞り込み",
     "allTypes": "すべて",
-    "editProject": "プロジェクトを編集"
+    "editProject": "プロジェクトを編集",
+    "typeSprite": "差分"
   },
   "generation": {
     "generate": "生成",
@@ -189,7 +190,8 @@
       "img2img": "i2i",
       "infill": "Inpaint",
       "upscale": "×2",
-      "typeset": "写植"
+      "typeset": "写植",
+      "sprite": "差分"
     },
     "restoreMenu": "プロンプト・設定を復元"
   },
@@ -1157,5 +1159,300 @@
     "default": "既定",
     "exclude": "基本の見た目から外す",
     "excludeHint": "このコマだけ、キャラクターカードのタグを外します（例: 髪を結んだコマで long hair を外す）"
+  },
+  "sprite": {
+    "leftHint": "左のメインプロンプト・キャラクター・画風はキャラクターの見た目です。すべての差分に入ります。ポーズ・衣装・表情などは中央の「定義」で設定します。",
+    "loadFailed": "差分セットを読み込めませんでした: {{error}}",
+    "noSetYet": "差分セットがありません",
+    "intro": "差分セットは 1 キャラクター分の立ち絵差分です。「新しいセット」からテンプレートを選んで始めてください。",
+    "set": "差分セット",
+    "noSet": "セットを選択",
+    "newSet": "新しいセット",
+    "setName": "セット名",
+    "setNamePlaceholder": "例: 主人公",
+    "rename": "名前を変更",
+    "duplicate": "定義を複製（画像は含まない）",
+    "copyName": "{{name}} のコピー",
+    "duplicated": "定義を複製しました",
+    "saveTemplate": "定義をテンプレートとして保存",
+    "templateSaved": "「{{name}}」をテンプレートに保存しました",
+    "deleteSet": "セットを削除",
+    "deleteSetTitle": "「{{name}}」を削除しますか？",
+    "deleteSetBody": "定義・採用状態・候補の一覧が消えます。生成した画像はプロジェクトの履歴に残ります。",
+    "saving": "保存中",
+    "tab": {
+      "matrix": "マトリクス",
+      "define": "定義",
+      "export": "書き出し"
+    },
+    "template": {
+      "label": "テンプレート",
+      "size": "ポーズ {{poses}}",
+      "user": "保存したテンプレート",
+      "rpg-battle": {
+        "name": "RPG 戦闘立ち絵",
+        "desc": "待機・攻撃・被弾・ダウン・拘束 × 服の破損 4 段階（下着あり）× 傷 × 疲労 × 恐怖"
+      },
+      "novel": {
+        "name": "ノベル立ち絵",
+        "desc": "正面 1 ポーズ × 衣装 3 種 × 表情 6 種"
+      },
+      "expressions": {
+        "name": "表情差分のみ",
+        "desc": "顔だけを描き換える表情 6 種"
+      },
+      "blank": {
+        "name": "空のセット",
+        "desc": "ポーズ 1 つと服・顔の領域だけ"
+      }
+    },
+    "queue": {
+      "progress": "生成中 {{done}}/{{total}}",
+      "stop": "停止",
+      "stopping": "停止中…",
+      "failures": "作れなかったセル {{count}}",
+      "clearFailures": "一覧を消す"
+    },
+    "method": {
+      "txt2img": "素体（新規生成）",
+      "inpaint": "インペイント",
+      "composite": "合成"
+    },
+    "methodLong": {
+      "txt2img": "素体: プロンプトから新しく生成",
+      "inpaint": "親の採用画像の領域をインペイント",
+      "composite": "親の採用画像に、この段階だけのセルの領域を重ねて合成（Anlas 不要）"
+    },
+    "blocker": {
+      "orphan": "このセルの軸や段階は定義から消えています。",
+      "excluded": "除外したセルです。",
+      "parentNotAdopted": "親セルに採用画像がありません。先に親セルを作って採用してください（一括生成では自動で先に作ります）。",
+      "sourceNotAdopted": "合成元（この段階だけのセル）に採用画像がありません。",
+      "maskMissing": "このポーズの領域マスクがまだ描かれていません。",
+      "noRegion": "この軸に領域が設定されていません。「定義」の軸で領域を選んでください。"
+    },
+    "blockerShort": {
+      "orphan": "定義にない",
+      "parentNotAdopted": "親が未採用",
+      "sourceNotAdopted": "合成元が未採用",
+      "maskMissing": "マスク未作成",
+      "noRegion": "領域なし"
+    },
+    "noActiveSet": "差分セットが選ばれていません",
+    "partState": {
+      "intact": "無傷",
+      "torn": "破れ",
+      "exposed": "大きく破れ（下が見える）",
+      "gone": "消失"
+    },
+    "candidateMethod": {
+      "txt2img": "生成",
+      "inpaint": "インペイント",
+      "composite": "合成",
+      "import": "取り込み",
+      "edit": "加工"
+    },
+    "matrix": {
+      "columns": "列",
+      "noColumns": "なし（ポーズのみ）",
+      "noPoses": "ポーズがありません。「定義」で追加してください。",
+      "checkUngeneratedHere": "表示中の未生成を選択",
+      "checkUngeneratedAll": "すべての未生成を選択（{{count}}）",
+      "uncheck": "選択を解除",
+      "batchSummary": "{{cells}} セル（生成 {{images}} 枚・合成 {{composites}}）",
+      "free": "無料",
+      "anlas": "{{count}} Anlas",
+      "generateChecked": "選んだセルを作る（{{count}}）",
+      "costTitle": "Anlas を消費します",
+      "costBody": "{{cells}} セルの生成に約 {{count}} Anlas かかります。続けますか？",
+      "generate": "生成する",
+      "excluded": "除外",
+      "queued": "待機中",
+      "check": "一括生成に含める",
+      "tileHint": "クリックで選択、ダブルクリックで生成",
+      "tileLabel": "セルを選択"
+    },
+    "cell": {
+      "noSelection": "マトリクスのセルを選ぶと、作り方・候補・プロンプトがここに表示されます。",
+      "generate": "生成（{{count}} 枚）",
+      "composite": "合成する",
+      "inpaintInstead": "インペイントで作る",
+      "retouch": "範囲を描いて再生成",
+      "retouchHint": "この画像の一部だけを描いたマスクで作り直す",
+      "import": "画像を取り込む",
+      "exclude": "除外する",
+      "include": "除外をやめる",
+      "drawRegions": "領域マスクを描く",
+      "openDefine": "定義を開く",
+      "noCandidates": "まだ候補がありません",
+      "adopt": "クリックで採用",
+      "unadopt": "クリックで採用を解除",
+      "adopted": "採用",
+      "zoom": "拡大",
+      "deleteCandidate": "候補を削除（画像も消えます）",
+      "prompt": "このセルで追加されるプロンプト",
+      "promptNote": "左のメインプロンプトの後ろ、クオリティタグの前に入ります。",
+      "note": "メモ",
+      "notePlaceholder": "例: 右手の剣が消えがち"
+    },
+    "define": {
+      "settings": "セット設定",
+      "settingsHint": "サイズとシードはセット内で共通です（ヘッダーのサイズ・シードは使いません）。シードを固定すると、ポーズが違っても顔と服がそろいやすくなります。",
+      "characterKey": "キャラ名（ファイル名用）",
+      "size": "サイズ",
+      "sizeWarning": "生成済みの画像と大きさが変わると、インペイントや合成の位置がずれます。",
+      "seed": "シード",
+      "seedFixed": "シードを固定",
+      "seedRandom": "毎回ランダム",
+      "newSeed": "新しいシード",
+      "candidates": "1 回に作る候補数: {{count}}",
+      "inpaintStrength": "インペイントの強さ: {{value}}",
+      "poses": "ポーズ（素体）",
+      "posesHint": "ポーズごとに素体をプロンプトから新しく作ります。差分はすべて素体から派生します。",
+      "addPose": "ポーズを追加",
+      "newPose": "ポーズ {{n}}",
+      "posePlaceholder": "例: full body, standing, fighting stance",
+      "regionMasks": "領域マスク {{done}}/{{total}}",
+      "regions": "領域",
+      "regionsHint": "ポーズごとに描く名前付きマスクです。軸は領域の中だけを描き換えます。顔と服のように重ならない領域にすると、合成で組み合わせを作れます。",
+      "addRegion": "領域を追加",
+      "newRegion": "領域 {{n}}",
+      "color": "色",
+      "outfit": "衣装",
+      "outfitHint": "衣装をパーツに分けて詳しく書くと、どの差分でも同じ服になります。「下に着ている」を選んだパーツ（下着など）は、上のパーツが大きく破れるか消えるまでプロンプトに入りません。",
+      "addPart": "パーツを追加",
+      "newPart": "パーツ {{n}}",
+      "partName": "パーツ名",
+      "partPlaceholder": "例: navy blue jacket with gold trim, long sleeves",
+      "coveredBy": "下に着ている:",
+      "coveredByHint": "選んだパーツの下に着ている（見えない）パーツにする",
+      "hiddenPart": "上のパーツが大きく破れるか消えるまでプロンプトに入りません。",
+      "noParts": "パーツがありません（服の破損軸を使わないなら不要です）",
+      "stages": "破損段階",
+      "stagesHint": "各段階で、パーツごとの状態を選びます。「破れ」「大きく破れ」は自動で torn / heavily torn を付けます。置き換えたい言い回しがあれば下の欄に書いてください。",
+      "addStage": "段階を追加",
+      "newStage": "破損{{n}}",
+      "baseStage": "素体の服（変化なし）",
+      "stagePlaceholder": "段階全体のタグ（例: torn clothes）",
+      "part": "パーツ",
+      "override": "この段階の言い回し",
+      "overridePlaceholder": {
+        "torn": "自動: torn …",
+        "exposed": "自動: heavily torn …",
+        "gone": "空欄: 何も書かない"
+      },
+      "result": "できる衣装プロンプト",
+      "axes": "差分の軸",
+      "axesHint": "上から順に派生します。セルは「最後に変わった軸を 1 段下げたセル」から、その軸の領域をインペイントして作ります。",
+      "addAxis": "軸を追加",
+      "addOutfitAxis": "服の破損軸を追加",
+      "newAxis": "軸 {{n}}",
+      "outfitAxis": "服の破損",
+      "outfitAxisNote": "段階は上の「破損段階」を使います",
+      "axisRegions": "描き換える領域:",
+      "axisNoRegion": "領域を 1 つ以上選んでください。",
+      "chain": "段階を積み上げる",
+      "chainHint": "オン: 段階 n を段階 n-1 から作る（破損の進行など）。オフ: 段階 0 から直接作る",
+      "composite": "合成で組み合わせる",
+      "compositeHint": "他の軸と組み合わせたセルを、画素の合成で作る（Anlas 不要）。領域が他の軸と重ならないときだけ使えます",
+      "levelNone": "なし",
+      "newLevel": "段階 {{n}}",
+      "addLevel": "段階を追加",
+      "levelNonePlaceholder": "変化なし（空欄でよい）",
+      "levelPlaceholder": "例: scared, tears",
+      "weight": "強さ",
+      "weightHint": "1 以外にすると 1.5::tags:: のように強調します",
+      "defaultLevel": "既定（素体と同じ）",
+      "label": "表示名",
+      "key": "キー",
+      "keyHint": "書き出しのファイル名に使う英数字",
+      "moveUp": "上へ",
+      "moveDown": "下へ",
+      "moveLeft": "左へ",
+      "moveRight": "右へ"
+    },
+    "mask": {
+      "titleRegions": "領域マスク — {{pose}}",
+      "titleCustom": "範囲を描いて再生成",
+      "noImage": "このポーズの素体にまだ採用画像がありません。先に素体を生成するか取り込むと、画像の上に描けます。",
+      "region": "領域",
+      "tool": "道具",
+      "tools": {
+        "brush": "ブラシ",
+        "eraser": "消しゴム",
+        "rect": "矩形で塗る",
+        "rectErase": "矩形で消す"
+      },
+      "brushSize": "ブラシの大きさ: {{size}}",
+      "invert": "反転",
+      "clear": "全部消す",
+      "fillAll": "全部塗る",
+      "copyFrom": "他のポーズからコピー",
+      "hintRegions": "8px 単位で塗ります（API に送る単位）。服の領域は破れる範囲より少し広めに、顔は髪を含めず目・口の周りに。",
+      "hintCustom": "塗った範囲だけを、このセルのプロンプトでインペイントします。",
+      "regenerate": "再生成（{{count}} 枚）"
+    },
+    "export": {
+      "target": "書き出し先",
+      "options": "設定",
+      "nameTemplate": "ファイル名",
+      "scale": "倍率",
+      "layers": "差分レイヤー",
+      "atlasSize": "アトラスの最大サイズ",
+      "layersHint": "素体以外を、素体との差分だけ残した透過 PNG で書き出す",
+      "layersNote": "素体の上に重ねて使う差分画像になります。軸の領域の外は透明です。",
+      "contents": "書き出す画像",
+      "summary": "採用済みの {{count}} 枚（未採用のセル {{missing}}）",
+      "nothing": "採用した画像がありません",
+      "files": "書き出すファイル（{{count}}）",
+      "run": "フォルダを選んで書き出す",
+      "done": "{{count}} 個のファイルを書き出しました: {{dir}}",
+      "targets": {
+        "generic": {
+          "name": "汎用 / 自作ゲーム",
+          "desc": "PNG と manifest.json / manifest.csv。ポーズ・各軸の段階から画像を引く表なので、ブラウザゲームや自作エンジンでそのまま読めます。"
+        },
+        "rpgmaker-mz": {
+          "name": "RPGツクール MZ",
+          "desc": "img/pictures に画像、js/plugins に変数から立ち絵を切り替えるプラグイン（プラグインコマンド「立ち絵を表示」）。"
+        },
+        "rpgmaker-mv": {
+          "name": "RPGツクール MV",
+          "desc": "img/pictures に画像、js/plugins にプラグイン（プラグインコマンド: NaiSprite_名前 show 番号 x y）。"
+        },
+        "wolf": {
+          "name": "WOLF RPGエディター",
+          "desc": "Data/Picture に画像、ユーザーデータベース用の CSV と説明。"
+        },
+        "tyrano": {
+          "name": "ティラノスクリプト",
+          "desc": "data/fgimage/chara に画像、chara_new / chara_face（差分レイヤー時は chara_layer）を定義した .ks。"
+        },
+        "kirikiri": {
+          "name": "吉里吉里Z (KAG)",
+          "desc": "fgimage に画像、ID から画像を表示するマクロの .ks。"
+        },
+        "renpy": {
+          "name": "Ren'Py",
+          "desc": "game/images に画像、image 定義の .rpy（差分レイヤー時は Composite）。show 名前 ポーズ 軸_段階 … で表示。"
+        },
+        "unity": {
+          "name": "Unity",
+          "desc": "Assets/NaiSprites に画像・manifest と、ID から Sprite を引く NaiSpriteLibrary.cs。"
+        },
+        "godot": {
+          "name": "Godot",
+          "desc": "sprites に画像と、ID からテクスチャを読む GDScript。"
+        },
+        "unreal": {
+          "name": "Unreal Engine",
+          "desc": "Sprites に画像と、DataTable に取り込める CSV。"
+        },
+        "web-atlas": {
+          "name": "Web（Phaser / PixiJS）",
+          "desc": "余白を切り詰めたテクスチャアトラス（TexturePacker JSON Hash、入り切らなければ複数ページ）と manifest.json。"
+        }
+      }
+    }
   }
 }

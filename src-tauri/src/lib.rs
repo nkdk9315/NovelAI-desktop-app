@@ -219,7 +219,6 @@ pub fn run() {
             commands::sprites::create_sprite_set,
             commands::sprites::update_sprite_set,
             commands::sprites::delete_sprite_set,
-            commands::sprites::duplicate_sprite_set,
             commands::sprites::list_sprite_cells,
             commands::sprites::add_sprite_candidate,
             commands::sprites::import_sprite_candidate,

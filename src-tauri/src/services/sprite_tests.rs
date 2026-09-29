@@ -45,7 +45,7 @@ fn create_validates_and_orders_sets() {
 }
 
 #[test]
-fn update_keeps_omitted_fields_and_duplicate_copies_spec() {
+fn update_keeps_omitted_fields() {
     let conn = setup_test_db();
     let p = create_test_project(&conn);
     let a = new_set(&conn, &p.id, "Alice");
@@ -58,11 +58,7 @@ fn update_keeps_omitted_fields_and_duplicate_copies_spec() {
     )
     .unwrap();
     assert_eq!((respec.name.as_str(), respec.spec["version"].as_i64()), ("A2", Some(2)));
-
-    let dup = duplicate_set(&conn, &a.id, "Copy").unwrap();
-    assert_ne!(dup.id, a.id);
-    assert_eq!(dup.spec["version"], 2);
-    assert_eq!(list_sets(&conn, &p.id).unwrap().len(), 2);
+    assert_eq!(list_sets(&conn, &p.id).unwrap().len(), 1);
 }
 
 #[test]
