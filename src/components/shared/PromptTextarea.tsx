@@ -1,6 +1,7 @@
-import { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
+import { useRef, useState, useEffect, useLayoutEffect } from "react";
 import { useAutocomplete } from "@/hooks/use-autocomplete";
 import { useTokenDrag } from "@/hooks/use-token-drag";
+import { insertTagAt, tagQueryAt, type TagQuery } from "@/lib/tag-query";
 
 function csvCategoryLabel(id: number): string {
   switch (id) {
@@ -82,7 +83,21 @@ export default function PromptTextarea({
 }: PromptTextareaProps) {
   const tokens = highlightTokens ?? [];
   const hasHighlights = tokens.length > 0 && tokens.some((t) => t.length > 0);
-  const { results, search } = useAutocomplete(300, undefined, [1]);
+  // Artists are managed in their own panel, so plain queries leave them out; `artist:` asks for them
+  const tagSearch = useAutocomplete(300, undefined, [1]);
+  const artistSearch = useAutocomplete(300, 1);
+  const [query, setQuery] = useState<TagQuery | null>(null);
+  const source = query?.artist ? artistSearch : tagSearch;
+  // Only suggestions for what is typed now: stale ones would make Enter insert the wrong tag
+  const current = query != null && source.resultsFor === query.query;
+  const results = !current ? [] : query.artist
+    ? source.results.filter((t) => t.csvCategory === 1).slice(0, 20)
+    : source.results;
+  const search = (q: TagQuery | null) => {
+    setQuery(q);
+    tagSearch.search(q && !q.artist ? q.query : "");
+    artistSearch.search(q?.artist ? q.query : "");
+  };
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const internalRef = useRef<HTMLTextAreaElement>(null);
@@ -110,6 +125,15 @@ export default function PromptTextarea({
     if (target > el.offsetHeight) el.style.height = `${target}px`;
   }, [isExpanded, value, expandOnFocus, textareaRef]);
 
+  // Put the caret right after an inserted tag in the same commit as the new text
+  const pendingCursor = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const pos = pendingCursor.current;
+    if (pos == null) return;
+    pendingCursor.current = null;
+    textareaRef.current?.setSelectionRange(pos, pos);
+  }, [value, textareaRef]);
+
   const handleFocus = () => {
     if (!expandOnFocus) return;
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
@@ -122,67 +146,30 @@ export default function PromptTextarea({
     collapseTimer.current = setTimeout(() => setExpanded(false), COLLAPSE_DELAY_MS);
   };
 
-  const getCurrentToken = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return { token: "", start: 0, end: 0 };
-    const pos = textarea.selectionStart;
-    const before = value.slice(0, pos);
-    // Find the start of the current token (after last comma or start)
-    const lastComma = before.lastIndexOf(",");
-    const start = lastComma + 1;
-    const token = before.slice(start).trim();
-    return { token, start, end: pos };
-  }, [value, textareaRef]);
-
   const handleChange = (newValue: string) => {
     onChange(newValue);
     // Defer token extraction to after state update
     setTimeout(() => {
       const textarea = textareaRef.current;
       if (!textarea) return;
-      const pos = textarea.selectionStart;
-      const before = newValue.slice(0, pos);
-      const lastComma = before.lastIndexOf(",");
-      const token = before.slice(lastComma + 1).trim();
-      if (token.length >= 2) {
-        search(token);
-        setShowDropdown(true);
-        setSelectedIndex(0);
-      } else {
-        setShowDropdown(false);
-        search("");
-      }
+      const q = tagQueryAt(newValue, textarea.selectionStart);
+      search(q);
+      setShowDropdown(q != null);
+      setSelectedIndex(0);
     }, 0);
   };
 
   const insertTag = (tagName: string) => {
-    const { start } = getCurrentToken();
-    const pos = textareaRef.current?.selectionStart ?? value.length;
-
-    // Find the whitespace-trimmed boundaries
-    const beforeToken = value.slice(0, start);
-    const afterCursor = value.slice(pos);
-
-    // Skip trailing whitespace and comma after cursor
-    let afterStart = 0;
-    while (afterStart < afterCursor.length && afterCursor[afterStart] === " ") afterStart++;
-    if (afterStart < afterCursor.length && afterCursor[afterStart] === ",") afterStart++;
-
-    const prefix = beforeToken.replace(/,?\s*$/, "");
-    const suffix = afterCursor.slice(afterStart).replace(/^\s*/, "");
-
-    const newValue = prefix
-      ? suffix
-        ? `${prefix}, ${tagName}, ${suffix}`
-        : `${prefix}, ${tagName}`
-      : suffix
-        ? `${tagName}, ${suffix}`
-        : tagName;
-
-    onChange(newValue);
+    const textarea = textareaRef.current;
+    // Re-read at the cursor: the text may have changed since the query was taken
+    const q = tagQueryAt(value, textarea?.selectionStart ?? value.length) ?? query;
     setShowDropdown(false);
-    search("");
-    textareaRef.current?.focus();
+    search(null);
+    if (!q) return;
+    const next = insertTagAt(value, q, tagName);
+    pendingCursor.current = next.cursor;
+    onChange(next.text);
+    textarea?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

@@ -940,7 +940,17 @@ interface HistoryState {
 
 - `category` 未指定時: `ipc-tags.searchTags` → Tag DB FTS5 trigram 検索（全カテゴリ横断）
 - `category` 指定時: 従来の `ipc.searchSystemPrompts` にフォールバック（csv_category フィルタ対応）
-- 結果は統一的に `TagDto[]` 形状で返す
+- 結果は統一的に `TagDto[]` 形状で返す。`resultsFor` は結果が答えているクエリ（デバウンス分だけ入力に遅れる）。
+  `PromptTextarea` は `resultsFor` が今のクエリと一致するときだけ候補を出す（古い候補で Enter すると別のタグが入るため）
+- 入力中のタグは `src/lib/tag-query.ts` で取り出す:
+
+```typescript
+/** カーソル位置のタグ名。カンマ・改行・重み `::`・`{}` `[]`・`|` で区切るので `2::smi` → `smi`、`2::smile:: blu` → `blu`。
+ *  `artist:` / `artist#` の後や `artist#` グループ内の項目はアーティスト検索（artist: true）。`Text:` と入力中の重み（`1.5`）は対象外 */
+export function tagQueryAt(text: string, pos: number): TagQuery | null; // { query, start, end, artist }
+/** 入力中の名前（カーソル後の同じ単語まで）を候補で置き換える。重み・接頭辞はそのまま、直後にタグが続くときだけ ", " を足す */
+export function insertTagAt(text: string, q: TagQuery, tag: string): { text: string; cursor: number };
+```
 
 ## 6.6 Preset Store (`src/stores/preset-store.ts`)
 
@@ -1310,6 +1320,22 @@ export function composeMangaPage(page, userMain, characters: MangaCharacterInput
 export function composeCurrentMangaPage(userMain: string, roll: boolean): ComposedMangaPage;
 ```
 
+**自由なコマ割り（`manga-geometry.ts`）**: コマは 0–1 座標の凸多角形。レイアウトエディタ（`modals/manga-layout/`）で
+ページ上をドラッグした直線が通るコマを分割（斜めも可、ほぼ水平 / 垂直はスナップ）、2 コマを結合（合わせて凸形のときのみ）、
+ページの形（縦長 / 4コマ用 / 正方形 / 横長）、テンプレート保存（`stores/manga-template-store.ts`、settings の
+`manga_layout_templates`）。`page.layoutId = "custom"` のとき各 `MangaPanel.shape` を使う。読み順は、コマを横切らない
+水平 → 垂直（右が先）の切れ目で再帰分割し、無ければ中心の行順（`readingOrder`）。説明文は形と位置から自動生成
+（`shapeLabel`: top/middle/bottom + left/right, large/small, wide/tall）。四角だけなら説明文のみ（V5 で 8/8）、
+斜めのコマがあると `ComposedMangaPage.template` を返し、`manga-template.ts` の線画を img2img（強さ 0.9）の下地にする（4/4）。
+ユーザーが画像編集（img2img / インペイント）を有効にしているときは線画を使わない。
+
+**コマごとの見た目**: キャラクターカードのプロンプトは基本の見た目、`Character.outfits` / `outfitId` が衣装
+（`outfits.ts`、タグは `outfit:<id>` ターゲット、通常モードでは着ている衣装をキャラプロンプトに足す）。
+`MangaCast.outfitId`（既定 / なし / 衣装 id）と `excludeTags`（基本から外す素のタグ）でコマごとに上書き。
+コマの場面と登場キャラの動作は `manga-scene:<panelId>` / `manga-cast:<castId>` のプロンプトターゲット
+（`PromptTargetInput` = タググループ付き入力、ランダム・ネガティブも有効）。旧データの `scene` / `action` 文字列は
+ターゲットの初期値として移行。コマ・登場キャラを消すとターゲットも削除。
+
 `buildGenerateRequest` は漫画モードでメインとキャラクターを composeMangaPage の結果で置き換え、登場数がモデル上限を超えると
 `manga.tooManyAppearances`。`shouldStripNoText` は漫画モードではページの効果音 / 文字で判定する。
 UI: `PromptModeControls` の「漫画」トグル（レイアウトのサイズを設定）、`left-panel/manga/`（`MangaSection` / `MangaLayoutThumb` /
@@ -1352,6 +1378,8 @@ export function hitTest(ctx, boxes, w, h, px, py): string | null;
  *  波括弧は区切りとして扱う（×1.05 しない）。remove(name) が true のものを本文から除き、空になったブロックや
  *  余分なカンマを整える（行末のカンマは残す） */
 export function extractArtistTags(prompt: string, remove?: (name: string) => boolean): { text: string; artistTags: ArtistTag[] };
+/** `before` の直後に書く項目が `artist#` グループ内か（オートコンプリート用） */
+export function inArtistGroup(before: string): boolean;
 ```
 
 ### 適用 (`src/lib/apply-metadata.ts`)

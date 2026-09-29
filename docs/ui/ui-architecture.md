@@ -274,6 +274,7 @@ App
             │   │   ├── img (生成画像)
             │   │   ├── LoadingOverlay (生成中)
             │   │   ├── EmptyState (未生成)
+            │   │   ├── MangaLayoutPreview (漫画モードで画像未表示: 選択中のコマ割りを番号付きで表示)
             │   │   └── ImageToolbar (Img2Img / 落書き / Inpaint / Enhance / Director Tools / Upscale / キャラ参照)
             │   │       └── EnhancePopover (×1 / ×1.5, レベル 1–5, コスト表示)
             │   ├── BaseImagePanel (ベース画像ストリップ: モード切替, strength / noise, mask strength,
@@ -294,6 +295,7 @@ App
             │   │       ├── Button ("選択を保存")
             │   │       └── Button ("選択解除")
             │   └── ThumbnailGrid
+            │       ├── NextPageTile (漫画モードのみ、先頭)
             │       └── ThumbnailItem × N (div wrapper, ThumbnailContextMenu で包む)
             │           ├── ThumbnailContextMenu (右クリック: 復元 / Img2Img / 落書き / Inpaint /
             │           │                         キャラ参照 / Director Tools / Upscale)
@@ -753,12 +755,14 @@ src/
 │   ├── center-panel/
 │   │   ├── CenterPanel.tsx               # 中央パネル全体
 │   │   ├── ImageDisplay.tsx              # 画像表示（loading/empty/image）
+│   │   ├── MangaLayoutPreview.tsx        # 漫画モードの空表示: コマ割りプレビュー
 │   │   ├── ActionBar.tsx                 # Generate/Save/Delete ボタン群
 │   │   └── ImageDetailOverlay.tsx        # S7 画像詳細オーバーレイ
 │   │
 │   ├── right-panel/
 │   │   ├── RightPanel.tsx                # 右パネル全体（ScrollArea）
 │   │   ├── HistoryHeader.tsx             # "History" + フィルタ
+│   │   ├── NextPageTile.tsx              # 漫画モード: 履歴先頭の「次のページ」（クリックで中央をコマ割りプレビューに）
 │   │   └── ThumbnailGrid.tsx             # サムネイルグリッド
 │   │
 │   ├── modals/

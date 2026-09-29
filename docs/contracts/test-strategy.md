@@ -338,6 +338,10 @@ fn test_create_project_creates_directory() {
 | never glues a name ending in a digit to a close | `2equal8, ::` を `2equal8 ::` に整形（`8::` にしない） |
 | keeps line breaks | 行末のカンマと改行を保持 |
 
+`tag-query.test.ts`（オートコンプリートのタグ取り出し）: カンマ後 / 重みの中（`2::smi`、`-1.5::blu`）/ 閉じた重みの直後
+（カンマなしも）/ `{}`・改行の後、`artist:` / `artist#` / `artist#` グループ内はアーティスト検索（グループが閉じたら通常）、
+入力中の重み・2 文字未満・`Text:` は検索しない、カーソル後の同じ単語まで置換、重みと接頭辞を保ったまま挿入、直後にタグが続くときだけカンマを足す。
+
 `metadata-import-prefs.test.ts`: 既定値（settings / seed / withImage OFF、append）、保存値のマージと不正値の無視、
 prefs → チェックリスト、画像に無い項目は前回値を保持。`nai-metadata.test.ts`: `isImageBase64`（未エンコード Vibe 判定）。
 Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
@@ -406,6 +410,16 @@ Rust `image_metadata_tests`: `prefers_stealth_copy_when_chunks_lack_vibes`。
 
 Rust `image_tools_tests`: `typeset_snapshot_keeps_source_and_layers`。
 
+### 4.4.6 Frontend テスト (`lib/manga-geometry.ts` / `outfits.ts` / 漫画のカスタム配置)
+
+| テストケース | 検証内容 |
+|-------------|---------|
+| `splitting: *` | 水平・斜めの分割、細すぎる / 外れた線は無視、線が通るコマだけ分割、分割の逆としての結合 |
+| `reading order: *` | 行の右→左、左に縦長コマがあるときは右列を先に、斜めの境界は行順にフォールバック |
+| `labels and helpers: *` | 位置・大きさ・形のラベル、横並び判定、ガター用の内側オフセット、スナップ |
+| `outfits: *` | 衣装の選択解決、外せるタグ、タグの除去と連結 |
+| `per-panel look and custom layouts: *` | 既定 / 別の衣装 / なし と基本から外すタグ、場面・動作ターゲットと旧文字列、カスタム配置の説明文と斜めのテンプレート、カスタム配置への切り替えで中身を保持 |
+
 ### 4.5 Frontend テスト (`lib/nai-metadata.ts`)
 
 | テストケース | 検証内容 |
@@ -460,6 +474,7 @@ src/
 │       ├── image-size.test.ts # fitGenerationSize / enhanceSize / alphaToMaskCells
 │       ├── history-action.test.ts
 │       ├── artist-extract.test.ts # 重み構文からのアーティスト抽出・除去
+│       ├── tag-query.test.ts      # オートコンプリートの入力中タグ取り出し・挿入
 │       └── nai-metadata.test.ts # メタデータのパース・プロンプト分割
 ├── stores/
 │   └── __tests__/

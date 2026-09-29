@@ -1,3 +1,5 @@
+import { rectShape, type Shape } from "@/lib/manga-geometry";
+
 /**
  * Page layouts for manga mode. Panels are listed in Japanese reading order
  * (right to left, top to bottom) with their rectangle in 0–1 page
@@ -76,6 +78,26 @@ export function isMangaLayoutId(id: string): id is MangaLayoutId {
 
 export function mangaLayout(id: string): MangaLayout {
   return MANGA_LAYOUTS[isMangaLayoutId(id) ? id : DEFAULT_MANGA_LAYOUT];
+}
+
+/** Page shapes for the user's own layouts (sizes within the Opus free tier). */
+export const PAGE_ASPECTS = {
+  portrait: { width: 832, height: 1216 },
+  strip: { width: 640, height: 1600 },
+  square: { width: 1024, height: 1024 },
+  landscape: { width: 1216, height: 832 },
+} as const;
+
+export type PageAspectId = keyof typeof PAGE_ASPECTS;
+export const PAGE_ASPECT_IDS = Object.keys(PAGE_ASPECTS) as PageAspectId[];
+
+export function isPageAspectId(id: unknown): id is PageAspectId {
+  return typeof id === "string" && Object.prototype.hasOwnProperty.call(PAGE_ASPECTS, id);
+}
+
+/** A built-in layout's panels as shapes (reading order). */
+export function layoutShapes(id: string): Shape[] {
+  return mangaLayout(id).panels.map(({ rect }) => rectShape(rect.x0, rect.y0, rect.x1, rect.y1));
 }
 
 /** Centers for `count` characters spread across a panel (left to right, vertically centered). */

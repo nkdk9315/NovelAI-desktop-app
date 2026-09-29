@@ -164,6 +164,8 @@
     "costConfirmNone": "なし"
   },
   "history": {
+    "nextPage": "次のページ",
+    "nextPageHint": "生成する次のページ：クリックするとコマ割りを中央に表示",
     "title": "履歴",
     "all": "すべて",
     "saved": "保存済み",
@@ -1040,6 +1042,8 @@
     "modeTooltip": "漫画モード：コマ割りを選び、コマごとに場面・登場キャラ・セリフを入力して 1 ページを生成します（V5 向け）",
     "title": "漫画ページ",
     "layout": "コマ割り",
+    "layoutPreview": "コマ割りのプレビュー",
+    "layoutPreviewHint": "番号は左のコマ番号（読む順）です",
     "layoutName": {
       "koma4": "4コマ",
       "two": "2コマ",
@@ -1055,7 +1059,7 @@
     "scene": "場面",
     "scenePlaceholder": "場面・背景（例: 放課後の教室、夕焼け）",
     "action": "動作・表情",
-    "actionPlaceholder": "動作・表情（例: waving hand, smiling）",
+    "actionPlaceholder": "動作・表情・持ち物（例: waving hand, smiling）",
     "addCast": "キャラを登場",
     "removeCast": "このコマから外す",
     "addLine": "セリフ",
@@ -1111,5 +1115,47 @@
     "save": "新しい画像として保存",
     "saved": "写植した画像を履歴に追加しました",
     "saveFailed": "保存に失敗しました: {{error}}"
+  },
+  "mangaLayout": {
+    "title": "コマ割りを作る",
+    "description": "ページの上をドラッグして線を引くと、線が通ったコマが分割されます。斜めの線も引けます（水平・垂直に近い線はまっすぐに補正されます）。",
+    "hint": "コマをクリックで選択。2つ選んで「結合」すると元の 1 コマに戻せます。番号は右→左・上→下の読み順です。",
+    "aspect": "ページの形",
+    "aspectName": {
+      "portrait": "縦長",
+      "strip": "4コマ用",
+      "square": "正方形",
+      "landscape": "横長"
+    },
+    "merge": "結合",
+    "mergeHint": "選んだ 2 コマを 1 つにまとめます",
+    "cannotMerge": "この 2 コマは結合できません（合わせて凸形の 1 コマにならない組み合わせです）",
+    "reset": "1 コマに戻す",
+    "tooMany": "コマが {{count}} 個あります。7 コマ以上は崩れやすくなります",
+    "slanted": "斜めのコマがあるときは、コマの線画を img2img の下地にして生成します（検証では強さ 0.9 で線どおりに描かれました）",
+    "slantedWithEdit": "画像編集（img2img / インペイント）が有効なため、斜めのコマ割りの線画は使われません",
+    "saveTemplate": "テンプレートとして保存",
+    "templateName": "テンプレート名",
+    "templateSaved": "「{{name}}」を保存しました",
+    "removeTemplate": "テンプレート「{{name}}」を削除",
+    "panelCount": "{{count}} コマ",
+    "apply": "このコマ割りを使う",
+    "custom": "カスタム",
+    "create": "自分で作る",
+    "edit": "編集",
+    "openEditorHint": "線を引いてコマ割りを自分で作ります"
+  },
+  "outfit": {
+    "label": "衣装",
+    "hint": "カードのプロンプトは基本の見た目（顔・髪・体型）として使い、選んだ衣装を足します。漫画モードではコマごとに衣装を変えられます",
+    "add": "衣装を追加",
+    "newName": "衣装{{n}}",
+    "name": "衣装名",
+    "remove": "この衣装を削除",
+    "placeholder": "衣装のタグ（例: school uniform, red ribbon）",
+    "none": "なし",
+    "default": "既定",
+    "exclude": "基本の見た目から外す",
+    "excludeHint": "このコマだけ、キャラクターカードのタグを外します（例: 髪を結んだコマで long hair を外す）"
   }
 }
