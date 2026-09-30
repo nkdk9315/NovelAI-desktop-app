@@ -10,6 +10,7 @@ import { move, removeStage, uniqueKey } from "@/lib/sprite/edit";
 import { outfitPromptAt } from "@/lib/sprite/prompt";
 import { displayTextOf } from "@/lib/sprite/text";
 import { CommitInput, KeyInput, dropTargets, updateSpec } from "./common";
+import { Tip } from "../Hint";
 
 /** Parts down, damage stages across: each part's state per stage, plus what the outfit prompt becomes. */
 export default function StagesTable() {
@@ -53,18 +54,24 @@ export default function StagesTable() {
                     </div>
                     {i > 0 ? (
                       <div className="flex items-center">
-                        <Button size="icon" variant="ghost" className="h-6 w-6" disabled={i <= 1} title={t("sprite.define.moveLeft")}
-                          onClick={() => updateSpec((s) => ({ ...s, outfit: { ...s.outfit, stages: move(s.outfit.stages, i, -1) } }))}>
-                          <ArrowLeft className="h-3 w-3" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" disabled={i === stages.length - 1} title={t("sprite.define.moveRight")}
-                          onClick={() => updateSpec((s) => ({ ...s, outfit: { ...s.outfit, stages: move(s.outfit.stages, i, 1) } }))}>
-                          <ArrowRight className="h-3 w-3" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" title={t("common.delete")}
-                          onClick={() => { dropTargets([st.id]); updateSpec((s) => removeStage(s, st.id)); }}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <Tip text={t("sprite.define.moveLeft")}>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" disabled={i <= 1} aria-label={t("sprite.define.moveLeft")}
+                            onClick={() => updateSpec((s) => ({ ...s, outfit: { ...s.outfit, stages: move(s.outfit.stages, i, -1) } }))}>
+                            <ArrowLeft className="h-3 w-3" />
+                          </Button>
+                        </Tip>
+                        <Tip text={t("sprite.define.moveRight")}>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" disabled={i === stages.length - 1} aria-label={t("sprite.define.moveRight")}
+                            onClick={() => updateSpec((s) => ({ ...s, outfit: { ...s.outfit, stages: move(s.outfit.stages, i, 1) } }))}>
+                            <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        </Tip>
+                        <Tip text={t("common.delete")}>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" aria-label={t("common.delete")}
+                            onClick={() => { dropTargets([st.id]); updateSpec((s) => removeStage(s, st.id)); }}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </Tip>
                       </div>
                     ) : (
                       <p className="text-[10px] text-muted-foreground">{t("sprite.define.baseStage")}</p>

@@ -5,7 +5,7 @@ import type { SpriteCellDto, SpriteSetDto } from "@/types/sprite";
 
 const SAVE_DELAY_MS = 400;
 
-export type CenterTab = "matrix" | "define" | "export";
+export type CenterTab = "guide" | "matrix" | "define" | "export";
 
 interface MatrixView {
   /** Axis shown as columns (null = none, one column per pose) */
@@ -24,6 +24,8 @@ interface SpriteState {
   selectedKey: string | null;
   checkedKeys: string[];
   tab: CenterTab;
+  /** Step open in the guide (null = the first unfinished one) */
+  guideStep: string | null;
   view: MatrixView;
   saving: boolean;
 
@@ -40,6 +42,7 @@ interface SpriteState {
   toggleChecked: (key: string) => void;
   setChecked: (keys: string[]) => void;
   setTab: (tab: CenterTab) => void;
+  setGuideStep: (step: string | null) => void;
   setView: (view: Partial<MatrixView>) => void;
 }
 
@@ -62,6 +65,7 @@ export const useSpriteStore = create<SpriteState>()((set, get) => ({
   selectedKey: null,
   checkedKeys: [],
   tab: "matrix",
+  guideStep: null,
   view: emptyView(null),
   saving: false,
 
@@ -85,9 +89,12 @@ export const useSpriteStore = create<SpriteState>()((set, get) => ({
     const dto = get().sets.find((s) => s.id === id);
     if (!dto) return;
     const spec = normalizeSpec(dto.spec);
-    set({ activeSetId: id, spec, cells: {}, selectedKey: null, checkedKeys: [], view: emptyView(spec) });
+    set({ activeSetId: id, spec, cells: {}, selectedKey: null, checkedKeys: [], guideStep: null, view: emptyView(spec) });
     const cells = await spriteIpc.listSpriteCells(id);
-    if (get().activeSetId === id) set({ cells: byKey(cells) });
+    if (get().activeSetId !== id) return;
+    // A set without any image yet is walked through by the guide
+    const started = cells.some((c) => c.candidates.length > 0);
+    set({ cells: byKey(cells), ...(started ? {} : { tab: "guide" as const }) });
   },
 
   createSet: async (name, spec) => {
@@ -161,6 +168,7 @@ export const useSpriteStore = create<SpriteState>()((set, get) => ({
   })),
   setChecked: (keys) => set({ checkedKeys: keys }),
   setTab: (tab) => set({ tab }),
+  setGuideStep: (guideStep) => set({ guideStep }),
   setView: (view) => set((s) => ({ view: { ...s.view, ...view } })),
 }));
 

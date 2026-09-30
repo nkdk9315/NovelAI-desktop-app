@@ -13,6 +13,7 @@ import { decodeCells, emptyCells, gridOf } from "@/lib/sprite/mask";
 import { baseKeyOf, enqueueCells } from "@/lib/sprite/run";
 import { toastError } from "@/lib/toast-error";
 import MaskCanvas, { type MaskLayer, type MaskTool } from "./MaskCanvas";
+import { Tip } from "../Hint";
 
 const CUSTOM_ID = "__custom__";
 const TOOLS: { id: MaskTool; icon: typeof Brush }[] = [
@@ -175,9 +176,11 @@ export default function SpriteMaskEditorDialog() {
               <p className="font-medium">{t("sprite.mask.tool")}</p>
               <div className="flex gap-1">
                 {TOOLS.map(({ id, icon: Icon }) => (
-                  <Button key={id} size="icon" variant={tool === id ? "default" : "outline"} className="h-8 w-8" title={t(`sprite.mask.tools.${id}`)} aria-pressed={tool === id} onClick={() => setTool(id)}>
-                    <Icon className="h-4 w-4" />
-                  </Button>
+                  <Tip key={id} text={t(`sprite.mask.tools.${id}`)}>
+                    <Button size="icon" variant={tool === id ? "default" : "outline"} className="h-8 w-8" aria-label={t(`sprite.mask.tools.${id}`)} aria-pressed={tool === id} onClick={() => setTool(id)}>
+                      <Icon className="h-4 w-4" />
+                    </Button>
+                  </Tip>
                 ))}
               </div>
               <label className="block pt-1 text-muted-foreground">{t("sprite.mask.brushSize", { size: radius })}</label>
@@ -185,9 +188,15 @@ export default function SpriteMaskEditorDialog() {
             </div>
             <div className="flex flex-wrap gap-1">
               <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={doUndo}><Undo2 className="h-3 w-3" />{t("common.undo")}</Button>
-              <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={invert}><FlipHorizontal2 className="h-3 w-3" />{t("sprite.mask.invert")}</Button>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => fill(0)}>{t("sprite.mask.clear")}</Button>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => fill(1)}>{t("sprite.mask.fillAll")}</Button>
+              <Tip text={t("sprite.tips.maskInvert")}>
+                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={invert}><FlipHorizontal2 className="h-3 w-3" />{t("sprite.mask.invert")}</Button>
+              </Tip>
+              <Tip text={t("sprite.tips.maskClear")}>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => fill(0)}>{t("sprite.mask.clear")}</Button>
+              </Tip>
+              <Tip text={t("sprite.tips.maskFill")}>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => fill(1)}>{t("sprite.mask.fillAll")}</Button>
+              </Tip>
             </div>
             {otherPoses.length > 0 && (
               <Select value={copyFrom} onValueChange={(v) => { setCopyFrom(v); void copyFromPose(v); }}>

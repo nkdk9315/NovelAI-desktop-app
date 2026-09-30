@@ -21,6 +21,7 @@ export default function RegionsSection() {
     <Section
       title={t("sprite.define.regions")}
       hint={t("sprite.define.regionsHint")}
+      help={t("sprite.help.sections.regions")}
       actions={<Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={add}><Plus className="h-3 w-3" />{t("sprite.define.addRegion")}</Button>}
     >
       <div className="space-y-1">

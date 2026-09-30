@@ -286,6 +286,11 @@ interface SpriteExportResultDto { outDir; files: string[] }
 
 - **ヘッダー / 左パネル**: 通常ページと同じ。左パネルの上にヒントを出す（「メインプロンプトはキャラの外見。全差分に入る」）。
 - **中央**: タブで切り替える。
+  - **ガイド**（`guide/*`・`lib/sprite/guide.ts`）:
+    - 8 ステップ（`GUIDE_STEPS`）。完了状態は `guideStatus()` が spec・セル・メインプロンプトから計算する。
+    - 開いたときは最初の未完了ステップ（`firstOpenStep`）に固定し、入力で完了しても勝手に移動しない。
+    - 衣装・ポーズ・軸のステップは定義タブの各セクションをそのまま使う。素体・領域マスク・差分のステップは専用の一覧と一括生成ボタン（`matrix/batch.tsx`）。
+    - 画像が 1 枚もないセットはガイドタブで開く。
   - **マトリクス**:
     - 行はポーズ、列は選んだ 1 軸の段階。その他の軸は段階を選ぶチップで絞り込む。
     - セルには採用画像か状態（未生成 / 生成待ち / 候補あり / 採用済み / 除外 / 生成できない理由）を表示する。
@@ -301,6 +306,12 @@ interface SpriteExportResultDto { outDir; files: string[] }
 - **領域マスクエディタ**（ダイアログ）:
   - ポーズの素体（採用画像）の上に、領域を色分けして 8px セル単位で描く。
   - 道具はブラシ（サイズ可変）・消しゴム・矩形・全消去・他領域から複製。
+- **パーツにつける軸**（`SpriteAxis.partIds`）: レベルのタグは対象パーツの直後に入り、全対象パーツが見えない段階では入らない。そのセルは `allCells` から外れ、`planCell` は `partHidden` を返す。書き出しは同じ見た目のセルの画像で埋める。
+- **背景と文字**（`lib/sprite/background.ts`・`services/sprite_background.rs`）:
+  - `spec.background`（transparent / white / asis）と `spec.noText` を生成リクエストに反映する（`RequestOverrides.transparentBackground` / `plainImage`）。
+  - `spec.export.removeBackground`（＋ `fillHoles` / `removeIslands`）なら、書き出しの読み込み時に無地の背景を消す。差分レイヤーより前に行うので、素体と差分で同じ背景が消える。
+  - `preview_sprite_background(setId, imageId, options)` は書き出しと同じ処理の結果を返す。
+- **説明**: ボタン・設定の説明は `Hint.tsx` の `Tip`（ツールチップ）と `HelpDot`（?）で出す（ネイティブの `title` は WebView で表示されないため使わない）。用語と流れは「使い方」ダイアログ（`SpriteHelpDialog`）。
 - **テンプレート**:
   - 組み込み: RPG 戦闘立ち絵 / ノベル立ち絵（表情）/ 表情差分のみ
   - ユーザー登録: `settings.sprite_templates`

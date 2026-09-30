@@ -64,7 +64,10 @@ export async function buildExportPlan(
       entries: await Promise.all(entries.map(async (e) => ({ imageId: e.imageId, frame: e.name, layer: await layerFor(e) }))),
     }
     : undefined;
-  return { setId, outDir, images, texts: out.texts, atlas };
+  const background = spec.export.removeBackground
+    ? { fillHoles: spec.export.fillHoles, removeIslands: spec.export.removeIslands }
+    : undefined;
+  return { setId, outDir, images, texts: out.texts, atlas, background };
 }
 
 /** Text files only (for previews / tests). */

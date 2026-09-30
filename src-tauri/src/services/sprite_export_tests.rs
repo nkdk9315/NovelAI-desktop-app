@@ -69,6 +69,7 @@ fn plan(f: &Fixture) -> SpriteExportPlan {
         images: vec![],
         texts: vec![],
         atlas: None,
+        background: None,
     }
 }
 
@@ -202,4 +203,28 @@ fn rejects_bad_folders_paths_and_foreign_images() {
         layer: None,
     }];
     assert!(matches!(export(&f.db, p), Err(AppError::Validation(_))));
+}
+
+#[test]
+fn removes_plain_backgrounds_when_asked_and_previews_the_same() {
+    let f = fixture();
+    let mut img = RgbaImage::from_pixel(40, 40, Rgba([250, 250, 250, 255]));
+    for y in 10..30 {
+        for x in 10..30 {
+            img.put_pixel(x, y, Rgba([30, 30, 120, 255]));
+        }
+    }
+    let id = add_image(&f, &img);
+    let mut p = plan(&f);
+    p.images = vec![SpriteExportImage { image_id: id.clone(), rel_path: "a.png".into(), scale: 1.0, layer: None }];
+    p.background = Some(BackgroundOptions { fill_holes: true, remove_islands: true });
+    export(&f.db, p).unwrap();
+    let out = read(&f, "a.png");
+    assert_eq!(out.get_pixel(0, 0)[3], 0);
+    assert_eq!(out.get_pixel(20, 20)[3], 255);
+
+    let preview = preview_background(&f.db, &f.set_id, &id, BackgroundOptions { fill_holes: true, remove_islands: true }).unwrap();
+    assert_eq!(preview.outcome, bg::BackgroundOutcome::Removed);
+    let png = crate::services::image_output::decode_base64(&preview.image_base64).unwrap();
+    assert_eq!(ops::decode(&png).unwrap(), out);
 }

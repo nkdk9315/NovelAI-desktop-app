@@ -71,6 +71,18 @@ export interface SpriteExportPlan {
   images: SpriteExportImage[];
   texts: SpriteExportText[];
   atlas?: SpriteAtlasRequest;
+  /** Remove plain backgrounds first (images already transparent pass through) */
+  background?: SpriteBackgroundOptions;
+}
+
+export interface SpriteBackgroundOptions {
+  fillHoles: boolean;
+  removeIslands: boolean;
+}
+
+export interface SpriteBackgroundPreviewDto {
+  imageBase64: string;
+  outcome: "removed" | "alreadyTransparent" | "notPlain";
 }
 
 export interface SpriteExportResultDto {

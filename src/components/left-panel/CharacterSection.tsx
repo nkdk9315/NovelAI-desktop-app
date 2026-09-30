@@ -8,6 +8,7 @@ import PositionEditor from "./PositionEditor";
 import CharacterHeader from "./CharacterHeader";
 import CharacterPromptGroups from "./CharacterPromptGroups";
 import DialogueEditor from "./DialogueEditor";
+import { useInImageTextHidden } from "@/hooks/use-in-image-text-hidden";
 import SfxEditor from "./SfxEditor";
 import EffectPalette from "./EffectPalette";
 import OutfitEditor from "./OutfitEditor";
@@ -30,6 +31,7 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
   const setNegativeOverride = useSidebarPromptStore((s) => s.setNegativeOverride);
   const [collapsed, setCollapsed] = useState(false);
   const mangaOn = useMangaStore((s) => s.page.enabled);
+  const textHidden = useInImageTextHidden();
   const [showNegative, setShowNegative] = useState(false);
   const [showGroupBrowser, setShowGroupBrowser] = useState(false);
 
@@ -82,7 +84,7 @@ export default function CharacterSection({ index }: CharacterSectionProps) {
           {/* Manga mode: the card only defines the look; lines and positions live in the panels */}
           {mangaOn ? (
             <p className="text-[9px] leading-snug text-muted-foreground">{t("manga.characterHint")}</p>
-          ) : (
+          ) : textHidden ? null : (
             <>
               <DialogueEditor targetId={character.id} />
               <SfxEditor targetId={character.id} />

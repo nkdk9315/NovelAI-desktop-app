@@ -4,6 +4,7 @@
  * so adding an axis later keeps existing keys: `p1|axA=lv2|axB=lv1`.
  */
 import type { AxisLevel, SpriteAxis, SpriteSpec } from "./spec";
+import { partHiddenAxes } from "./prompt";
 
 /** axisId → levelId, only for non-default levels */
 export type LevelMap = Record<string, string>;
@@ -78,26 +79,34 @@ export function isOrphanKey(spec: SpriteSpec, key: string): boolean {
 }
 
 /** A cell that varies an axis its pose doesn't use. */
-export function isSkipped(spec: SpriteSpec, coord: CellCoord): boolean {
+export function isPoseSkipped(spec: SpriteSpec, coord: CellCoord): boolean {
   const skip = spec.poses.find((p) => p.id === coord.poseId)?.skipAxes ?? [];
   return skip.some((axisId) => coord.levels[axisId] != null);
 }
 
-/** Every cell of the spec (poses × the levels of the axes each pose uses), in pose / axis order. */
-export function allCells(spec: SpriteSpec): CellCoord[] {
+/** A cell that isn't made: an axis its pose doesn't use, or a part variant while the part is hidden. */
+export function isSkipped(spec: SpriteSpec, coord: CellCoord): boolean {
+  return isPoseSkipped(spec, coord) || partHiddenAxes(spec, coord).length > 0;
+}
+
+/**
+ * Every cell of the spec (poses × the levels of the axes each pose uses), in
+ * pose / axis order. Part variants while the part is hidden are left out
+ * unless `withHiddenParts` (the export gives them their visible look's image).
+ */
+export function allCells(spec: SpriteSpec, withHiddenParts = false): CellCoord[] {
   return spec.poses.flatMap((pose) => {
     let combos: Record<string, number>[] = [{}];
     for (const axis of spec.axes) {
       const n = pose.skipAxes.includes(axis.id) ? 1 : Math.max(1, levelsOf(spec, axis).length);
       combos = combos.flatMap((c) => Array.from({ length: n }, (_, i) => ({ ...c, [axis.id]: i })));
     }
-    return combos.map((c) => coordOf(spec, pose.id, c));
+    return combos.map((c) => coordOf(spec, pose.id, c)).filter((c) => withHiddenParts || partHiddenAxes(spec, c).length === 0);
   });
 }
 
 export function cellCount(spec: SpriteSpec): number {
-  return spec.poses.reduce((total, pose) => total + spec.axes.reduce(
-    (n, a) => n * (pose.skipAxes.includes(a.id) ? 1 : Math.max(1, levelsOf(spec, a).length)), 1), 0);
+  return allCells(spec).length;
 }
 
 /** Human-readable label: `通常 / 破損2 / 恐怖1` */

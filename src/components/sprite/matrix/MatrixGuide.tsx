@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Check } from "lucide-react";
+import { Check, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSpriteStore } from "@/stores/sprite-store";
 import { useSpriteMaskEditorStore } from "@/stores/sprite-mask-editor-store";
 import { allCells, cellKey } from "@/lib/sprite/cells";
-import { hasMask } from "@/lib/sprite/plan";
+import { baseKey, missingMaskRegions } from "@/lib/sprite/guide";
 
 /**
  * The order of work, with progress: 1. bases (one per pose) → 2. region masks
@@ -17,12 +17,8 @@ export default function MatrixGuide() {
   const cells = useSpriteStore((s) => s.cells);
 
   const status = useMemo(() => {
-    const baseKey = (poseId: string) => cellKey({ poseId, levels: {} });
     const missingBases = spec.poses.filter((p) => !cells[baseKey(p.id)]?.adoptedImageId);
-    const usedRegions = (poseId: string) => [...new Set(spec.axes
-      .filter((a) => !spec.poses.find((p) => p.id === poseId)?.skipAxes.includes(a.id))
-      .flatMap((a) => a.regionIds))];
-    const missingMasks = spec.poses.filter((p) => usedRegions(p.id).some((r) => !hasMask(spec, p.id, r)));
+    const missingMasks = spec.poses.filter((p) => missingMaskRegions(spec, p.id).length > 0);
     const keys = allCells(spec).map(cellKey);
     const adopted = keys.filter((k) => cells[k]?.adoptedImageId || cells[k]?.excluded).length;
     return { missingBases, missingMasks, adopted, total: keys.length, baseKeys: missingBases.map((p) => baseKey(p.id)) };
@@ -68,6 +64,11 @@ export default function MatrixGuide() {
           {i < steps.length - 1 && <span className="px-1 text-muted-foreground">→</span>}
         </li>
       ))}
+      <li className="ml-auto">
+        <Button size="sm" variant="ghost" className="h-6 gap-1 text-[11px]" onClick={() => useSpriteStore.getState().setTab("guide")}>
+          <Compass className="h-3 w-3" />{t("sprite.guide.openGuide")}
+        </Button>
+      </li>
     </ol>
   );
 }

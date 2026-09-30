@@ -4,7 +4,7 @@ use tauri::State;
 
 use crate::models::sprite::{
     AddSpriteCandidateRequest, CreateSpriteSetRequest, ImportSpriteCandidateRequest, SaveSpriteImageRequest,
-    SetSpriteCellStateRequest, SpriteCandidateDto, SpriteCellDto, SpriteExportPlan, SpriteExportResultDto,
+    SetSpriteCellStateRequest, SpriteBackgroundPreviewDto, SpriteCandidateDto, SpriteCellDto, SpriteExportPlan, SpriteExportResultDto,
     SpriteSetDto, UpdateSpriteSetRequest,
 };
 use crate::services::sprite;
@@ -95,4 +95,14 @@ pub fn delete_sprite_cells(state: State<'_, AppState>, set_id: String, cell_keys
 #[tauri::command(async)]
 pub fn export_sprite_set(state: State<'_, AppState>, plan: SpriteExportPlan) -> Result<SpriteExportResultDto, String> {
     crate::services::sprite_export::export(&state.db, plan).map_err(|e| e.into())
+}
+
+#[tauri::command(async)]
+pub fn preview_sprite_background(
+    state: State<'_, AppState>,
+    set_id: String,
+    image_id: String,
+    options: crate::services::sprite_background::BackgroundOptions,
+) -> Result<SpriteBackgroundPreviewDto, String> {
+    crate::services::sprite_export::preview_background(&state.db, &set_id, &image_id, options).map_err(|e| e.into())
 }

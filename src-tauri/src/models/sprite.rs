@@ -238,6 +238,16 @@ pub struct SpriteExportPlan {
     #[serde(default)]
     pub texts: Vec<SpriteExportText>,
     pub atlas: Option<SpriteAtlasRequest>,
+    /// Remove plain backgrounds before anything else (images already transparent pass through)
+    #[serde(default)]
+    pub background: Option<crate::services::sprite_background::BackgroundOptions>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpriteBackgroundPreviewDto {
+    pub image_base64: String,
+    pub outcome: crate::services::sprite_background::BackgroundOutcome,
 }
 
 #[derive(Debug, Serialize)]

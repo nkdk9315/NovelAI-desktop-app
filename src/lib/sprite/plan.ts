@@ -4,13 +4,13 @@
  * or — for a `composite` axis combined with other axes — by pasting that
  * axis' regions from the single-axis cell onto the cell without it.
  */
-import { activeAxes, cellKey, isOrphanKey, isSkipped, levelIndex, parseCellKey, withLevel, type CellCoord } from "./cells";
+import { activeAxes, cellKey, isOrphanKey, isPoseSkipped, isSkipped, levelIndex, parseCellKey, withLevel, type CellCoord } from "./cells";
 import type { SpriteAxis, SpriteSpec } from "./spec";
 
 export type CellMethod = "txt2img" | "inpaint" | "composite";
 
 export type PlanBlocker =
-  | "orphan" | "skipped" | "excluded" | "parentNotAdopted" | "sourceNotAdopted" | "maskMissing" | "noRegion";
+  | "orphan" | "skipped" | "partHidden" | "excluded" | "parentNotAdopted" | "sourceNotAdopted" | "maskMissing" | "noRegion";
 
 export interface CellState {
   adoptedImageId: string | null;
@@ -57,16 +57,22 @@ export function planCell(spec: SpriteSpec, key: string, lookup: CellLookup, opts
     return plan;
   }
   if (isSkipped(spec, coord)) {
-    blockers.push("skipped");
+    blockers.push(isPoseSkipped(spec, coord) ? "skipped" : "partHidden");
     return plan;
   }
   if (lookup(key)?.excluded) blockers.push("excluded");
   const active = activeAxes(spec, coord);
   if (active.length === 0) return plan;
 
-  const axis = active[active.length - 1];
+  // Change the last axis whose parent is a cell that is made (a part variant
+  // ordered before the damage axis mustn't derive from a cell where the part is hidden)
+  const parentOf = (a: SpriteAxis) => {
+    const i = levelIndex(spec, coord, a);
+    return withLevel(spec, coord, a, a.chain ? i - 1 : 0);
+  };
+  const axis = [...active].reverse().find((a) => !isSkipped(spec, parentOf(a))) ?? active[active.length - 1];
   const index = levelIndex(spec, coord, axis);
-  const others = active.slice(0, -1);
+  const others = active.filter((a) => a !== axis);
   plan.axis = axis;
   plan.regionIds = axis.regionIds.filter((r) => spec.regions.some((x) => x.id === r));
   const adopted = (k: string) => !!lookup(k)?.adoptedImageId;
@@ -74,7 +80,8 @@ export function planCell(spec: SpriteSpec, key: string, lookup: CellLookup, opts
   const otherRegions = [...new Set(others.flatMap((a) => a.regionIds))];
   const sourceKey = cellKey(withLevel(spec, { poseId: coord.poseId, levels: {} }, axis, index));
   const canComposite = axis.composite && others.length > 0 && !opts.preferInpaint
-    && !plan.regionIds.some((r) => otherRegions.includes(r));
+    && !plan.regionIds.some((r) => otherRegions.includes(r))
+    && !isSkipped(spec, parseCellKey(sourceKey));
 
   if (canComposite) {
     plan.method = "composite";
@@ -84,7 +91,7 @@ export function planCell(spec: SpriteSpec, key: string, lookup: CellLookup, opts
     if (!adopted(sourceKey)) blockers.push("sourceNotAdopted");
   } else {
     plan.method = "inpaint";
-    plan.parentKey = cellKey(withLevel(spec, coord, axis, axis.chain ? index - 1 : 0));
+    plan.parentKey = cellKey(parentOf(axis));
   }
   if (!adopted(plan.parentKey)) blockers.push("parentNotAdopted");
   if (plan.regionIds.length === 0) blockers.push("noRegion");

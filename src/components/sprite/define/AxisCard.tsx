@@ -8,6 +8,7 @@ import { parseCellKey } from "@/lib/sprite/cells";
 import { newLevel, spriteTargetId, type AxisLevel, type SpriteAxis } from "@/lib/sprite/spec";
 import { move, ownedTargetIds, removeAxis, removeLevel, uniqueKey } from "@/lib/sprite/edit";
 import { CommitInput, KeyInput, RowActions, chip, dropTargets, updateSpec } from "./common";
+import { HelpDot } from "../Hint";
 
 export default function AxisCard({ axis, index, count }: { axis: SpriteAxis; index: number; count: number }) {
   const { t } = useTranslation();
@@ -37,6 +38,7 @@ export default function AxisCard({ axis, index, count }: { axis: SpriteAxis; ind
       <div className="flex flex-wrap items-center gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-1">
           <span className="text-[10px] text-muted-foreground">{t("sprite.define.axisRegions")}</span>
+          <HelpDot text={t("sprite.tips.axisRegions")} />
           {spec.regions.map((r) => {
             const on = axis.regionIds.includes(r.id);
             return (
@@ -47,15 +49,35 @@ export default function AxisCard({ axis, index, count }: { axis: SpriteAxis; ind
             );
           })}
         </div>
-        <label className="flex items-center gap-1" title={t("sprite.define.chainHint")}>
+        <label className="flex items-center gap-1">
           <Switch checked={axis.chain} onCheckedChange={(v) => patch((a) => ({ ...a, chain: v }))} />
           <span>{t("sprite.define.chain")}</span>
+          <HelpDot text={t("sprite.define.chainHint")} />
         </label>
-        <label className="flex items-center gap-1" title={t("sprite.define.compositeHint")}>
+        <label className="flex items-center gap-1">
           <Switch checked={axis.composite} onCheckedChange={(v) => patch((a) => ({ ...a, composite: v }))} />
           <span>{t("sprite.define.composite")}</span>
+          <HelpDot text={t("sprite.define.compositeHint")} />
         </label>
       </div>
+      {!outfit && spec.outfit.parts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 text-xs">
+          <span className="text-[10px] text-muted-foreground">{t("sprite.define.axisParts")}</span>
+          <HelpDot text={t("sprite.define.axisPartsHint")} />
+          {spec.outfit.parts.map((p) => {
+            const on = axis.partIds.includes(p.id);
+            return (
+              <button key={p.id} type="button" aria-pressed={on} className={chip(on)}
+                onClick={() => patch((a) => ({ ...a, partIds: on ? a.partIds.filter((x) => x !== p.id) : [...a.partIds, p.id] }))}>
+                {p.name}{p.coveredBy.length > 0 && <span className="ml-0.5 text-sky-500">*</span>}
+              </button>
+            );
+          })}
+          <span className="text-[10px] text-muted-foreground">
+            {axis.partIds.length > 0 ? t("sprite.define.axisPartsOn") : t("sprite.define.axisPartsOff")}
+          </span>
+        </div>
+      )}
       {axis.regionIds.length === 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400">{t("sprite.define.axisNoRegion")}</p>}
       {!outfit && (
         <div className="space-y-1.5">
@@ -66,8 +88,9 @@ export default function AxisCard({ axis, index, count }: { axis: SpriteAxis; ind
                   onCommit={(v) => patchLevel(level.id, { label: v.trim() || level.label })} />
                 <KeyInput value={level.key} fallback={String(li)} taken={axis.levels.filter((l) => l.id !== level.id).map((l) => l.key)}
                   onCommit={(v) => patchLevel(level.id, { key: v })} />
-                <label className="flex items-center gap-1 text-[10px] text-muted-foreground" title={t("sprite.define.weightHint")}>
+                <label className="flex items-center gap-1 text-[10px] text-muted-foreground">
                   {t("sprite.define.weight")}
+                  <HelpDot text={t("sprite.define.weightHint")} />
                   <CommitInput value={String(level.weight)} type="number" step={0.1} className="w-16"
                     onCommit={(v) => patchLevel(level.id, { weight: Math.min(3, Math.max(0.1, Number(v) || 1)) })} />
                 </label>

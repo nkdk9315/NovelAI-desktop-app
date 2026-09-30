@@ -216,6 +216,7 @@ pub fn run() {
             commands::sidebar_preset_groups::update_sidebar_preset_group_default_strength,
             commands::sidebar_preset_groups::set_sidebar_preset_group_preset_strength,
             commands::sprites::list_sprite_sets,
+            commands::sprites::preview_sprite_background,
             commands::sprites::create_sprite_set,
             commands::sprites::update_sprite_set,
             commands::sprites::delete_sprite_set,

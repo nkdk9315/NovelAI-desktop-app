@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Ban, Brush, ChevronDown, ChevronRight, FileInput, Play, Wand2 } from "lucide-react";
+import { Ban, Brush, ChevronDown, ChevronRight, Eye, FileInput, Play, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useSidebarPromptStore } from "@/stores/sidebar-prompt-store";
@@ -20,6 +20,11 @@ import { loadImageElement } from "@/lib/canvas-image";
 import { projectImageUrl } from "@/lib/sprite/image-url";
 import { sameAspect, sizeForAspect } from "@/lib/sprite/spec";
 import CandidateGrid from "./CandidateGrid";
+import { useGenerationParamsStore } from "@/stores/generation-params-store";
+import { spriteRequestExtras } from "@/lib/sprite/background";
+import { joinPrompt } from "@/lib/outfits";
+import BackgroundPreviewDialog from "../export/BackgroundPreviewDialog";
+import { HelpDot, Tip } from "../Hint";
 
 /** The selected cell: how it is made, its prompt, actions and candidates. */
 export default function SpriteCellPanel() {
@@ -28,7 +33,9 @@ export default function SpriteCellPanel() {
   const key = useSpriteStore((s) => s.selectedKey);
   const cells = useSpriteStore((s) => s.cells);
   const setId = useSpriteStore((s) => s.activeSetId);
+  const model = useGenerationParamsStore((s) => s.model);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   // Re-render when a prompt box changes (the preview reads the prompt targets)
   useSidebarPromptStore((s) => s.targets);
   const cell = key ? cells[key] : undefined;
@@ -39,7 +46,12 @@ export default function SpriteCellPanel() {
   }
 
   const coord = parseCellKey(key);
-  const prompt = cellPrompt(spec, coord, displayTextOf);
+  const cellText = cellPrompt(spec, coord, displayTextOf);
+  const extras = spriteRequestExtras(spec, model);
+  const prompt = {
+    positive: joinPrompt(cellText.positive, extras.positive),
+    negative: joinPrompt(cellText.negative, extras.negative),
+  };
   const blockers = plan.blockers.filter((b) => b !== "excluded");
   const adoptedImageId = cell?.adoptedImageId ?? null;
   const parentLabel = plan.parentKey ? cellLabel(spec, parseCellKey(plan.parentKey)) : null;
@@ -88,8 +100,9 @@ export default function SpriteCellPanel() {
     <div className="space-y-3 p-3 text-xs">
       <div>
         <h2 className="text-sm font-semibold">{cellLabel(spec, coord)}</h2>
-        <p className="mt-0.5 text-muted-foreground">
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-1 text-muted-foreground">
           {t(`sprite.methodLong.${plan.method}`)}
+          <HelpDot text={t(`sprite.tips.method.${plan.method}`)} />
           {parentLabel && (
             <>
               {" ← "}
@@ -130,31 +143,51 @@ export default function SpriteCellPanel() {
       )}
 
       <div className="flex flex-wrap gap-1.5">
-        <Button size="sm" className="h-7 gap-1 text-xs" onClick={() => generate()}>
-          <Play className="h-3.5 w-3.5" />
-          {plan.method === "composite" ? t("sprite.cell.composite") : t("sprite.cell.generate", { count: spec.candidatesPerCell })}
-        </Button>
-        {plan.method === "composite" && (
-          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => generate(true)}>
-            <Wand2 className="h-3.5 w-3.5" />{t("sprite.cell.inpaintInstead")}
+        <Tip text={plan.method === "composite" ? t("sprite.tips.composite") : t("sprite.tips.generate", { count: spec.candidatesPerCell })}>
+          <Button size="sm" className="h-7 gap-1 text-xs" onClick={() => generate()}>
+            <Play className="h-3.5 w-3.5" />
+            {plan.method === "composite" ? t("sprite.cell.composite") : t("sprite.cell.generate", { count: spec.candidatesPerCell })}
           </Button>
+        </Tip>
+        {plan.method === "composite" && (
+          <Tip text={t("sprite.tips.inpaintInstead")}>
+            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => generate(true)}>
+              <Wand2 className="h-3.5 w-3.5" />{t("sprite.cell.inpaintInstead")}
+            </Button>
+          </Tip>
         )}
         {retouchImage && (
-          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs"
-            title={t("sprite.cell.retouchHint")}
-            onClick={() => useSpriteMaskEditorStore.getState().open({ kind: "custom", cellKey: key, imageId: retouchImage })}>
-            <Brush className="h-3.5 w-3.5" />{t("sprite.cell.retouch")}
-          </Button>
+          <Tip text={t("sprite.cell.retouchHint")}>
+            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs"
+              onClick={() => useSpriteMaskEditorStore.getState().open({ kind: "custom", cellKey: key, imageId: retouchImage })}>
+              <Brush className="h-3.5 w-3.5" />{t("sprite.cell.retouch")}
+            </Button>
+          </Tip>
         )}
-        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={importFile}>
-          <FileInput className="h-3.5 w-3.5" />{t("sprite.cell.import")}
-        </Button>
-        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={toggleExcluded}>
-          <Ban className="h-3.5 w-3.5" />{cell?.excluded ? t("sprite.cell.include") : t("sprite.cell.exclude")}
-        </Button>
+        <Tip text={t("sprite.tips.import")}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={importFile}>
+            <FileInput className="h-3.5 w-3.5" />{t("sprite.cell.import")}
+          </Button>
+        </Tip>
+        {adoptedImageId && (
+          <Tip text={t("sprite.bg.checkTip")}>
+            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setPreviewId(adoptedImageId)}>
+              <Eye className="h-3.5 w-3.5" />{t("sprite.bg.check")}
+            </Button>
+          </Tip>
+        )}
+        <Tip text={cell?.excluded ? t("sprite.tips.include") : t("sprite.tips.exclude")}>
+          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={toggleExcluded}>
+            <Ban className="h-3.5 w-3.5" />{cell?.excluded ? t("sprite.cell.include") : t("sprite.cell.exclude")}
+          </Button>
+        </Tip>
       </div>
+      {(cell?.candidates.length ?? 0) > 0 && !adoptedImageId && (
+        <p className="rounded-md bg-sky-500/10 px-2 py-1 text-sky-700 dark:text-sky-300">{t("sprite.cell.adoptPrompt")}</p>
+      )}
 
       <CandidateGrid setId={setId} cellKey={key} cell={cell} onChanged={refresh} />
+      <BackgroundPreviewDialog imageId={previewId} onClose={() => setPreviewId(null)} />
 
       <div>
         <button type="button" className="flex items-center gap-1 font-medium" onClick={() => setShowPrompt((v) => !v)}>
@@ -165,6 +198,7 @@ export default function SpriteCellPanel() {
           <div className="mt-1 space-y-1 rounded-md bg-muted/50 p-2 font-mono text-[11px] leading-relaxed">
             <p className="text-muted-foreground">{t("sprite.cell.promptNote")}</p>
             <p className="break-words">{prompt.positive || "—"}</p>
+            {extras.transparent && <p className="text-sky-700 dark:text-sky-300">{t("sprite.bg.v5Note")}</p>}
             {prompt.negative && <p className="break-words text-muted-foreground">UC: {prompt.negative}</p>}
           </div>
         )}

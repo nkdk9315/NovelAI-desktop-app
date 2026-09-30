@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { projectImageUrl } from "@/lib/sprite/image-url";
 import type { CellPlan } from "@/lib/sprite/plan";
 import type { SpriteCellDto } from "@/types/sprite";
+import { Tip } from "../Hint";
 
 interface Props {
   cellKey: string;
@@ -28,7 +29,8 @@ function SpriteCellTile({ cellKey, cell, plan, selected, checked, status, stale,
   const src = adopted ? projectImageUrl(adopted.filePath) : undefined;
   const candidates = cell?.candidates.length ?? 0;
   const blocker = plan.blockers.find((b) => b !== "excluded");
-  const excluded = (cell?.excluded ?? false) || plan.blockers.includes("skipped");
+  const notMade = plan.blockers.find((b) => b === "skipped" || b === "partHidden");
+  const excluded = (cell?.excluded ?? false) || !!notMade;
 
   return (
     <div
@@ -42,7 +44,6 @@ function SpriteCellTile({ cellKey, cell, plan, selected, checked, status, stale,
         className="absolute inset-0 flex items-center justify-center"
         onClick={() => onSelect(cellKey)}
         onDoubleClick={() => onGenerate(cellKey)}
-        title={t("sprite.matrix.tileHint")}
         aria-label={t("sprite.matrix.tileLabel")}
       >
         {src ? (
@@ -50,8 +51,8 @@ function SpriteCellTile({ cellKey, cell, plan, selected, checked, status, stale,
         ) : (
           <span className="flex flex-col items-center gap-1 px-1 text-center text-[10px] text-muted-foreground">
             {excluded ? <Ban className="h-4 w-4" /> : blocker ? <Lock className="h-4 w-4" /> : <ImageOff className="h-4 w-4 opacity-50" />}
-            {plan.blockers.includes("skipped")
-              ? t("sprite.blockerShort.skipped")
+            {notMade
+              ? t(`sprite.blockerShort.${notMade}`)
               : excluded
               ? t("sprite.matrix.excluded")
               : blocker
@@ -70,10 +71,12 @@ function SpriteCellTile({ cellKey, cell, plan, selected, checked, status, stale,
           />
         </span>
         <span className="flex items-center gap-1">
-          {stale && <RefreshCcw className="h-3 w-3 text-amber-500" aria-label={t("sprite.matrix.stale")} />}
-          {plan.method === "composite" && <Combine className="h-3 w-3 text-sky-500" aria-label={t("sprite.method.composite")} />}
+          {stale && <Tip text={t("sprite.matrix.staleHint")}><span className="pointer-events-auto"><RefreshCcw className="h-3 w-3 text-amber-500" aria-label={t("sprite.matrix.stale")} /></span></Tip>}
+          {plan.method === "composite" && <Tip text={t("sprite.compositeHint")}><span className="pointer-events-auto"><Combine className="h-3 w-3 text-sky-500" aria-label={t("sprite.method.composite")} /></span></Tip>}
           {candidates > 0 && (
-            <span className="rounded bg-background/80 px-1 text-[9px] tabular">{candidates}</span>
+            <Tip text={t("sprite.tips.candidateCount", { count: candidates })}>
+              <span className="pointer-events-auto rounded bg-background/80 px-1 text-[9px] tabular">{candidates}</span>
+            </Tip>
           )}
         </span>
       </div>

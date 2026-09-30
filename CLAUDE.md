@@ -44,7 +44,7 @@ NovelAI API を利用した AI イラスト生成・管理デスクトップア�
 ```
 main.rs, state.rs, error.rs, db.rs
 ├── commands/       # 20 モジュール
-├── services/       # 32 モジュール（テスト除く、generation_snapshot / image_output / image_tools / image_metadata / vibe_import / nax / nax_catalog / nax_thumb / sprite / sprite_export / sprite_image_ops を含む）
+├── services/       # 33 モジュール（テスト除く、generation_snapshot / image_output / image_tools / image_metadata / vibe_import / nax / nax_catalog / nax_thumb / sprite / sprite_export / sprite_image_ops / sprite_background を含む）
 ├── repositories/   # 21 モジュール（テスト除く）
 └── models/         # dto.rs（Row 構造体 + IPC 用 DTO）, sprite.rs（差分制作）
 ```

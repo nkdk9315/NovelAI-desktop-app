@@ -1161,7 +1161,7 @@
     "excludeHint": "Switch off the card's tags in this panel only (e.g. long hair when tied up)"
   },
   "sprite": {
-    "leftHint": "The main prompt and art style on the left are the character's look and go into every variant. Characters (e.g. enemies) can be turned on per pose. Poses, outfit and expressions are set in Definition.",
+    "leftHint": "The main prompt and art style on the left are the character's look and go into every variant. Characters (e.g. enemies) can be turned on per pose. Poses, outfit and expressions are set in the Guide (or all at once in Definition).",
     "loadFailed": "Could not load the sprite sets: {{error}}",
     "noSetYet": "No sprite set yet",
     "intro": "A sprite set holds one character's variant sprites. Start with New set and pick a template.",
@@ -1183,7 +1183,8 @@
     "tab": {
       "matrix": "Matrix",
       "define": "Definition",
-      "export": "Export"
+      "export": "Export",
+      "guide": "Guide"
     },
     "template": {
       "label": "Template",
@@ -1230,7 +1231,8 @@
       "sourceNotAdopted": "The composite source (the single-axis cell) has no adopted image.",
       "maskMissing": "The region masks of this pose are not drawn yet.",
       "noRegion": "This axis has no region. Pick one in Definition → axes.",
-      "skipped": "This pose doesn't use this axis (Definition → Poses)."
+      "skipped": "This pose doesn't use this axis (Definition → Poses).",
+      "partHidden": "The part this variant belongs to (underwear, …) isn't visible at this damage stage, so the cell isn't made."
     },
     "blockerShort": {
       "orphan": "Not defined",
@@ -1238,7 +1240,8 @@
       "sourceNotAdopted": "Source not adopted",
       "maskMissing": "No mask",
       "noRegion": "No region",
-      "skipped": "Not used"
+      "skipped": "Not used",
+      "partHidden": "Part hidden"
     },
     "partState": {
       "intact": "Intact",
@@ -1285,7 +1288,7 @@
       "keysHint": "Arrows: move / Enter: generate / Space: select / 1–9: adopt candidate"
     },
     "cell": {
-      "noSelection": "Select a cell in the matrix to see how it is made, its candidates and prompt.",
+      "noSelection": "The selected cell (one variant) shows here. Click an image in the matrix or the guide to see its candidates, how it is made and its generate button.",
       "generate": "Generate ({{count}})",
       "composite": "Composite",
       "inpaintInstead": "Inpaint instead",
@@ -1309,7 +1312,8 @@
       "stale": "This image was made from the parent's previous image. Redo it so the variants match.",
       "redo": "Redo",
       "sizeFitted": "The set size was set to {{width}}×{{height}} to fit the imported image.",
-      "aspectMismatch": "The imported image ({{w}}×{{h}}) has another aspect ratio than the set ({{sw}}×{{sh}}); inpainting will stretch it."
+      "aspectMismatch": "The imported image ({{w}}×{{h}}) has another aspect ratio than the set ({{sw}}×{{sh}}); inpainting will stretch it.",
+      "adoptPrompt": "Candidates are ready. Click the one to use to adopt it; the adopted image is what child cells start from and what gets exported."
     },
     "define": {
       "settings": "Set settings",
@@ -1395,7 +1399,15 @@
       "confirmPose": "This pose has {{count}} cells with images and its region masks. The cells become undefined (images stay in the history).",
       "confirmAxis": "{{count}} cells using this axis become undefined (images stay in the history).",
       "poseCast": "Characters:",
-      "poseCastHint": "Left-panel characters that appear in this pose (e.g. the enemy restraining her), in its base and variants"
+      "poseCastHint": "Left-panel characters that appear in this pose (e.g. the enemy restraining her), in its base and variants",
+      "damageOn": "Make clothing damage variants",
+      "damageOnHint": "When off, no damage stages are made (the outfit parts stay intact in every cell). You can turn it back on any time.",
+      "damageOff": "No clothing damage variants. Clothes variants other than damage (wet, blood, dirt…) are under \"Add a common variant\" → Clothes in the axes.",
+      "axisParts": "Attach to outfit parts:",
+      "axisPartsHint": "When set, this axis's tags go right after the part (e.g. underwear → \"light blue panties, stained panties\"). At stages where the part is covered or gone the tags are left out and the cell isn't made. When none is set, the tags apply to the whole picture (wounds on the body…). * = worn under.",
+      "axisPartsOn": "→ only while a chosen part is visible",
+      "axisPartsOff": "→ the whole picture (body, face…)",
+      "noAxes": "No axes. \"Add a common variant\" is the easy way to start."
     },
     "mask": {
       "titleRegions": "Region masks — {{pose}}",
@@ -1506,7 +1518,558 @@
       "checkBases": "Select missing bases",
       "masks": "Region masks {{done}}/{{total}}",
       "drawMasks": "Draw for \"{{pose}}\"",
-      "variants": "Variants {{done}}/{{total}}"
+      "variants": "Variants {{done}}/{{total}}",
+      "openGuide": "Continue in the guide"
+    },
+    "tabHint": {
+      "guide": "Walks you through the job step by step. Start here",
+      "matrix": "Every variant at a glance: generate, adopt and redo",
+      "define": "Edit all the set's settings (poses, outfit, axes…) in one place",
+      "export": "Write the files for your game engine"
+    },
+    "newSetDesc": "One set = the variants of one character. You can change everything a template sets later; pick the one closest to your use.",
+    "compositeHint": "Made by compositing (no API call, no Anlas)",
+    "welcome": {
+      "title": "Make every variant of a standing sprite",
+      "create": "Create the first set",
+      "steps": [
+        {
+          "term": "Describe",
+          "desc": "Write the character's look, outfit, poses and what varies (damage, expression, fatigue…). Templates leave you only the blanks to fill."
+        },
+        {
+          "term": "Generate",
+          "desc": "Make one base per pose and paint the areas that change (clothes, face…); variants are then made by repainting only those areas."
+        },
+        {
+          "term": "Export",
+          "desc": "Write the images plus the scripts / tables each engine needs: RPG Maker, TyranoScript, Ren'Py, Unity and more."
+        }
+      ]
+    },
+    "help": {
+      "open": "How to use",
+      "title": "How sprite variants work",
+      "lead": "The workflow, the vocabulary and the screen layout. The Guide tab walks you through the actual work.",
+      "toGuide": "Open the guide",
+      "pages": {
+        "flow": "Workflow",
+        "terms": "Terms",
+        "screen": "Screen",
+        "faq": "FAQ"
+      },
+      "flow": [
+        {
+          "term": "Write the character's look",
+          "desc": "In the left panel's main prompt, write what never changes: hair, eyes, build. Keep clothes, pose and expression out of it."
+        },
+        {
+          "term": "Write the outfit as parts",
+          "desc": "Split it into jacket, shirt, skirt, underwear… and describe each in detail. For each damage stage, pick each part's state (intact, torn, heavily torn, gone)."
+        },
+        {
+          "term": "Choose the poses",
+          "desc": "Idle, attack, hit… Each pose gets its own base, generated from scratch."
+        },
+        {
+          "term": "Choose the axes",
+          "desc": "What varies: clothing damage, expression, wounds, fatigue… Each axis repaints the regions you pick."
+        },
+        {
+          "term": "Make and adopt the bases",
+          "desc": "Make a few candidates; the first one is adopted for now. Compare and click the best to adopt it instead. The bases decide the quality of every variant."
+        },
+        {
+          "term": "Paint the region masks",
+          "desc": "Paint areas like \"clothes\" and \"face\" over each base. Variants only repaint inside them, so the face and body stay put."
+        },
+        {
+          "term": "Generate the variants",
+          "desc": "Pick the cells left and generate them together; missing parents are made first. You see the Anlas estimate and confirm before it starts."
+        },
+        {
+          "term": "Review, adopt and export",
+          "desc": "Adopt candidates in the matrix and redo the ones you don't like, then export for your engine."
+        }
+      ],
+      "terms": [
+        {
+          "term": "Set",
+          "desc": "The variants of one character. A project can hold several (per character, per outfit…)."
+        },
+        {
+          "term": "Cell",
+          "desc": "The slot of one variant: one per combination of pose × each axis's level."
+        },
+        {
+          "term": "Base",
+          "desc": "A pose's starting image (every axis at level 0), generated from the prompt."
+        },
+        {
+          "term": "Axis and level",
+          "desc": "What varies (axis: expression, damage, fatigue…) and how much (level: none → light → heavy). Level 0 is the base's state."
+        },
+        {
+          "term": "Region / region mask",
+          "desc": "A named area repainted by variants (clothes, face…) and its painting on each pose. Outside it, the parent's image is kept."
+        },
+        {
+          "term": "Parent",
+          "desc": "The image a cell is made from. E.g. damage 2 is made from damage 1's adopted image (when levels build on each other)."
+        },
+        {
+          "term": "Inpaint",
+          "desc": "Repaint only the regions of the parent's image with this cell's prompt. Costs Anlas."
+        },
+        {
+          "term": "Composite",
+          "desc": "For axes whose regions don't overlap (face and body), cut and paste existing images. No API call, so it's free."
+        },
+        {
+          "term": "Candidates and adoption",
+          "desc": "A generation makes a few candidates and the first is adopted automatically; click another to switch. The adopted image is the parent of child cells and is what gets exported."
+        },
+        {
+          "term": "Worn under (hidden part)",
+          "desc": "A part like underwear: left out of the prompt until a part over it is heavily torn or gone, then added automatically."
+        },
+        {
+          "term": "Part-attached variant",
+          "desc": "A variant of one outfit part, like wet, bloody or dirty clothes or stained underwear. Its tags follow the part and are left out while the part is hidden (underwear under the clothes…); those cells aren't made, so nothing is wasted."
+        },
+        {
+          "term": "Excluded",
+          "desc": "A cell you don't want: skipped by batch generation and export."
+        },
+        {
+          "term": "Parent changed (redo)",
+          "desc": "A cell still made from its parent's old image after the parent was redone. Select them all at once and redo them."
+        }
+      ],
+      "screen": [
+        {
+          "term": "Left panel",
+          "desc": "The character's look (main prompt, style, Vibes, character reference), shared by every cell. Tag groups and autocomplete work as usual."
+        },
+        {
+          "term": "Center: Guide",
+          "desc": "Eight steps, each showing only the settings and buttons it needs."
+        },
+        {
+          "term": "Center: Matrix",
+          "desc": "Poses down, the chosen axis's levels across; switch the other axes' levels with the buttons above. Check cells to generate them together."
+        },
+        {
+          "term": "Center: Definition",
+          "desc": "Every setting of the set on one page (the guide's content, all at once)."
+        },
+        {
+          "term": "Center: Export",
+          "desc": "Choose the engine, file names and scale, then export."
+        },
+        {
+          "term": "Right panel",
+          "desc": "The selected cell: click a candidate to adopt it; generate, repaint a part, import an image or exclude the cell."
+        },
+        {
+          "term": "Keys (matrix)",
+          "desc": "Arrows move, Enter generates, Space checks, 1–9 adopt the n-th candidate on the right."
+        }
+      ],
+      "faq": [
+        {
+          "term": "Images come with a background (games need transparency)",
+          "desc": "Set the set's background to \"Transparent\". V5 generates transparent images; V4.5 draws on plain white, removed on export for free. \"Check transparency\" on the right shows the result."
+        },
+        {
+          "term": "Text, effect lines or marks show up",
+          "desc": "Turn on \"No text or effect lines\" in the set settings (on by default). Leftovers away from the character go with \"Drop small detached bits\" on export, or fix them with \"Paint and regenerate\". Also check the pose prompts for tags like motion lines."
+        },
+        {
+          "term": "Stained underwear, wet or bloody clothes, wounds on the body",
+          "desc": "Pick them from \"Add a common variant\" in the axes. Body variants (wounds, dirt, sweat) apply to the whole picture; clothes and underwear variants are attached to parts. Stained underwear is only made at stages where torn clothes show the underwear. For clothes variants without damage, turn off \"Make clothing damage variants\" in the outfit."
+        },
+        {
+          "term": "The face or clothes change between poses",
+          "desc": "Describe the outfit parts in detail and fix the seed in the set settings. On V4.5, also use \"first pose's base as character reference\"."
+        },
+        {
+          "term": "The face or body shifts a little in variants",
+          "desc": "Keep the region masks to the needed area. Lowering the inpaint strength keeps more of the parent."
+        },
+        {
+          "term": "Underwear shouldn't show at first",
+          "desc": "On the underwear part, set \"worn under\" to the jacket / shirt. It enters the prompt once a part over it is heavily torn or gone."
+        },
+        {
+          "term": "Saving Anlas",
+          "desc": "Try one pose first; make fewer candidates; turn on \"combine by compositing\" for axes that don't overlap (free); turn off unused axes per pose."
+        },
+        {
+          "term": "Using hand-drawn or existing sprites",
+          "desc": "\"Import image\" on the right puts an image into any cell. Import a base and variants are made from your drawing."
+        },
+        {
+          "term": "Only part of an image is wrong",
+          "desc": "\"Paint and regenerate\" on the right repaints just the area you paint."
+        },
+        {
+          "term": "Too many cells",
+          "desc": "Turn off unneeded axes per pose (\"Axes used\") or exclude cells you don't need."
+        }
+      ],
+      "sections": {
+        "outfit": "Write the outfit as parts (jacket, shirt, skirt, underwear…). In the table, pick what each part looks like at each damage stage (intact, torn, heavily torn, gone); the outfit prompt of each stage is built from that.",
+        "poses": "Each pose gets one base generated from scratch; every variant derives from it. \"Axes used\" turns off variants a pose doesn't need.",
+        "axes": "What varies, derived top to bottom. The clothing-damage axis uses the outfit's damage stages; other axes get a prompt per level.",
+        "regions": "Names of the areas variants repaint, painted over each pose's base. Keep them from overlapping (face vs body) so combinations can be composited for free."
+      }
+    },
+    "tips": {
+      "newSet": "Make another character's or outfit's variants as a new set",
+      "duplicate": "A new set with the same settings (images aren't copied). Handy for another character with the same structure",
+      "saveTemplate": "Save this set's settings as a template for new sets",
+      "deleteSet": "Delete this set (images stay in the project history)",
+      "help": "Workflow, terms, screen layout and FAQ",
+      "columns": "The axis laid out across. Poses are always down; pick the level of the other axes with the buttons on the right",
+      "filter": "Level of \"{{axis}}\" to show",
+      "checkHere": "Check the cells shown that have no image yet",
+      "checkAll": "Check every cell without an image, including levels not shown",
+      "post": "Background removal or 2× upscale over adopted images",
+      "generateChecked": "Make the checked cells; missing parents are made first. Asks before spending Anlas",
+      "regionMasks": "Paint clothes, face and other areas over this pose's base",
+      "addOutfitAxis": "Turn the outfit's damage stages (intact → torn → …) into variants",
+      "addAxis": "Add variants made by prompt: expression, wounds, fatigue…",
+      "axisRegions": "Areas this axis repaints; outside them the parent's image is kept",
+      "characterKey": "Alphanumeric name at the start of exported file names",
+      "size": "Size of every image in the set. Changing it later misplaces inpainting and compositing",
+      "seed": "Fixing it keeps the face and clothes closer across poses",
+      "candidates": "Candidates per generation: more to choose from, more Anlas",
+      "inpaintStrength": "How much variants repaint: lower stays closer to the parent, higher follows the prompt more",
+      "maskInvert": "Swap painted and unpainted",
+      "maskClear": "Erase this region",
+      "maskFill": "Paint the whole image",
+      "adopt": "Click to adopt: the adopted image is the parent of child cells and is exported",
+      "candidateMethod": {
+        "txt2img": "Generated from the prompt",
+        "inpaint": "Inpainted over the parent's regions",
+        "composite": "Composited from existing images",
+        "import": "Imported from a file",
+        "edit": "Edited (background removal, upscale…)"
+      },
+      "candidateCount": "{{count}} candidates",
+      "method": {
+        "txt2img": "A base is generated from the left panel's look + the pose + the outfit",
+        "inpaint": "Only this axis's regions of the parent's adopted image are repainted; the rest stays, so face and body match",
+        "composite": "The regions of this combination don't overlap, so it is cut and pasted from existing images (no Anlas)"
+      },
+      "generate": "Make {{count}} candidates (change in the settings)",
+      "composite": "Cut and paste from existing images (free)",
+      "inpaintInstead": "If the composite looks wrong, repaint it by inpainting instead (costs Anlas)",
+      "import": "Add an image file as a candidate. Put one in a base and variants are made from it",
+      "exclude": "Don't make or export this cell",
+      "include": "Make and export this cell again",
+      "layersUnsupported": "This target doesn't support difference layers",
+      "nameTemplate": "Shape of exported file names; the buttons below insert {pose} and the like",
+      "scale": "Size of exported images, to fit your game's screen",
+      "atlasSize": "Largest size of one atlas image; more pages are made when needed",
+      "exportRun": "Only cells with an adopted image are exported. Pick a folder; the engine's folder layout is created inside it."
+    },
+    "wizard": {
+      "stepOf": "Step {{n}} of {{total}}",
+      "optional": "optional for this set",
+      "done": "Done",
+      "tips": "Tips",
+      "back": "Back",
+      "next": "Next",
+      "skip": "Later",
+      "regionsFold": "Add or rename regions (advanced)",
+      "settingsFold": "Generation settings (background, text, size, seed, candidates, inpaint strength)",
+      "thumbTip": "Click to show its candidates on the right, where you can generate and adopt",
+      "look": {
+        "where": "Written in the left panel's main prompt",
+        "empty": "Still empty. Write the character's look in the left panel's main prompt.",
+        "characters": "The left panel has {{count}} character(s). People shown only in some poses (enemies…) are picked per pose in the Poses step.",
+        "misplaced": {
+          "outfit": "The main prompt has clothing tags ({{tags}}). There they survive every damage stage; move them to the Outfit step.",
+          "pose": "The main prompt has pose tags ({{tags}}). There they apply to every pose; move them to the Poses step.",
+          "expression": "The main prompt has expression tags ({{tags}}). To vary the expression, move them to an axis level."
+        }
+      },
+      "bases": {
+        "adopted": "Adopted",
+        "pick": "{{count}} candidates, none adopted",
+        "none": "Not made",
+        "generate": "Make the missing bases ({{count}})",
+        "generateTip": "Makes candidates for each pose. The first is adopted for now; click the image to compare them on the right",
+        "adoptHint": "{{count}} base(s) have candidates but none adopted. Click the image and adopt the best candidate on the right.",
+        "allMade": "Every pose has a base. To redo one, click it and use \"Generate\" on the right to add candidates, then adopt the better one."
+      },
+      "masks": {
+        "legend": "Regions and the axes using them",
+        "usedBy": "→ repainted by {{axes}}",
+        "unused": "→ not used by any axis",
+        "noneNeeded": "Nothing to paint for this pose",
+        "needBase": "Adopt a base first to paint over it",
+        "draw": "Paint",
+        "edit": "Repaint",
+        "drawTip": "Paint each region over the base; variants only change inside them"
+      },
+      "variants": {
+        "progress": "{{done}} / {{total}} cells adopted (or excluded)",
+        "trial": "Try each level of \"{{pose}}\" first ({{count}})",
+        "trialTip": "Makes each axis's levels on their own (no combinations) for the first pose. Checking the result before making everything avoids wasting Anlas",
+        "all": "Make everything left ({{count}})",
+        "allTip": "Cells without a parent get it made first. Asks before spending Anlas",
+        "allMade": "Every cell has candidates.",
+        "adoptHint": "{{count}} cell(s) have candidates but none adopted. Adopt them in the matrix.",
+        "toMatrix": "Review and adopt in the matrix",
+        "problemMasks": "Cells of poses without region masks can't be made: {{poses}}",
+        "problemRegions": "Cells of axes without regions can't be made: {{axes}}",
+        "fix": "Fix it"
+      },
+      "export": {
+        "current": "Current target: {{target}}",
+        "open": "Open the Export tab"
+      },
+      "steps": {
+        "look": {
+          "short": "Look",
+          "title": "Write the character's look",
+          "what": "Write what never changes (hairstyle, hair colour, eyes, build, age…) in the left panel's main prompt. The style, Vibes and character reference of the left panel are used as they are.",
+          "tips": [
+            "Keep clothes, pose and expression out of it: written in the next steps, they can vary per variant.",
+            "Tag groups, autocomplete and random groups work as in normal generation."
+          ],
+          "missing": "{{items}}"
+        },
+        "outfit": {
+          "short": "Outfit",
+          "title": "Describe the outfit as parts",
+          "what": "Split it into jacket, shirt, skirt, underwear… and describe colours and shapes in detail; the more detail, the more every pose wears the same clothes. In the table, pick each part's state at each damage stage.",
+          "tips": [
+            "Set underwear as \"worn under\" the clothes over it: it stays out of the first sprite and appears once they are heavily torn.",
+            "\"Torn\" and \"heavily torn\" add torn / heavily torn by themselves; fill the table only to change the wording.",
+            "Skip this step if the set doesn't damage clothes.",
+            "Sets without damage can turn off \"Make clothing damage variants\" below the table."
+          ],
+          "missing": "Parts with an empty prompt: {{items}}"
+        },
+        "poses": {
+          "short": "Poses",
+          "title": "Choose the poses",
+          "what": "Each pose gets a base generated from scratch. Write the framing (full body…) and the posture. Remove poses you don't need, add the ones missing.",
+          "tips": [
+            "For standing sprites, the same framing tags on every pose (full body, standing…) keep the size consistent.",
+            "\"Axes used\" turns off variants a pose doesn't need, saving cells and Anlas.",
+            "For poses with an enemy holding the character, pick left-panel characters under \"Cast\"."
+          ],
+          "missing": "Poses with an empty prompt: {{items}}"
+        },
+        "axes": {
+          "short": "Axes",
+          "title": "Choose what varies (axes)",
+          "what": "List what should vary (clothing damage, expression, wounds, fatigue…) as axes and write each level's prompt. Pick the regions each axis repaints (clothes, face, body…).",
+          "tips": [
+            "Wounds, wet or bloody clothes, stained underwear… come ready-made (regions and prompts set) from \"Add a common variant\".",
+            "Pick the smallest area that works (face for expressions, body for wounds and sweat) so nothing else shifts.",
+            "For axes whose regions don't overlap (face vs body), \"combine by compositing\" makes the combinations for free.",
+            "For levels that build on each other, like progressing damage, turn on \"build up levels\"."
+          ],
+          "missing": "Axes missing something (no region, or an empty level prompt): {{items}}"
+        },
+        "bases": {
+          "short": "Bases",
+          "title": "Make and adopt the bases",
+          "what": "Make a few candidates per pose. The first is adopted for now; compare them and click the best to adopt it instead. Every variant starts from the base, so it pays to be picky here.",
+          "tips": [
+            "Click an image to see its candidates on the right. Generate again if none is good (candidates accumulate).",
+            "To use your own sprite, \"Import image\" on the right makes it the base.",
+            "If faces differ between poses, fix the seed in the generation settings below.",
+            "Background transparency and text suppression are in the generation settings below (default: transparent, no text)."
+          ],
+          "missing": "Poses without an adopted base: {{items}}"
+        },
+        "masks": {
+          "short": "Masks",
+          "title": "Paint the areas that change",
+          "what": "Over each pose's base, paint the areas variants repaint (clothes, face…). Only these areas change; outside them the base is kept.",
+          "tips": [
+            "Paint clothes a bit wider than where they tear, and the face only around the eyes, mouth and brows.",
+            "For similar poses, \"Copy from another pose\" and then adjust.",
+            "Painting snaps to 8px cells (the unit the API uses)."
+          ],
+          "missing": "Poses with regions left to paint: {{items}}"
+        },
+        "variants": {
+          "short": "Variants",
+          "title": "Make the variants",
+          "what": "Generate the remaining cells together. Parents are made first and non-overlapping combinations are composited for free. You see the Anlas estimate before it starts.",
+          "tips": [
+            "Try one pose first and check the result before making everything.",
+            "Each cell's first candidate is adopted for now; compare in the matrix and click (or press 1–9) to switch.",
+            "Fix a cell you partly dislike with \"Paint and regenerate\" on the right."
+          ],
+          "missing": "{{items}}"
+        },
+        "export": {
+          "short": "Export",
+          "title": "Export for your game",
+          "what": "In the Export tab, pick the engine (RPG Maker, TyranoScript, Ren'Py, Unity, Web…). The images plus the scripts or tables to load them are written in the engine's folder layout.",
+          "tips": [
+            "Change the file name shape and the scale; \"Files to write\" shows the contents beforehand.",
+            "Difference layers keep only what differs from the base, as transparent images (supported engines only).",
+            "Images with a background can be exported as transparent PNGs (free). Check first with \"Check transparency\" on the right."
+          ],
+          "missing": "{{items}}"
+        }
+      }
+    },
+    "noTextHint": "The sprite page keeps text, sound effects and marks out of its images (dialogue / sound-effect inputs aren't used). Turn off \"No text or effect lines\" in the set settings to change this.",
+    "bg": {
+      "label": "Background",
+      "labelHint": "Game assets need a transparent background. V5 makes transparent images directly. V4.5 can't, so it draws on a plain white background that is removed on export (free, done on your computer).",
+      "mode": {
+        "transparent": "Transparent",
+        "white": "Keep white",
+        "asis": "Don't set"
+      },
+      "modeHint": {
+        "transparentV5": "V5: generated as transparent images; inpainted variants stay transparent.",
+        "transparentV45": "V4.5: generated on a plain white background, removed on export (V4.5 can't make transparent images).",
+        "white": "Generated on a plain white background, which is kept. You can still remove it on export.",
+        "asis": "Nothing is added about the background; for when your prompt sets one."
+      },
+      "noText": "No text or effect lines",
+      "noTextHint": "Always sends \"no text\" and puts text, sound effects, signatures and effect lines in the negative prompt. The left panel's dialogue, sound effects and marks are not used.",
+      "v5Note": "+ transparent background (V5 transparent generation)",
+      "section": "Transparent background",
+      "sectionHint": "Images with a background (V4.5, white) get their plain background removed into transparent PNGs — free, done on your computer. Images generated transparent on V5 are written as they are.",
+      "remove": "Remove the background",
+      "fillHoles": "Also enclosed gaps",
+      "fillHolesHint": "Also removes background enclosed by the figure, e.g. between an arm and the body. Turn off if parts of white clothes disappear.",
+      "removeIslands": "Drop small detached bits",
+      "removeIslandsHint": "Removes small things away from the character (text, signatures, effect lines, breath puffs). Anything touching the character stays. Turn off if a needed prop disappears.",
+      "check": "Check transparency",
+      "checkTip": "See the adopted image with its background removed, exactly as the export does it",
+      "previewTitle": "Background removed",
+      "previewDesc": "The same processing as the export. Changing the switches below updates the result.",
+      "outcome": {
+        "alreadyTransparent": "This image is already transparent and is exported as is.",
+        "notPlain": "The background isn't plain, so it couldn't be removed. Set the set's background to \"Transparent\" or \"Keep white\" and regenerate, or use background removal in \"Process adopted images\" (NovelAI, paid)."
+      }
+    },
+    "axisPreset": {
+      "add": "Add a common variant",
+      "tip": "Adds wounds, dirt and sweat on the body, expressions, blush and fear, wet / bloody / dirty clothes, stained underwear… with regions and prompts set",
+      "group": {
+        "body": "Body",
+        "face": "Face",
+        "clothes": "Clothes (attached to parts)",
+        "underwear": "Underwear (attached to parts)"
+      },
+      "items": {
+        "wounds": "Wounds (light → heavy)",
+        "bodyDirt": "Dirt on the body",
+        "sweat": "Sweat",
+        "expression": "Expressions (smile, anger, sadness…)",
+        "blush": "Blush",
+        "fear": "Fear",
+        "fatigue": "Fatigue",
+        "wet": "Wet clothes (see-through)",
+        "blood": "Blood on clothes",
+        "clothesDirt": "Dirty clothes",
+        "underwearStain": "Stained underwear"
+      },
+      "noParts": {
+        "clothes": "There are no outfit parts, so the axis applies to the whole picture. After adding parts, pick them under \"Attach to outfit parts\".",
+        "underwear": "There is no worn-under part (underwear), so the axis applies to the whole picture and every cell would draw underwear. Add the underwear in the outfit and pick it under \"Attach to outfit parts\"."
+      }
+    },
+    "sample": {
+      "open": "Sample",
+      "tip": "See a sample made with this feature (2 poses, damage, expressions, wounds… 20 images) and how each was made",
+      "title": "Variant sample",
+      "lead": "Variants actually made with this feature. Only 2 bases were generated from scratch; everything else repaints part of a base (V5, transparent background, Opus free tier: 0 Anlas). Click an image to enlarge it.",
+      "how": {
+        "base": "Base (new)",
+        "regions": "Region masks",
+        "inpaint": "Inpaint",
+        "chain": "Built up",
+        "composite": "Composite (free)"
+      },
+      "howLong": {
+        "base": "Generated from the prompt; every variant below starts from it",
+        "regions": "Areas painted over the base (red: clothes, blue: face); variants repaint only inside them",
+        "inpaint": "Only the axis's region of the base is inpainted; the rest stays as the base",
+        "chain": "Inpainted again from the previous variant (built-up levels, combinations)",
+        "composite": "Cut and pasted from two existing images — no API call, free"
+      },
+      "sections": {
+        "damage": {
+          "title": "Clothing damage (built up)",
+          "desc": "Damage 1 comes from the base, damage 2 from damage 1, inpainting only the clothes region. Face, hair and pose stay as the base."
+        },
+        "expressions": {
+          "title": "Expressions (face region only)",
+          "desc": "Only a small area around the face is repainted, so the clothes and body stay as in the base."
+        },
+        "other": {
+          "title": "Other body and clothes variants",
+          "desc": "Wounds and dirt are on the body; blood is attached to the blazer (an outfit part). \"Add a common variant\" adds the same axes."
+        },
+        "combo": {
+          "title": "Combinations",
+          "desc": "Damage 2 + wounds + fear are built up one axis at a time. Non-overlapping combinations like face × clothes can be composited from existing images (free)."
+        },
+        "poses": {
+          "title": "The same definition on another pose",
+          "desc": "Adding poses reuses the outfit, damage stages and expressions as they are."
+        },
+        "regions": {
+          "title": "Region masks",
+          "desc": "Areas painted over each pose's base. Thanks to them, the face and body don't shift in the variants."
+        }
+      },
+      "labels": {
+        "base": "Base (intact)",
+        "d1": "Damage 1",
+        "d2": "Damage 2",
+        "normal": "Normal",
+        "smile": "Smile",
+        "angry": "Angry",
+        "sad": "Sad",
+        "surprised": "Surprised",
+        "blush": "Blush",
+        "wound": "Wounds",
+        "dirt": "Dirt",
+        "blood": "Blood on clothes",
+        "d2Wound": "Damage 2 + wounds",
+        "d2WoundFear": "Damage 2 + wounds + fear",
+        "d2Angry": "Damage 2 + angry",
+        "poseBase": "Base (pointing)",
+        "regionsA": "Standing",
+        "regionsB": "Pointing"
+      },
+      "madeWith": "Generated with nai-diffusion-5-full, 832×1216, transparent background, \"No text or effect lines\" on. 2 bases + 16 inpainted + 1 composite.",
+      "prompts": "Prompts used",
+      "promptLabels": {
+        "look": "Look (left panel main prompt)",
+        "poseA": "Pose: standing",
+        "poseB": "Pose: pointing",
+        "outfit": "Outfit (intact)",
+        "d1": "Damage 1",
+        "d2": "Damage 2",
+        "expressions": "Expressions",
+        "other": "Wounds / dirt / blood on clothes",
+        "fear": "Fear"
+      },
+      "create": "Create a set like this",
+      "createTip": "Creates a new set with the sample's poses, outfit, damage stages, expressions, wounds and blood, and copies the look prompt",
+      "copyLook": "Copy the look prompt",
+      "lookCopied": "Look prompt copied. Paste it into the left panel's main prompt.",
+      "copyFailed": "Couldn't copy",
+      "setName": "Sample (uniform)"
     }
   }
 }

@@ -31,7 +31,7 @@ function rpgBattle(): SpriteSpec {
   const [body, face] = spec.regions;
   spec.poses = [
     newPose("待機", "idle", "full body, standing, fighting stance, looking at viewer"),
-    newPose("攻撃", "attack", "full body, attacking, dynamic pose, motion lines"),
+    newPose("攻撃", "attack", "full body, attacking, dynamic pose, swinging weapon"),
     newPose("被弾", "hit", "full body, being hit, flinching, pained expression, stumbling backward"),
     newPose("ダウン", "down", "full body, sitting on ground, wariza, exhausted"),
     newPose("拘束", "bound", "full body, restrained, arms held behind back, struggling"),
@@ -137,7 +137,7 @@ export function withFreshIds(spec: SpriteSpec, keepMasks: boolean): SpriteSpec {
   const parts = spec.outfit.parts.map((p) => ({ ...p, id: re(p.id), coveredBy: p.coveredBy.map(re) }));
   const stages = spec.outfit.stages.map((s) => ({ ...s, id: re(s.id), states: reKeys(s.states), overrides: reKeys(s.overrides) }));
   const axes = spec.axes.map((a) => ({
-    ...a, id: re(a.id), regionIds: a.regionIds.map(re), levels: a.levels.map((l) => ({ ...l, id: re(l.id) })),
+    ...a, id: re(a.id), regionIds: a.regionIds.map(re), partIds: (a.partIds ?? []).map(re), levels: a.levels.map((l) => ({ ...l, id: re(l.id) })),
   }));
   const masks = keepMasks
     ? Object.fromEntries(Object.entries(spec.masks).map(([pose, m]) => [re(pose), reKeys(m)]))

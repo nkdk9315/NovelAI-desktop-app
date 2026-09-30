@@ -44,6 +44,7 @@ export function removePart(spec: SpriteSpec, id: string): SpriteSpec {
       parts: spec.outfit.parts.filter((p) => p.id !== id).map((p) => ({ ...p, coveredBy: p.coveredBy.filter((c) => c !== id) })),
       stages: spec.outfit.stages.map((s) => ({ ...s, states: omit(s.states, id), overrides: omit(s.overrides, id) })),
     },
+    axes: spec.axes.map((a) => ({ ...a, partIds: a.partIds.filter((p) => p !== id) })),
   };
 }
 

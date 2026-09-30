@@ -1,22 +1,21 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Eraser, Play, RefreshCcw, Rows3, SquareCheck, SquareDashed, Wand } from "lucide-react";
+import { AlertTriangle, Eraser, RefreshCcw, Rows3, SquareCheck, SquareDashed, Wand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cellStateOf, useSpriteStore } from "@/stores/sprite-store";
+import { useSpriteStore } from "@/stores/sprite-store";
 import { allCells, cellKey, isOrphanKey, isSkipped, levelsOf, parseCellKey } from "@/lib/sprite/cells";
 import * as spriteIpc from "@/lib/ipc-sprite";
 import { toastError } from "@/lib/toast-error";
 import PostProcessDialog from "./PostProcessDialog";
-import { batchProblems, withMissingAncestors } from "@/lib/sprite/plan";
 import { staleKeys } from "@/lib/sprite/status";
 import { useSpriteMaskEditorStore } from "@/stores/sprite-mask-editor-store";
-import { estimateSpriteCost } from "@/lib/sprite/cost";
-import { enqueueCells } from "@/lib/sprite/run";
+import { BatchCost, BatchGenerateButton, useSpriteBatch } from "./batch";
+import { HelpDot, Tip } from "../Hint";
 
 const NONE = "__none__";
 
@@ -33,7 +32,6 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
   const checkedKeys = useSpriteStore((s) => s.checkedKeys);
   const setView = useSpriteStore((s) => s.setView);
   const setChecked = useSpriteStore((s) => s.setChecked);
-  const [confirm, setConfirm] = useState<{ keys: string[]; total: number } | null>(null);
   const [postOpen, setPostOpen] = useState(false);
   const [confirmOrphans, setConfirmOrphans] = useState(false);
   // Cells whose pose / axis / level was removed from the definition
@@ -50,33 +48,15 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
     !cells[k]?.candidates.length && !cells[k]?.excluded && !isSkipped(spec, parseCellKey(k)));
   const everyKey = useMemo(() => allCells(spec).map(cellKey), [spec]);
   // Parents that aren't adopted yet are made first, in the same batch
-  const batch = useMemo(
-    () => withMissingAncestors(spec, checkedKeys, cellStateOf).filter((k) => !cellStateOf(k)?.excluded),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- cells: adoption / excluded flags change the batch
-    [spec, checkedKeys, cells],
-  );
-  const problems = useMemo(() => batchProblems(spec, batch), [spec, batch]);
+  const { problems } = useSpriteBatch(checkedKeys);
   const stale = useMemo(() => staleKeys(spec, cells), [spec, cells]);
-  const estimate = useMemo(
-    () => estimateSpriteCost(spec, batch, cellStateOf, spec.candidatesPerCell),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- cells: excluded flags change the plan
-    [spec, checkedKeys, cells],
-  );
-
-  const run = (keys: string[]) => {
-    enqueueCells(keys.map((key) => ({ key, count: spec.candidatesPerCell })));
-    setChecked([]);
-  };
-  const start = () => {
-    if (estimate.total > 0) setConfirm({ keys: batch, total: estimate.total });
-    else run(batch);
-  };
 
   return (
     <div className="sticky top-0 z-10 space-y-2 border-b border-border bg-background/95 px-3 py-2 backdrop-blur">
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <Rows3 className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-muted-foreground">{t("sprite.matrix.columns")}</span>
+        <HelpDot text={t("sprite.tips.columns")} />
         <Select value={view.columnAxisId ?? NONE} onValueChange={(v) => setView({ columnAxisId: v === NONE ? null : v })}>
           <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -88,7 +68,9 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
           const current = view.filter[axis.id] ?? 0;
           return (
             <div key={axis.id} className="flex flex-wrap items-center gap-1" role="radiogroup" aria-label={axis.label}>
-              <span className="ml-2 text-[10px] font-medium text-muted-foreground">{axis.label}</span>
+              <Tip text={t("sprite.tips.filter", { axis: axis.label })}>
+                <span className="ml-2 text-[10px] font-medium text-muted-foreground">{axis.label}</span>
+              </Tip>
               {levelsOf(spec, axis).map((l, i) => (
                 <button
                   key={l.id}
@@ -106,46 +88,47 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
         })}
       </div>
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setChecked(ungenerated(visibleKeys))}>
-          <SquareDashed className="h-3.5 w-3.5" />{t("sprite.matrix.checkUngeneratedHere")}
-        </Button>
-        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setChecked(ungenerated(everyKey))}>
-          <SquareCheck className="h-3.5 w-3.5" />{t("sprite.matrix.checkUngeneratedAll", { count: ungenerated(everyKey).length })}
-        </Button>
+        <Tip text={t("sprite.tips.checkHere")}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setChecked(ungenerated(visibleKeys))}>
+            <SquareDashed className="h-3.5 w-3.5" />{t("sprite.matrix.checkUngeneratedHere")}
+          </Button>
+        </Tip>
+        <Tip text={t("sprite.tips.checkAll")}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setChecked(ungenerated(everyKey))}>
+            <SquareCheck className="h-3.5 w-3.5" />{t("sprite.matrix.checkUngeneratedAll", { count: ungenerated(everyKey).length })}
+          </Button>
+        </Tip>
         {checkedKeys.length > 0 && (
           <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setChecked([])}>
             {t("sprite.matrix.uncheck")}
           </Button>
         )}
-        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setPostOpen(true)}>
-          <Wand className="h-3.5 w-3.5" />{t("sprite.post.open")}
-        </Button>
-        {stale.length > 0 && (
-          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-amber-600 dark:text-amber-400"
-            title={t("sprite.matrix.staleHint")} onClick={() => setChecked(stale)}>
-            <RefreshCcw className="h-3.5 w-3.5" />{t("sprite.matrix.checkStale", { count: stale.length })}
+        <Tip text={t("sprite.tips.post")}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setPostOpen(true)}>
+            <Wand className="h-3.5 w-3.5" />{t("sprite.post.open")}
           </Button>
+        </Tip>
+        {stale.length > 0 && (
+          <Tip text={t("sprite.matrix.staleHint")}>
+            <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-amber-600 dark:text-amber-400" onClick={() => setChecked(stale)}>
+              <RefreshCcw className="h-3.5 w-3.5" />{t("sprite.matrix.checkStale", { count: stale.length })}
+            </Button>
+          </Tip>
         )}
         {orphans.length > 0 && (
-          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-amber-600 dark:text-amber-400"
-            title={t("sprite.matrix.orphansHint")} onClick={() => setConfirmOrphans(true)}>
-            <Eraser className="h-3.5 w-3.5" />{t("sprite.matrix.orphans", { count: orphans.length })}
-          </Button>
+          <Tip text={t("sprite.matrix.orphansHint")}>
+            <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-amber-600 dark:text-amber-400" onClick={() => setConfirmOrphans(true)}>
+              <Eraser className="h-3.5 w-3.5" />{t("sprite.matrix.orphans", { count: orphans.length })}
+            </Button>
+          </Tip>
         )}
         <div className="flex-1" />
-        <span className="hidden text-[10px] text-muted-foreground xl:inline" title={t("sprite.matrix.keysHint")}>⌨ {t("sprite.matrix.keys")}</span>
-        {checkedKeys.length > 0 && (
-          <span className="text-muted-foreground">
-            {t("sprite.matrix.batchSummary", {
-              cells: batch.length, images: estimate.generations, composites: estimate.composites,
-            })}
-            {" · "}
-            {estimate.total === 0 ? t("sprite.matrix.free") : t("sprite.matrix.anlas", { count: estimate.total })}
-          </span>
-        )}
-        <Button size="sm" className="h-7 gap-1 text-xs" disabled={batch.length === 0} onClick={start}>
-          <Play className="h-3.5 w-3.5" />{t("sprite.matrix.generateChecked", { count: batch.length })}
-        </Button>
+        <Tip text={t("sprite.matrix.keysHint")}>
+          <span className="hidden text-[10px] text-muted-foreground xl:inline">⌨ {t("sprite.matrix.keys")}</span>
+        </Tip>
+        {checkedKeys.length > 0 && <BatchCost keys={checkedKeys} />}
+        <BatchGenerateButton keys={checkedKeys} tip={t("sprite.tips.generateChecked")}
+          label={(count) => t("sprite.matrix.generateChecked", { count })} onStarted={() => setChecked([])} />
       </div>
 
       {(problems.maskMissing.length > 0 || problems.noRegion.length > 0) && (
@@ -175,22 +158,6 @@ export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={removeOrphans}>{t("common.delete")}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <AlertDialog open={!!confirm} onOpenChange={(o) => { if (!o) setConfirm(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("sprite.matrix.costTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("sprite.matrix.costBody", { count: confirm?.total ?? 0, cells: confirm?.keys.length ?? 0 })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (confirm) run(confirm.keys); setConfirm(null); }}>
-              {t("sprite.matrix.generate")}
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -4,7 +4,7 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSpriteStore } from "@/stores/sprite-store";
 import { useSpriteTemplateStore } from "@/stores/sprite-template-store";
 import { BUILTIN_TEMPLATES, builtinTemplate, templateSize, withFreshIds } from "@/lib/sprite/templates";
@@ -35,7 +35,7 @@ export default function NewSpriteSetDialog({ open, onOpenChange }: { open: boole
     setBusy(true);
     try {
       await useSpriteStore.getState().createSet(name.trim(), { ...spec, characterKey: slugKey(name, spec.characterKey) });
-      useSpriteStore.getState().setTab("define");
+      useSpriteStore.getState().setTab("guide");
       onOpenChange(false);
     } catch (e) {
       toastError(String(e));
@@ -78,6 +78,7 @@ export default function NewSpriteSetDialog({ open, onOpenChange }: { open: boole
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("sprite.newSet")}</DialogTitle>
+          <DialogDescription>{t("sprite.newSetDesc")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
@@ -95,7 +96,7 @@ export default function NewSpriteSetDialog({ open, onOpenChange }: { open: boole
                     size="icon"
                     variant="ghost"
                     className="h-7 w-7 shrink-0"
-                    title={t("common.delete")}
+                    aria-label={t("common.delete")}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (choice.kind === "user" && choice.id === tpl.id) setChoice({ kind: "builtin", id: "blank" });

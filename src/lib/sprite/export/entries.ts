@@ -3,7 +3,8 @@
  * (from the name template) and its level keys, which engine adapters turn
  * into lookup tables.
  */
-import { allCells, cellKey, levelIndex, levelsOf, type CellCoord } from "../cells";
+import { allCells, cellKey, levelIndex, levelsOf, withLevel, type CellCoord } from "../cells";
+import { partHiddenAxes } from "../prompt";
 import type { SpriteSpec } from "../spec";
 
 export interface ExportEntry {
@@ -44,11 +45,13 @@ export function applyNameTemplate(
 export function buildEntries(spec: SpriteSpec, cells: (key: string) => CellImage | undefined): ExportEntry[] {
   const out: ExportEntry[] = [];
   const used = new Set<string>();
-  const coords = allCells(spec);
+  // Part variants while the part is hidden look like the cell without them: same image
+  const coords = allCells(spec, true);
+  const sourceOf = (coord: CellCoord) => partHiddenAxes(spec, coord).reduce((c, axis) => withLevel(spec, c, axis, 0), coord);
   const baseKeys = new Map(spec.poses.map((p) => [p.id, cellKey({ poseId: p.id, levels: {} })]));
   coords.forEach((coord) => {
     const key = cellKey(coord);
-    const cell = cells(key);
+    const cell = cells(cellKey(sourceOf(coord)));
     if (!cell?.adoptedImageId || cell.excluded) return;
     const pose = spec.poses.find((p) => p.id === coord.poseId)!;
     const levels: Record<string, string> = {};

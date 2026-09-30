@@ -16,6 +16,8 @@ import { compositeImages } from "./composite";
 import { regionCells, subtractCells } from "./mask";
 import { planCell, type CellPlan } from "./plan";
 import { cellPrompt } from "./prompt";
+import { spriteRequestExtras } from "./background";
+import { joinPrompt } from "@/lib/outfits";
 import type { SpriteSpec } from "./spec";
 import { rolledTextOf } from "./text";
 import type { CharacterReferenceRequest, GenerateActionRequest } from "@/types";
@@ -84,12 +86,15 @@ async function runGenerate(spec: SpriteSpec, setId: string, projectId: string, p
   for (let i = 0; i < item.count; i++) {
     if (useSpriteQueueStore.getState().stopRequested) return;
     const prompt = cellPrompt(spec, plan.coord, rolledTextOf);
+    const extras = spriteRequestExtras(spec, useGenerationParamsStore.getState().model);
     const built = buildGenerateRequest(projectId, {
       action,
       width: spec.width,
       height: spec.height,
-      mainSuffix: prompt.positive,
-      negativeSuffix: prompt.negative,
+      mainSuffix: joinPrompt(prompt.positive, extras.positive),
+      negativeSuffix: joinPrompt(prompt.negative, extras.negative),
+      transparentBackground: extras.transparent,
+      plainImage: extras.plain,
       seed: spec.seed != null ? (spec.seed + existing + i) % 4_294_967_296 : undefined,
       snapshotExtra: { sprite: { setId, cellKey: plan.key } },
       characterReference,

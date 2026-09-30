@@ -8,7 +8,10 @@ use image::RgbaImage;
 use rusqlite::Connection;
 
 use crate::error::AppError;
-use crate::models::sprite::{SpriteAtlasRequest, SpriteExportLayer, SpriteExportPlan, SpriteExportResultDto};
+use crate::models::sprite::{
+    SpriteAtlasRequest, SpriteBackgroundPreviewDto, SpriteExportLayer, SpriteExportPlan, SpriteExportResultDto,
+};
+use crate::services::sprite_background::{self as bg, BackgroundOptions};
 use crate::services::sprite_image_ops as ops;
 
 type Db = std::sync::Mutex<Connection>;
@@ -43,6 +46,7 @@ fn write(root: &Path, rel: &str, bytes: &[u8], files: &mut Vec<String>) -> Resul
 struct Loader<'a> {
     db: &'a Db,
     project_id: String,
+    background: Option<BackgroundOptions>,
     cache: HashMap<String, RgbaImage>,
 }
 
@@ -59,6 +63,11 @@ impl Loader<'_> {
             }
         }
         let img = ops::decode(&crate::services::image_output::read_history_image(self.db, image_id)?)?;
+        // Before difference layers: the base and the variant lose the same background
+        let img = match self.background {
+            Some(opts) => bg::remove_background(&img, opts).0,
+            None => img,
+        };
         self.cache.insert(image_id.to_string(), img.clone());
         Ok(img)
     }
@@ -87,11 +96,8 @@ pub fn export(db: &Db, plan: SpriteExportPlan) -> Result<SpriteExportResultDto, 
     if plan.images.len() + plan.texts.len() + atlas_count > MAX_FILES {
         return Err(AppError::Validation("too many files to export".to_string()));
     }
-    let project_id = {
-        let conn = db.lock().map_err(|e| AppError::Database(e.to_string()))?;
-        crate::repositories::sprite_set::find_by_id(&conn, &plan.set_id)?.project_id
-    };
-    let mut loader = Loader { db, project_id, cache: HashMap::new() };
+    let project_id = project_of(db, &plan.set_id)?;
+    let mut loader = Loader { db, project_id, background: plan.background, cache: HashMap::new() };
     let mut files = Vec::new();
 
     for item in &plan.images {
@@ -108,6 +114,24 @@ pub fn export(db: &Db, plan: SpriteExportPlan) -> Result<SpriteExportResultDto, 
         write(&root, &text.rel_path, text.content.as_bytes(), &mut files)?;
     }
     Ok(SpriteExportResultDto { out_dir: plan.out_dir, files })
+}
+
+fn project_of(db: &Db, set_id: &str) -> Result<String, AppError> {
+    let conn = db.lock().map_err(|e| AppError::Database(e.to_string()))?;
+    Ok(crate::repositories::sprite_set::find_by_id(&conn, set_id)?.project_id)
+}
+
+/// One image of the set with its background removed, as the export would write it.
+pub fn preview_background(
+    db: &Db, set_id: &str, image_id: &str, opts: BackgroundOptions,
+) -> Result<SpriteBackgroundPreviewDto, AppError> {
+    let mut loader = Loader { db, project_id: project_of(db, set_id)?, background: None, cache: HashMap::new() };
+    let (img, outcome) = bg::remove_background(&loader.image(image_id)?, opts);
+    use base64::Engine as _;
+    Ok(SpriteBackgroundPreviewDto {
+        image_base64: base64::engine::general_purpose::STANDARD.encode(ops::encode_png(&img)?),
+        outcome,
+    })
 }
 
 /// Trimmed frames packed into `<rel_dir>/<name>-<n>.png` with a TexturePacker "JSON Hash" file per page.

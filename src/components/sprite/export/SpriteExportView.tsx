@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, FolderOpen, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, FolderOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -15,6 +15,9 @@ import { allCells, cellKey } from "@/lib/sprite/cells";
 import type { SpriteExportTarget } from "@/lib/sprite/spec";
 import { toastError } from "@/lib/toast-error";
 import { CommitInput, Section, chip, updateSpec } from "../define/common";
+import { HelpDot } from "../Hint";
+import BackgroundOptionsFields from "./BackgroundOptionsFields";
+import BackgroundPreviewDialog from "./BackgroundPreviewDialog";
 
 const SCALES = [1, 0.75, 0.5, 0.25];
 const ATLAS_SIZES = [2048, 4096, 8192];
@@ -26,6 +29,7 @@ export default function SpriteExportView() {
   const cells = useSpriteStore((s) => s.cells);
   const [busy, setBusy] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const ex = spec.export;
   const patch = (p: Partial<typeof ex>) => updateSpec((s) => ({ ...s, export: { ...s.export, ...p } }));
 
@@ -70,7 +74,7 @@ export default function SpriteExportView() {
       <Section title={t("sprite.export.options")}>
         <div className="space-y-3 text-xs">
           <div className="space-y-1">
-            <Label className="text-xs">{t("sprite.export.nameTemplate")}</Label>
+            <Label className="flex items-center gap-1 text-xs">{t("sprite.export.nameTemplate")}<HelpDot text={t("sprite.tips.nameTemplate")} /></Label>
             <CommitInput value={ex.nameTemplate} className="font-mono" onCommit={(v) => patch({ nameTemplate: v.trim() || "{char}_{pose}" })} />
             <div className="flex flex-wrap gap-1">
               {tokens.map((tok) => (
@@ -83,7 +87,7 @@ export default function SpriteExportView() {
           </div>
           <div className="flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-2">
-              <Label className="text-xs">{t("sprite.export.scale")}</Label>
+              <Label className="flex items-center gap-1 text-xs">{t("sprite.export.scale")}<HelpDot text={t("sprite.tips.scale")} /></Label>
               <Select value={String(ex.scale)} onValueChange={(v) => patch({ scale: Number(v) })}>
                 <SelectTrigger className="h-7 w-40 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -95,13 +99,14 @@ export default function SpriteExportView() {
                 </SelectContent>
               </Select>
             </div>
-            <label className={`flex items-center gap-2 ${layersOk ? "" : "opacity-50"}`} title={t("sprite.export.layersHint")}>
+            <label className={`flex items-center gap-2 ${layersOk ? "" : "opacity-50"}`}>
               <Switch checked={ex.layers && layersOk} disabled={!layersOk} onCheckedChange={(v) => patch({ layers: v })} />
               {t("sprite.export.layers")}
+              <HelpDot text={layersOk ? t("sprite.export.layersHint") : t("sprite.tips.layersUnsupported")} />
             </label>
             {ex.target === "web-atlas" && (
               <div className="flex items-center gap-2">
-                <Label className="text-xs">{t("sprite.export.atlasSize")}</Label>
+                <Label className="flex items-center gap-1 text-xs">{t("sprite.export.atlasSize")}<HelpDot text={t("sprite.tips.atlasSize")} /></Label>
                 <Select value={String(ex.atlasMaxSize)} onValueChange={(v) => patch({ atlasMaxSize: Number(v) })}>
                   <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -113,6 +118,24 @@ export default function SpriteExportView() {
           </div>
           {ex.layers && layersOk && <p className="text-[11px] text-muted-foreground">{t("sprite.export.layersNote")}</p>}
         </div>
+      </Section>
+      <Section title={t("sprite.bg.section")} hint={t("sprite.bg.sectionHint")}>
+        <div className="space-y-2 text-xs">
+          <label className="flex items-center gap-2">
+            <Switch checked={ex.removeBackground} onCheckedChange={(v) => patch({ removeBackground: v })} />
+            {t("sprite.bg.remove")}
+          </label>
+          {ex.removeBackground && (
+            <div className="flex flex-wrap items-center gap-4">
+              <BackgroundOptionsFields />
+              <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" disabled={entries.length === 0}
+                onClick={() => setPreviewId(entries[0]?.imageId ?? null)}>
+                <Eye className="h-3.5 w-3.5" />{t("sprite.bg.check")}
+              </Button>
+            </div>
+          )}
+        </div>
+        <BackgroundPreviewDialog imageId={previewId} onClose={() => setPreviewId(null)} />
       </Section>
       <Section title={t("sprite.export.contents")}>
         <div className="space-y-2 text-xs">
@@ -136,6 +159,7 @@ export default function SpriteExportView() {
               ))}
             </div>
           )}
+          <p className="text-[11px] text-muted-foreground">{t("sprite.tips.exportRun")}</p>
           <Button className="gap-1" disabled={busy || entries.length === 0} onClick={() => { void run(); }}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderOpen className="h-4 w-4" />}
             {t("sprite.export.run")}

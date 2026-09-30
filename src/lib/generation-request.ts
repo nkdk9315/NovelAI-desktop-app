@@ -95,6 +95,13 @@ export interface RequestOverrides {
   characterReference?: CharacterReferenceRequest;
   /** Only these left-panel characters take part (sprite poses); all when omitted */
   characterIds?: string[];
+  /** V5: request a transparent background regardless of the prompt-mode toggle */
+  transparentBackground?: boolean;
+  /**
+   * No in-image text (sprite cells): the dialogue, sound effects and effect
+   * marks of the prompt boxes are left out, and `no text` is always sent
+   */
+  plainImage?: boolean;
 }
 
 export type BuildResult =
@@ -187,8 +194,15 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
   if (manga && manga.characters.length > maxChars) {
     return { ok: false, errorKey: "manga.tooManyAppearances", errorArgs: { max: maxChars, count: manga.characters.length } };
   }
-  const assembledMain = manga ? manga.main : appendTargetExtras(userMain, mainTarget, bubbleStyles, params.autoSfx);
-  const fullPrompt = decorateMainPrompt(artistPrefix + assembledMain, currentPromptDecoration(params));
+  const plain = overrides.plainImage ?? false;
+  const transparent = overrides.transparentBackground ?? params.transparentBackground;
+  const assembledMain = manga ? manga.main : plain ? userMain : appendTargetExtras(userMain, mainTarget, bubbleStyles, params.autoSfx);
+  const decoration: PromptDecoration = {
+    ...currentPromptDecoration(params),
+    transparentBackground: transparent,
+    ...(plain ? { stripNoText: false, forceNoText: true } : {}),
+  };
+  const fullPrompt = decorateMainPrompt(artistPrefix + assembledMain, decoration);
 
   let enabledVibes = allVibes.map((v) => ({ vibeId: v.vibeId, strength: v.strength }));
   if (params.normalizeVibeStrength && enabledVibes.length > 0) {
@@ -214,11 +228,9 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
           ? rollTargetForGeneration(charTarget)
           : { positive: c.prompt, negative: c.negativePrompt };
         const outfit = currentOutfitText(c, sidebarState.targets, true);
+        const charPrompt = joinPrompt(appendContributions(charRolled.positive, charContrib.positive), outfit?.positive);
         return {
-          prompt: appendTargetExtras(
-            joinPrompt(appendContributions(charRolled.positive, charContrib.positive), outfit?.positive),
-            charTarget, bubbleStyles,
-          ),
+          prompt: plain ? charPrompt : appendTargetExtras(charPrompt, charTarget, bubbleStyles),
           centerX: c.centerX,
           centerY: c.centerY,
           negativePrompt: joinPrompt(appendContributions(charRolled.negative, charContrib.negative), outfit?.negative),
@@ -258,7 +270,7 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
         ...buildUiSnapshot(params, sidebarArtistTags, sidebarState.targets, useMangaStore.getState().page),
         ...overrides.snapshotExtra,
       },
-      transparentBackground: isV5 ? params.transparentBackground : undefined,
+      transparentBackground: isV5 ? transparent : undefined,
       characterReference,
     },
   };

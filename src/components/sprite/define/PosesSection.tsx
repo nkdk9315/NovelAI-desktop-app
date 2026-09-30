@@ -9,6 +9,7 @@ import { newPose, spriteTargetId } from "@/lib/sprite/spec";
 import { move, removePose, uniqueKey } from "@/lib/sprite/edit";
 import { parseCellKey } from "@/lib/sprite/cells";
 import { CommitInput, KeyInput, RowActions, Section, chip, dropTargets, updateSpec } from "./common";
+import { HelpDot, Tip } from "../Hint";
 
 export default function PosesSection() {
   const { t } = useTranslation();
@@ -28,6 +29,7 @@ export default function PosesSection() {
     <Section
       title={t("sprite.define.poses")}
       hint={t("sprite.define.posesHint")}
+      help={t("sprite.help.sections.poses")}
       actions={<Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={add}><Plus className="h-3 w-3" />{t("sprite.define.addPose")}</Button>}
     >
       <div className="space-y-2">
@@ -40,10 +42,12 @@ export default function PosesSection() {
                   onCommit={(v) => updateSpec((s) => ({ ...s, poses: s.poses.map((p) => (p.id === pose.id ? { ...p, label: v.trim() || p.label } : p)) }))} />
                 <KeyInput value={pose.key} fallback={`pose${i + 1}`} taken={poses.filter((p) => p.id !== pose.id).map((p) => p.key)}
                   onCommit={(v) => updateSpec((s) => ({ ...s, poses: s.poses.map((p) => (p.id === pose.id ? { ...p, key: v } : p)) }))} />
-                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs"
-                  onClick={() => useSpriteMaskEditorStore.getState().open({ kind: "regions", poseId: pose.id })}>
-                  <Brush className="h-3 w-3" />{t("sprite.define.regionMasks", { done: masked, total: spec.regions.length })}
-                </Button>
+                <Tip text={t("sprite.tips.regionMasks")}>
+                  <Button size="sm" variant="outline" className="h-7 gap-1 text-xs"
+                    onClick={() => useSpriteMaskEditorStore.getState().open({ kind: "regions", poseId: pose.id })}>
+                    <Brush className="h-3 w-3" />{t("sprite.define.regionMasks", { done: masked, total: spec.regions.length })}
+                  </Button>
+                </Tip>
                 <div className="flex-1" />
                 <RowActions index={i} count={poses.length}
                   confirm={cellsOfPose(pose.id) > 0 || masked > 0 ? t("sprite.define.confirmPose", { count: cellsOfPose(pose.id) }) : undefined}
@@ -51,8 +55,9 @@ export default function PosesSection() {
                   onRemove={() => { dropTargets([pose.id]); updateSpec((s) => removePose(s, pose.id)); }} />
               </div>
               {spec.axes.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1" title={t("sprite.define.poseAxesHint")}>
+                <div className="flex flex-wrap items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">{t("sprite.define.poseAxes")}</span>
+                  <HelpDot text={t("sprite.define.poseAxesHint")} />
                   {spec.axes.map((a) => {
                     const on = !pose.skipAxes.includes(a.id);
                     return (
@@ -70,8 +75,9 @@ export default function PosesSection() {
                 </div>
               )}
               {characters.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1" title={t("sprite.define.poseCastHint")}>
+                <div className="flex flex-wrap items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">{t("sprite.define.poseCast")}</span>
+                  <HelpDot text={t("sprite.define.poseCastHint")} />
                   {characters.map((c, ci) => {
                     const on = pose.characterIds == null || pose.characterIds.includes(c.id);
                     return (

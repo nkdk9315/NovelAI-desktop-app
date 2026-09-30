@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
-  SpriteCandidateDto, SpriteCandidateMethod, SpriteCellDto, SpriteExportPlan, SpriteExportResultDto, SpriteSetDto,
+  SpriteBackgroundOptions, SpriteBackgroundPreviewDto, SpriteCandidateDto, SpriteCandidateMethod, SpriteCellDto,
+  SpriteExportPlan, SpriteExportResultDto, SpriteSetDto,
 } from "@/types/sprite";
 
 export function listSpriteSets(projectId: string): Promise<SpriteSetDto[]> {
@@ -44,6 +45,13 @@ export function setSpriteCellState(setId: string, cellKey: string, state: { excl
 export function deleteSpriteCells(setId: string, cellKeys: string[]): Promise<void> {
   return invoke("delete_sprite_cells", { setId, cellKeys });
 }
+/** One image with its background removed, as the export would write it. */
+export function previewSpriteBackground(
+  setId: string, imageId: string, options: SpriteBackgroundOptions,
+): Promise<SpriteBackgroundPreviewDto> {
+  return invoke("preview_sprite_background", { setId, imageId, options });
+}
+
 export function exportSpriteSet(plan: SpriteExportPlan): Promise<SpriteExportResultDto> {
   return invoke("export_sprite_set", { plan });
 }

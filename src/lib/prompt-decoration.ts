@@ -107,12 +107,16 @@ export interface PromptDecoration {
   furryMode: boolean;
   /** Remove `no text` from the quality tags (set only when the prompt draws text) */
   stripNoText?: boolean;
+  /** Add `no text` even when the quality tags don't carry it (sprite cells) */
+  forceNoText?: boolean;
 }
 
 /** Suffix added after the prompt: `transparent background` (V5) followed by the quality tags. */
 export function promptSuffix(d: PromptDecoration): string {
   const tags = qualityTagsFor(d.model, d.qualityPreset, d.customQualityTags);
-  const quality = d.stripNoText ? withoutNoText(tags) : tags;
+  let quality = d.stripNoText ? withoutNoText(tags) : tags;
+  const hasNoText = quality.split(",").some((t) => t.trim().toLowerCase() === NO_TEXT_TAG);
+  if (d.forceNoText && !d.stripNoText && !hasNoText) quality = appendTo(quality, NO_TEXT_TAG);
   const transparent = d.transparentBackground && isV5Model(d.model) ? TRANSPARENT_BACKGROUND_TAG : "";
   return [transparent, quality].filter(Boolean).join(", ");
 }

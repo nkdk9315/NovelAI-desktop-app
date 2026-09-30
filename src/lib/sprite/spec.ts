@@ -76,6 +76,12 @@ export interface SpriteAxis {
   chain: boolean;
   /** Combinations with other axes may be made by pixel compositing */
   composite: boolean;
+  /**
+   * Outfit parts the levels belong to (wet shirt, stained underwear): the tags
+   * follow the part in the prompt and are left out — and the cell isn't made —
+   * while every one of them is hidden or gone. Empty = the whole picture.
+   */
+  partIds: string[];
   levels: AxisLevel[];
 }
 
@@ -92,7 +98,21 @@ export interface SpriteExportSettings {
   layers: boolean;
   atlasMaxSize: number;
   lastDir: string | null;
+  /** Remove plain backgrounds (V4.5 / white) on export; transparent images pass through */
+  removeBackground: boolean;
+  /** Also remove flat enclosed gaps (between an arm and the body) */
+  fillHoles: boolean;
+  /** Drop small pieces far from the character (stray text, signatures, motion lines) */
+  removeIslands: boolean;
 }
+
+/**
+ * How cells are generated against the background:
+ * - transparent: V5 makes transparent images; V4.5 a plain white background removed on export
+ * - white: a plain white background, kept
+ * - asis: nothing added (the prompt decides)
+ */
+export type SpriteBackground = "transparent" | "white" | "asis";
 
 export interface SpriteSpec {
   version: number;
@@ -105,6 +125,9 @@ export interface SpriteSpec {
   inpaintStrength: number;
   /** V4.5: other poses' bases use the first pose's adopted base as character reference */
   poseReference: boolean;
+  background: SpriteBackground;
+  /** Keep text, sound effects and effect lines out of the images (dialogue / SFX of the left panel are ignored) */
+  noText: boolean;
   poses: SpritePose[];
   outfit: { parts: OutfitPart[]; stages: DamageStage[] };
   axes: SpriteAxis[];
@@ -141,7 +164,7 @@ export function newLevel(label: string, key: string, prompt = "", weight = 1): A
 }
 
 export function newAxis(label: string, key: string, kind: SpriteAxis["kind"], levels: AxisLevel[] = []): SpriteAxis {
-  return { id: newId(), key, label, kind, regionIds: [], chain: kind === "outfit", composite: false, levels };
+  return { id: newId(), key, label, kind, regionIds: [], chain: kind === "outfit", composite: false, partIds: [], levels };
 }
 
 export const DEFAULT_EXPORT: SpriteExportSettings = {
@@ -151,6 +174,9 @@ export const DEFAULT_EXPORT: SpriteExportSettings = {
   layers: false,
   atlasMaxSize: 4096,
   lastDir: null,
+  removeBackground: true,
+  fillHoles: true,
+  removeIslands: true,
 };
 
 export function randomSeed(): number {
@@ -172,6 +198,8 @@ export function newSpec(characterKey = "chara"): SpriteSpec {
     candidatesPerCell: 2,
     inpaintStrength: 1,
     poseReference: false,
+    background: "transparent",
+    noText: true,
     poses: [newPose("通常", "idle", "full body, standing, looking at viewer")],
     outfit: { parts: [], stages: [newStage("無傷", "d0")] },
     axes: [outfitAxis],
@@ -200,7 +228,7 @@ export function normalizeSpec(raw: unknown): SpriteSpec {
         .map((s) => ({ ...s, states: s.states ?? {}, overrides: s.overrides ?? {} })),
     },
     axes: (Array.isArray(r.axes) ? r.axes : base.axes)
-      .map((a) => ({ ...a, regionIds: a.regionIds ?? [], levels: a.levels ?? [] })),
+      .map((a) => ({ ...a, regionIds: a.regionIds ?? [], partIds: a.partIds ?? [], levels: a.levels ?? [] })),
     regions: Array.isArray(r.regions) ? r.regions : base.regions,
     masks: isObj(r.masks) ? r.masks as SpriteSpec["masks"] : {},
     export: { ...DEFAULT_EXPORT, ...(isObj(r.export) ? r.export : {}) },

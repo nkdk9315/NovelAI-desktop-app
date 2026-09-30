@@ -125,7 +125,8 @@ export default function PromptModeControls() {
         </SelectContent>
       </Select>
 
-      {isV5 && (
+      {/* The sprite page sets the background per set */}
+      {isV5 && workspace !== "sprite" && (
         <ModeButton
           active={transparentBackground}
           onClick={() => setParam("transparentBackground", !transparentBackground)}

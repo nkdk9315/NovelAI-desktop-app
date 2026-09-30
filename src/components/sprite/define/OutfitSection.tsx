@@ -1,12 +1,20 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { parseCellKey } from "@/lib/sprite/cells";
 import PromptTargetInput from "@/components/left-panel/PromptTargetInput";
 import { useSpriteStore } from "@/stores/sprite-store";
-import { newPart, spriteTargetId } from "@/lib/sprite/spec";
-import { move, removePart } from "@/lib/sprite/edit";
+import { newAxis, newPart, spriteTargetId } from "@/lib/sprite/spec";
+import { move, removeAxis, removePart, uniqueKey } from "@/lib/sprite/edit";
 import { CommitInput, RowActions, Section, chip, dropTargets, updateSpec } from "./common";
 import StagesTable from "./StagesTable";
+import { HelpDot } from "../Hint";
 
 /**
  * Outfit parts, written in detail once so every sprite wears the same
@@ -16,6 +24,25 @@ import StagesTable from "./StagesTable";
 export default function OutfitSection() {
   const { t } = useTranslation();
   const parts = useSpriteStore((s) => s.spec!.outfit.parts);
+  const damageAxis = useSpriteStore((s) => s.spec!.axes.find((a) => a.kind === "outfit") ?? null);
+  const damageCells = useSpriteStore((s) => (damageAxis
+    ? Object.values(s.cells).filter((c) => c.candidates.length > 0 && parseCellKey(c.cellKey).levels[damageAxis.id] != null).length
+    : 0));
+  const [confirmOff, setConfirmOff] = useState(false);
+  const setDamage = (on: boolean) => {
+    if (on) {
+      updateSpec((s) => {
+        const axis = newAxis(t("sprite.define.outfitAxis"), uniqueKey("damage", s.axes.map((a) => a.key)), "outfit");
+        const body = s.regions.find((r) => r.key === "body") ?? s.regions[0];
+        axis.regionIds = body ? [body.id] : [];
+        return { ...s, axes: [axis, ...s.axes] };
+      });
+    } else if (damageCells > 0) {
+      setConfirmOff(true);
+    } else if (damageAxis) {
+      updateSpec((s) => removeAxis(s, damageAxis.id));
+    }
+  };
 
   const add = () => updateSpec((s) => ({
     ...s,
@@ -28,6 +55,7 @@ export default function OutfitSection() {
     <Section
       title={t("sprite.define.outfit")}
       hint={t("sprite.define.outfitHint")}
+      help={t("sprite.help.sections.outfit")}
       actions={<Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={add}><Plus className="h-3 w-3" />{t("sprite.define.addPart")}</Button>}
     >
       <div className="space-y-2">
@@ -39,8 +67,9 @@ export default function OutfitSection() {
                 <CommitInput value={part.name} className="w-32" aria-label={t("sprite.define.partName")}
                   onCommit={(v) => patchPart(part.id, (p) => ({ ...p, name: v.trim() || p.name }))} />
                 {others.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1" title={t("sprite.define.coveredByHint")}>
+                  <div className="flex flex-wrap items-center gap-1">
                     <span className="text-[10px] text-muted-foreground">{t("sprite.define.coveredBy")}</span>
+                    <HelpDot text={t("sprite.define.coveredByHint")} />
                     {others.map((o) => {
                       const on = part.coveredBy.includes(o.id);
                       return (
@@ -68,7 +97,28 @@ export default function OutfitSection() {
         })}
         {parts.length === 0 && <p className="text-xs text-muted-foreground">{t("sprite.define.noParts")}</p>}
       </div>
-      <StagesTable />
+      <label className="flex items-start gap-2 pt-2 text-xs">
+        <Switch checked={!!damageAxis} onCheckedChange={setDamage} />
+        <span>
+          {t("sprite.define.damageOn")}
+          <span className="block text-[10px] text-muted-foreground">{t("sprite.define.damageOnHint")}</span>
+        </span>
+      </label>
+      {damageAxis ? <StagesTable /> : <p className="text-[11px] text-muted-foreground">{t("sprite.define.damageOff")}</p>}
+      <AlertDialog open={confirmOff} onOpenChange={setConfirmOff}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("sprite.define.confirmDelete")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("sprite.define.confirmAxis", { count: damageCells })}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (damageAxis) updateSpec((s) => removeAxis(s, damageAxis.id)); }}>
+              {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Section>
   );
 }
