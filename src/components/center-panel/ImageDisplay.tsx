@@ -8,6 +8,7 @@ import { useMangaStore } from "@/stores/manga-store";
 import { useZoomPan } from "@/hooks/use-zoom-pan";
 import ImageToolbar from "./ImageToolbar";
 import MangaLayoutPreview from "./MangaLayoutPreview";
+import GenerationPreviewView from "./GenerationPreviewView";
 
 export default function ImageDisplay() {
   const { t } = useTranslation();
@@ -15,6 +16,7 @@ export default function ImageDisplay() {
   const isGenerating = useGenerationStore((s) => s.isGenerating);
   const lastResult = useGenerationStore((s) => s.lastResult);
   const error = useGenerationStore((s) => s.error);
+  const preview = useGenerationStore((s) => (s.isGenerating ? s.preview : null));
   const currentProject = useProjectStore((s) => s.currentProject);
   const clearError = useGenerationStore((s) => s.clearError);
   const mangaEnabled = useMangaStore((s) => s.page.enabled);
@@ -37,12 +39,14 @@ export default function ImageDisplay() {
     {imageSrc && lastResult && <ImageToolbar imageId={lastResult.id} />}
     <div
       ref={zoom.containerRef}
-      {...(imageSrc ? zoom.handlers : {})}
+      {...(imageSrc && !preview ? zoom.handlers : {})}
       className={`relative flex flex-1 touch-none select-none items-center justify-center overflow-hidden ${
         imageSrc && scale > 1 ? (zoom.interacting ? "cursor-grabbing" : "cursor-grab") : ""
       }`}
     >
-      {imageSrc ? (
+      {preview ? (
+        <GenerationPreviewView preview={preview} />
+      ) : imageSrc ? (
         <img
           src={imageSrc}
           alt={`Seed: ${lastResult?.seed}`}
@@ -62,7 +66,7 @@ export default function ImageDisplay() {
         </div>
       )}
 
-      {imageSrc && (
+      {imageSrc && !preview && (
         <div
           className="absolute bottom-3 right-3 flex items-center rounded-md border border-border bg-card/90 text-muted-foreground"
           onPointerDown={(e) => e.stopPropagation()}
@@ -83,11 +87,23 @@ export default function ImageDisplay() {
         </div>
       )}
 
+      {preview && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-primary/15">
+          <div
+            className="h-full bg-primary transition-[width] duration-300 ease-out"
+            style={{ width: `${Math.min(100, (preview.count / preview.expected) * 100)}%` }}
+          />
+        </div>
+      )}
+
       {/* While generating, don't cover whatever image the user is looking at. */}
-      {isGenerating && (imageSrc ? (
+      {isGenerating && (imageSrc || preview ? (
         <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-1.5 rounded-md border border-border bg-card/90 px-2 py-1 text-xs text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
           {t("generation.generating")}
+          {preview && (
+            <span className="tabular">{Math.min(preview.count, preview.expected)} / {preview.expected}</span>
+          )}
         </div>
       ) : (
         <div className="absolute inset-0 flex items-center justify-center">

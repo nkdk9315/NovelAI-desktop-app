@@ -443,6 +443,14 @@ pub struct GenerateImageResponse {
     pub anlas_consumed: Option<u64>,
 }
 
+/// 生成中の途中経過 1 枚（generate_image_stream の Channel で送る）
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerationProgressDto {
+    pub step: u32,              // API の step_ix（0 始まり）
+    pub image_base64: String,   // JPEG
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CostEstimateRequest {

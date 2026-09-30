@@ -113,7 +113,8 @@ pub fn delete_project(conn: &Connection, id: &str) -> Result<(), AppError>;
 ///      - model/sampler/noise_schedule → FromStr parse
 ///      - action → GenerateAction変換 (base64 → ImageInput::Base64)
 ///      - character_reference → CharacterReferenceConfig { image: ImageInput::Base64, strength, fidelity, mode }
-///   4. api_client.generate(&params).await
+///   4. api_client.generate_with_progress(&params, on_progress).await
+///      （on_progress: 途中経過の JPEG を GenerationProgressDto { step, image_base64 } にして渡す。None なら送らない）
 ///   5. image_output::persist_output_image で images/<uuid>.<ext> 書込 + image_repo::insert (is_saved = 0)
 ///      （prompt_snapshot = PromptSnapshotInput::build(seed)。拡張子は result.image_format）
 ///   6. GenerateImageResponse 返却 (image_data → base64)
@@ -121,6 +122,7 @@ pub async fn generate_image(
     db: &Mutex<Connection>,
     api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     req: GenerateImageRequest,
+    on_progress: Option<&(dyn Fn(GenerationProgressDto) + Send + Sync)>,
 ) -> Result<GenerateImageResponse, AppError>;
 
 /// リクエスト検証（generate_image 冒頭で呼ばれる）

@@ -1,8 +1,9 @@
+use tauri::ipc::Channel;
 use tauri::State;
 
 use crate::models::dto::{
     CostEstimateRequest, CostResultDto, GenerateImageRequest, GenerateImageResponse,
-    GeneratedImageDto,
+    GeneratedImageDto, GenerationProgressDto,
 };
 use crate::state::AppState;
 
@@ -11,7 +12,22 @@ pub async fn generate_image(
     state: State<'_, AppState>,
     req: GenerateImageRequest,
 ) -> Result<GenerateImageResponse, String> {
-    crate::services::generation::generate_image(&state.db, &state.api_client, req)
+    crate::services::generation::generate_image(&state.db, &state.api_client, req, None)
+        .await
+        .map_err(|e| e.into())
+}
+
+/// `generate_image`, sending each denoising preview through `on_progress`
+/// while the image is generated.
+#[tauri::command]
+pub async fn generate_image_stream(
+    state: State<'_, AppState>,
+    req: GenerateImageRequest,
+    on_progress: Channel<GenerationProgressDto>,
+) -> Result<GenerateImageResponse, String> {
+    // A preview that can't be delivered (window gone) is simply dropped
+    let send = |p: GenerationProgressDto| { let _ = on_progress.send(p); };
+    crate::services::generation::generate_image(&state.db, &state.api_client, req, Some(&send))
         .await
         .map_err(|e| e.into())
 }

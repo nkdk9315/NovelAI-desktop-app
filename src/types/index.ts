@@ -463,6 +463,14 @@ export interface GenerateImageResponse {
   anlasConsumed?: number;
 }
 
+/** One denoising preview, streamed while an image is being generated. */
+export interface GenerationProgressDto {
+  /** Sampling step the preview comes from (0-based) */
+  step: number;
+  /** JPEG preview, base64 */
+  imageBase64: string;
+}
+
 export interface CostEstimateRequest {
   width: number;
   height: number;

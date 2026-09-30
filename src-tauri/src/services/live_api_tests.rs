@@ -95,13 +95,21 @@ async fn live_api_v45_and_v5() {
         .unwrap();
         let db = std::sync::Mutex::new(conn);
 
+        let previews = std::sync::atomic::AtomicUsize::new(0);
+        let on_progress = |_: crate::models::dto::GenerationProgressDto| {
+            previews.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        };
         let res = crate::services::generation::generate_image(
             &db,
             &api_client,
             make_request(&project.id, model, transparent),
+            Some(&on_progress),
         )
         .await
         .unwrap_or_else(|e| panic!("{model}: {e:?}"));
+        let previews = previews.into_inner();
+        println!("{model}: {previews} streamed previews");
+        assert!(previews > 0, "{model}: no streamed previews");
 
         let path = dir.path().join(&res.file_path);
         let img = image::open(&path).unwrap().to_rgba8();
@@ -168,7 +176,7 @@ async fn live_api_empty_prompts() {
         center_y: 0.5,
         negative_prompt: String::new(),
     }]);
-    let res = crate::services::generation::generate_image(&db, &api_client, req)
+    let res = crate::services::generation::generate_image(&db, &api_client, req, None)
         .await
         .unwrap_or_else(|e| panic!("empty prompts rejected: {e:?}"));
     println!("empty prompts OK: {} seed={}", res.file_path, res.seed);
