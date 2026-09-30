@@ -41,6 +41,12 @@
   --color-syntax-negative: var(--syntax-negative);
   --color-syntax-artist: var(--syntax-artist);
   --color-syntax-text: var(--syntax-text);
+
+  /* 生成中のプレビュー（ステップごとの途中画像）を前のコマに重ねてフェードイン */
+  --animate-preview-in: preview-in 0.3s ease-out;
+  @keyframes preview-in {
+    from { opacity: 0; }
+  }
 }
 
 /* ── ダークモード（デフォルト） ── */

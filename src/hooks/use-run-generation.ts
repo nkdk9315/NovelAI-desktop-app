@@ -22,7 +22,9 @@ export function useRunGeneration() {
       toast.error(t(built.errorKey, built.errorArgs));
       return;
     }
-    await generate(built.req);
+    // Stream preview is on unless turned off in the settings
+    const stream = useSettingsStore.getState().settings.stream_preview !== "off";
+    await generate(built.req, { stream });
     await Promise.all([loadImages(projectId), refreshAnlas()]);
   }, [projectId, generate, loadImages, refreshAnlas, t]);
 }

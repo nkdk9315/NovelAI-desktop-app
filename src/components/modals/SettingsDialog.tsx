@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -208,6 +209,19 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
                 <SelectItem value="none">{t("settings.costConfirmNone")}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Stream preview */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="stream-preview" className="text-xs">{t("settings.streamPreview")}</Label>
+              <p className="text-[11px] text-muted-foreground">{t("settings.streamPreviewHint")}</p>
+            </div>
+            <Switch
+              id="stream-preview"
+              checked={settings.stream_preview !== "off"}
+              onCheckedChange={(on) => setSetting("stream_preview", on ? "on" : "off")}
+            />
           </div>
 
           {/* Theme & Language */}

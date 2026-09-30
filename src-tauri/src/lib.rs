@@ -115,6 +115,7 @@ pub fn run() {
             commands::projects::update_project_thumbnail,
             commands::projects::get_default_project_dir,
             commands::images::generate_image,
+            commands::images::generate_image_stream,
             commands::images::estimate_cost,
             commands::images::save_image,
             commands::images::save_all_images,

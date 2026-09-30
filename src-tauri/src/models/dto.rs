@@ -587,6 +587,16 @@ pub struct GenerateImageResponse {
     pub anlas_consumed: Option<u64>,
 }
 
+/// One denoising preview, sent while an image is being generated.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GenerationProgressDto {
+    /// Sampling step the preview comes from (`step_ix`, 0-based)
+    pub step: u32,
+    /// JPEG preview
+    pub image_base64: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CostEstimateRequest {

@@ -273,6 +273,12 @@ export interface GenerateImageResponse {
   anlasConsumed?: number;
 }
 
+/** 生成中の途中経過 1 枚 */
+export interface GenerationProgressDto {
+  step: number;         // 0 始まり
+  imageBase64: string;  // JPEG
+}
+
 export interface CostEstimateRequest {
   width: number;
   height: number;
@@ -487,6 +493,15 @@ export function deleteProject(id: string): Promise<void> {
 export function generateImage(req: GenerateImageRequest): Promise<GenerateImageResponse> {
   return invoke("generate_image", { req });
 }
+
+/** generateImage と同じ。途中経過を届くたびに onProgress へ渡す（Tauri Channel） */
+export function generateImageStream(
+  req: GenerateImageRequest,
+  onProgress: (p: GenerationProgressDto) => void,
+): Promise<GenerateImageResponse>;
+// useGenerationStore.generate(req, { stream }) が settings.stream_preview（既定 on）で使い分け、
+// 途中経過は preview（data URL・受信数・想定数 = steps、img2img は ceil(steps × strength)）に入る。
+// ImageDisplay は生成中だけ preview を前のコマに重ねてフェードインで表示する
 
 export function estimateCost(req: CostEstimateRequest): Promise<CostResultDto> {
   return invoke("estimate_cost", { req });

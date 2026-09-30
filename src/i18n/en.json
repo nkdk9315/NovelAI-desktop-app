@@ -162,7 +162,9 @@
     "costConfirmMode": "Cost Confirmation",
     "costConfirmDialog": "Show confirmation dialog",
     "costConfirmColor": "Change button color",
-    "costConfirmNone": "None"
+    "costConfirmNone": "None",
+    "streamPreview": "Live generation preview",
+    "streamPreviewHint": "Show the image emerging from noise step by step while it generates, like the official site"
   },
   "history": {
     "nextPage": "Next page",

@@ -84,8 +84,18 @@ pub async fn generate_image(
     state: State<'_, AppState>,
     req: GenerateImageRequest,
 ) -> Result<GenerateImageResponse, String>;
-// → generation_service::generate_image(&state.db, &state.api_client, req).await
+// → generation_service::generate_image(&state.db, &state.api_client, req, None).await
 // req.action: Generate | Img2Img | Infill、req.characterReference: キャラ参照（V4.5 のみ、Vibe と併用不可）
+
+#[tauri::command]
+pub async fn generate_image_stream(
+    state: State<'_, AppState>,
+    req: GenerateImageRequest,
+    on_progress: tauri::ipc::Channel<GenerationProgressDto>,
+) -> Result<GenerateImageResponse, String>;
+// generate_image と同じ。生成中に API が stream で送る途中経過（ステップごとの JPEG）を
+// on_progress に流す（設定「生成中のプレビュー」、settings.stream_preview != "off"）。
+// Channel は省略可能な引数にできないため、stream しない呼び出し（差分制作など）は generate_image を使う
 
 #[tauri::command]
 pub fn estimate_cost(req: CostEstimateRequest) -> Result<CostResultDto, String>;

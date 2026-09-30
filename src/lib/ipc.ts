@@ -1,11 +1,11 @@
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import type {
   ProjectDto, GenreDto, GeneratedImageDto,
   AnlasBalanceDto, CostResultDto,
   CategoryDto, SystemTagDto, ListSystemGroupTagsResponse,
   CreateProjectRequest, UpdateProjectRequest, GenerateImageRequest, CostEstimateRequest,
   CreateGenreRequest, UpdateGenreRequest,
-  GenerateImageResponse, PromptGroupDto,
+  GenerateImageResponse, GenerationProgressDto, PromptGroupDto,
   AugmentImageRequest, UpscaleImageRequest, ImageToolResponse, ImageDataDto, ImageMetadataDto,
   ImportVibeEncodingRequest, ImportedVibeDto, EncodeVibeImageRequest, VibeDto, SaveTypesetRequest,
 } from "@/types";
@@ -81,6 +81,15 @@ export function getDefaultProjectDir(projectType: string, name: string): Promise
 // ---- Images ----
 
 export function generateImage(req: GenerateImageRequest): Promise<GenerateImageResponse> { return invoke("generate_image", { req }); }
+/** `generateImage`, calling `onProgress` with each denoising preview as it arrives. */
+export function generateImageStream(
+  req: GenerateImageRequest,
+  onProgress: (p: GenerationProgressDto) => void,
+): Promise<GenerateImageResponse> {
+  const channel = new Channel<GenerationProgressDto>();
+  channel.onmessage = onProgress;
+  return invoke("generate_image_stream", { req, onProgress: channel });
+}
 export function estimateCost(req: CostEstimateRequest): Promise<CostResultDto> { return invoke("estimate_cost", { req }); }
 export function saveImage(imageId: string): Promise<void> { return invoke("save_image", { imageId }); }
 export function saveAllImages(projectId: string): Promise<void> { return invoke("save_all_images", { projectId }); }

@@ -1,9 +1,12 @@
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine;
 use novelai_api::client::NovelAIClient;
 use rusqlite::Connection;
 
 use crate::error::AppError;
 use crate::models::dto::{
     CostEstimateRequest, CostResultDto, GenerateImageRequest, GenerateImageResponse,
+    GenerationProgressDto,
 };
 use crate::services::generation_snapshot::PromptSnapshotInput;
 
@@ -80,14 +83,16 @@ pub fn parse_char_ref_mode(mode: &str) -> Result<novelai_api::schemas::CharRefMo
     }
 }
 
+/// `on_progress` receives the denoising previews the API streams before the
+/// final image (the "stream preview" setting); `None` skips them.
 pub async fn generate_image(
     db: &std::sync::Mutex<Connection>,
     api_client: &tokio::sync::Mutex<Option<NovelAIClient>>,
     req: GenerateImageRequest,
+    on_progress: Option<&(dyn Fn(GenerationProgressDto) + Send + Sync)>,
 ) -> Result<GenerateImageResponse, AppError> {
     validate_generate_request(&req)?;
 
-    use base64::Engine;
     use novelai_api::schemas::{
         CharacterConfig, CharacterReferenceConfig, GenerateAction, GenerateParams, ImageInput,
         VibeConfig, VibeItem,
@@ -224,14 +229,17 @@ pub async fn generate_image(
         let client = client_guard
             .as_ref()
             .ok_or_else(|| AppError::NotInitialized("API client not initialized".to_string()))?;
+        let forward = on_progress.map(|send| move |p: novelai_api::client::GenerateProgress| {
+            send(GenerationProgressDto { step: p.step, image_base64: BASE64.encode(&p.image) });
+        });
+        let forward = forward.as_ref().map(|f| f as &novelai_api::client::ProgressFn<'_>);
         client
-            .generate(&params)
+            .generate_with_progress(&params, forward)
             .await
             .map_err(|e| AppError::ApiClient(e.to_string()))?
     };
 
-    let base64_image =
-        base64::engine::general_purpose::STANDARD.encode(&result.image_data);
+    let base64_image = BASE64.encode(&result.image_data);
     let meta = crate::services::image_output::OutputMeta {
         seed: result.seed as i64,
         width: req.width,

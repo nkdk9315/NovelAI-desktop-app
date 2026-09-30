@@ -162,7 +162,9 @@
     "costConfirmMode": "コスト確認",
     "costConfirmDialog": "確認ダイアログを表示",
     "costConfirmColor": "ボタンの色を変更",
-    "costConfirmNone": "なし"
+    "costConfirmNone": "なし",
+    "streamPreview": "生成中のプレビュー",
+    "streamPreviewHint": "公式サイトのように、ノイズから画像が浮かび上がる途中経過を表示します"
   },
   "history": {
     "nextPage": "次のページ",
