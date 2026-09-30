@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useSpriteStore } from "@/stores/sprite-store";
 import { newRegion } from "@/lib/sprite/spec";
 import { move, removeRegion, uniqueKey } from "@/lib/sprite/edit";
-import { CommitInput, KeyInput, RowActions, Section, updateSpec } from "./common";
+import { CommitInput, KeyInput, RowActions, Section, updateSpec } from "./DefineCommon";
 
 export default function RegionsSection() {
   const { t } = useTranslation();

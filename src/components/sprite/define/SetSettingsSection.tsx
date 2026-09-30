@@ -8,7 +8,7 @@ import { useSpriteStore } from "@/stores/sprite-store";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { isV5Model, supportsCharacterReference } from "@/lib/constants";
 import { randomSeed, slugKey } from "@/lib/sprite/spec";
-import { CommitInput, Section, chip, updateSpec } from "./common";
+import { CommitInput, Section, chip, updateSpec } from "./DefineCommon";
 import type { SpriteBackground } from "@/lib/sprite/spec";
 
 const BACKGROUNDS: SpriteBackground[] = ["transparent", "white", "asis"];

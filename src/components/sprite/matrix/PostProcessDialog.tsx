@@ -13,7 +13,7 @@ import * as ipc from "@/lib/ipc";
 import * as spriteIpc from "@/lib/ipc-sprite";
 import { calculateAugmentCost, calculateUpscaleCost } from "@/lib/cost";
 import { toastError } from "@/lib/toast-error";
-import { chip } from "../define/common";
+import { chip } from "../define/DefineCommon";
 
 type Tool = "bg-removal" | "upscale";
 const TOOLS: Tool[] = ["bg-removal", "upscale"];

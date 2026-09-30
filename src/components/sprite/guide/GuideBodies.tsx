@@ -9,7 +9,7 @@ import { allCells, cellKey, isSkipped, parseCellKey } from "@/lib/sprite/cells";
 import { baseKey, misplacedLookTags, missingMaskRegions, regionsUsedBy } from "@/lib/sprite/guide";
 import { projectImageUrl } from "@/lib/sprite/image-url";
 import SetSettingsSection from "../define/SetSettingsSection";
-import { BatchCost, BatchGenerateButton, useSpriteBatch } from "../matrix/batch";
+import { BatchCost, BatchGenerateButton, useSpriteBatch } from "../matrix/BatchGenerate";
 import { Tip } from "../Hint";
 import { Fold } from "./Fold";
 

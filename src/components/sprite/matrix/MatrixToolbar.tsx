@@ -14,7 +14,7 @@ import { toastError } from "@/lib/toast-error";
 import PostProcessDialog from "./PostProcessDialog";
 import { staleKeys } from "@/lib/sprite/status";
 import { useSpriteMaskEditorStore } from "@/stores/sprite-mask-editor-store";
-import { BatchCost, BatchGenerateButton, useSpriteBatch } from "./batch";
+import { BatchCost, BatchGenerateButton, useSpriteBatch } from "./BatchGenerate";
 import { HelpDot, Tip } from "../Hint";
 
 const NONE = "__none__";

@@ -8,7 +8,7 @@ import { useSpriteMaskEditorStore } from "@/stores/sprite-mask-editor-store";
 import { newPose, spriteTargetId } from "@/lib/sprite/spec";
 import { move, removePose, uniqueKey } from "@/lib/sprite/edit";
 import { parseCellKey } from "@/lib/sprite/cells";
-import { CommitInput, KeyInput, RowActions, Section, chip, dropTargets, updateSpec } from "./common";
+import { CommitInput, KeyInput, RowActions, Section, chip, dropTargets, updateSpec } from "./DefineCommon";
 import { HelpDot, Tip } from "../Hint";
 
 export default function PosesSection() {

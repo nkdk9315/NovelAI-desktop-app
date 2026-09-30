@@ -9,7 +9,7 @@ import { PART_STATES, newStage, spriteTargetId, type DamageStage, type PartState
 import { move, removeStage, uniqueKey } from "@/lib/sprite/edit";
 import { outfitPromptAt } from "@/lib/sprite/prompt";
 import { displayTextOf } from "@/lib/sprite/text";
-import { CommitInput, KeyInput, dropTargets, updateSpec } from "./common";
+import { CommitInput, KeyInput, dropTargets, updateSpec } from "./DefineCommon";
 import { Tip } from "../Hint";
 
 /** Parts down, damage stages across: each part's state per stage, plus what the outfit prompt becomes. */

@@ -16,8 +16,13 @@ fn map_cell(row: &Row) -> rusqlite::Result<SpriteCellRow> {
     })
 }
 
-const CANDIDATE_SELECT: &str = "SELECT c.id, c.set_id, c.cell_key, c.image_id, c.parent_image_id, c.method, \
-     c.created_at, i.file_path, i.seed FROM sprite_candidates c JOIN generated_images i ON i.id = c.image_id";
+/// Candidate columns with their image's file / seed, as a macro for `concat!` (no runtime formatting).
+macro_rules! candidate_select {
+    () => {
+        "SELECT c.id, c.set_id, c.cell_key, c.image_id, c.parent_image_id, c.method, \
+         c.created_at, i.file_path, i.seed FROM sprite_candidates c JOIN generated_images i ON i.id = c.image_id"
+    };
+}
 
 fn map_candidate(row: &Row) -> rusqlite::Result<SpriteCandidateRow> {
     Ok(SpriteCandidateRow {
@@ -84,7 +89,7 @@ pub fn delete_cells(conn: &Connection, set_id: &str, cell_keys: &[String]) -> Re
 }
 
 pub fn list_candidates(conn: &Connection, set_id: &str) -> Result<Vec<SpriteCandidateRow>, AppError> {
-    let mut stmt = conn.prepare(&format!("{CANDIDATE_SELECT} WHERE c.set_id = ?1 ORDER BY c.created_at"))?;
+    let mut stmt = conn.prepare(concat!(candidate_select!(), " WHERE c.set_id = ?1 ORDER BY c.created_at"))?;
     let rows = stmt
         .query_map([set_id], map_candidate)?
         .collect::<Result<Vec<_>, _>>()?;
@@ -92,7 +97,7 @@ pub fn list_candidates(conn: &Connection, set_id: &str) -> Result<Vec<SpriteCand
 }
 
 pub fn find_candidate(conn: &Connection, id: &str) -> Result<SpriteCandidateRow, AppError> {
-    conn.query_row(&format!("{CANDIDATE_SELECT} WHERE c.id = ?1"), [id], map_candidate)
+    conn.query_row(concat!(candidate_select!(), " WHERE c.id = ?1"), [id], map_candidate)
         .map_err(|e| match e {
             rusqlite::Error::QueryReturnedNoRows => AppError::NotFound(format!("sprite candidate {id}")),
             _ => e.into(),

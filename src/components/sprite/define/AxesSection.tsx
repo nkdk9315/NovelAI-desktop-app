@@ -9,7 +9,7 @@ import { useSpriteStore } from "@/stores/sprite-store";
 import { newAxis, newLevel } from "@/lib/sprite/spec";
 import { uniqueKey } from "@/lib/sprite/edit";
 import { AXIS_PRESETS, axisFromPreset, type AxisPresetGroup } from "@/lib/sprite/axis-presets";
-import { Section, updateSpec } from "./common";
+import { Section, updateSpec } from "./DefineCommon";
 import AxisCard from "./AxisCard";
 import { HelpDot, Tip } from "../Hint";
 

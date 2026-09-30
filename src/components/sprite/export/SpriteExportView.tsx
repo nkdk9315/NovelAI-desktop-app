@@ -14,7 +14,7 @@ import { TARGETS } from "@/lib/sprite/export/types";
 import { allCells, cellKey } from "@/lib/sprite/cells";
 import type { SpriteExportTarget } from "@/lib/sprite/spec";
 import { toastError } from "@/lib/toast-error";
-import { CommitInput, Section, chip, updateSpec } from "../define/common";
+import { CommitInput, Section, chip, updateSpec } from "../define/DefineCommon";
 import { HelpDot } from "../Hint";
 import BackgroundOptionsFields from "./BackgroundOptionsFields";
 import BackgroundPreviewDialog from "./BackgroundPreviewDialog";

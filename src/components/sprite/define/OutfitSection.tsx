@@ -12,7 +12,7 @@ import PromptTargetInput from "@/components/left-panel/PromptTargetInput";
 import { useSpriteStore } from "@/stores/sprite-store";
 import { newAxis, newPart, spriteTargetId } from "@/lib/sprite/spec";
 import { move, removeAxis, removePart, uniqueKey } from "@/lib/sprite/edit";
-import { CommitInput, RowActions, Section, chip, dropTargets, updateSpec } from "./common";
+import { CommitInput, RowActions, Section, chip, dropTargets, updateSpec } from "./DefineCommon";
 import StagesTable from "./StagesTable";
 import { HelpDot } from "../Hint";
 

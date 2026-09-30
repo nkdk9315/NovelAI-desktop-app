@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Switch } from "@/components/ui/switch";
 import { useSpriteStore } from "@/stores/sprite-store";
-import { updateSpec } from "../define/common";
+import { updateSpec } from "../define/DefineCommon";
 import { HelpDot } from "../Hint";
 
 /** The two tuning switches of the local background removal. */

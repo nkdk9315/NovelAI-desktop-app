@@ -7,7 +7,7 @@ import { useSpriteStore } from "@/stores/sprite-store";
 import { parseCellKey } from "@/lib/sprite/cells";
 import { newLevel, spriteTargetId, type AxisLevel, type SpriteAxis } from "@/lib/sprite/spec";
 import { move, ownedTargetIds, removeAxis, removeLevel, uniqueKey } from "@/lib/sprite/edit";
-import { CommitInput, KeyInput, RowActions, chip, dropTargets, updateSpec } from "./common";
+import { CommitInput, KeyInput, RowActions, chip, dropTargets, updateSpec } from "./DefineCommon";
 import { HelpDot } from "../Hint";
 
 export default function AxisCard({ axis, index, count }: { axis: SpriteAxis; index: number; count: number }) {

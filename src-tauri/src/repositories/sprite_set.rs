@@ -3,7 +3,12 @@ use rusqlite::{Connection, Row};
 use crate::error::AppError;
 use crate::models::sprite::SpriteSetRow;
 
-const COLUMNS: &str = "id, project_id, name, spec, sort_order, created_at, updated_at";
+/// Column list, as a macro so queries are built with `concat!` (no runtime formatting).
+macro_rules! columns {
+    () => {
+        "id, project_id, name, spec, sort_order, created_at, updated_at"
+    };
+}
 
 fn map_row(row: &Row) -> rusqlite::Result<SpriteSetRow> {
     Ok(SpriteSetRow {
@@ -18,16 +23,14 @@ fn map_row(row: &Row) -> rusqlite::Result<SpriteSetRow> {
 }
 
 pub fn list_by_project(conn: &Connection, project_id: &str) -> Result<Vec<SpriteSetRow>, AppError> {
-    let mut stmt = conn.prepare(&format!(
-        "SELECT {COLUMNS} FROM sprite_sets WHERE project_id = ?1 ORDER BY sort_order, created_at"
-    ))?;
+    let mut stmt = conn.prepare(concat!("SELECT ", columns!(), " FROM sprite_sets WHERE project_id = ?1 ORDER BY sort_order, created_at"))?;
     let rows = stmt.query_map([project_id], map_row)?.collect::<Result<Vec<_>, _>>()?;
     Ok(rows)
 }
 
 pub fn find_by_id(conn: &Connection, id: &str) -> Result<SpriteSetRow, AppError> {
     conn.query_row(
-        &format!("SELECT {COLUMNS} FROM sprite_sets WHERE id = ?1"),
+        concat!("SELECT ", columns!(), " FROM sprite_sets WHERE id = ?1"),
         [id],
         map_row,
     )
@@ -47,7 +50,7 @@ pub fn next_sort_order(conn: &Connection, project_id: &str) -> Result<i64, AppEr
 
 pub fn insert(conn: &Connection, row: &SpriteSetRow) -> Result<(), AppError> {
     conn.execute(
-        &format!("INSERT INTO sprite_sets ({COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"),
+        concat!("INSERT INTO sprite_sets (", columns!(), ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)"),
         rusqlite::params![
             row.id,
             row.project_id,
