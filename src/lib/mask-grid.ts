@@ -1,4 +1,8 @@
-/** The API receives the inpaint mask at 1/8 of the generation size. */
+/**
+ * Inpaint masks are drawn on an 8px cell grid. The API client scales the cells
+ * back to full size before sending (a 1/8-size or off-grid mask makes V5 draw a
+ * grey frame along the mask border).
+ */
 export const MASK_CELL = 8;
 
 /** Average alpha (0–255) above which a mask cell counts as painted. */
