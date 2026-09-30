@@ -6,6 +6,7 @@ import ResizeHandle from "@/components/shared/ResizeHandle";
 import SpriteCenter from "@/components/sprite/SpriteCenter";
 import SpriteCellPanel from "@/components/sprite/cell/SpriteCellPanel";
 import SpriteMaskEditorDialog from "@/components/sprite/mask/SpriteMaskEditorDialog";
+import NaxExplorerDialog from "@/components/modals/nax/NaxExplorerDialog";
 import { useLayoutStore } from "@/stores/layout-store";
 import { useProjectStore } from "@/stores/project-store";
 import { useMangaStore } from "@/stores/manga-store";
@@ -76,6 +77,8 @@ export default function SpritePage() {
         </aside>
       </div>
       <SpriteMaskEditorDialog />
+      {/* The shared left panel has the tag explorer buttons */}
+      <NaxExplorerDialog />
     </div>
   );
 }
