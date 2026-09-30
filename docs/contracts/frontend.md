@@ -936,6 +936,23 @@ interface HistoryState {
 | `left-panel/PresetTweakPanel.tsx` | プリセット個別調整パネル。アーティストタグ・Vibe 編集。`useArtistTagInput` を使用 |
 | `left-panel/ArtistStyleSection.tsx` | スタイルセクション全体。`useSidebarArtistTagsStore` + `useGenerationParamsStore` を併用 |
 
+## プロンプトの構文ハイライト (`src/lib/prompt-syntax.ts`)
+
+`PromptTextarea` は文字を透明にし、同じレイアウトの `PromptHighlight` を下に敷いて色を付ける
+（色だけ変え、太さなど字幅の変わる装飾は使わない。IME 変換中は通常表示に戻す）。
+色は `index.css` の `--syntax-*`（ダーク / ライト別）。`syntaxHighlight={false}` で無効。
+
+```typescript
+/** プロンプトを種類つきの区間に分ける（連結すると元の文字列）。weight は {} ×1.05・[] ÷1.05・`1.5::…::` の積 */
+export function highlightPrompt(prompt: string): SyntaxSpan[]; // { text, kind, weight }
+// kind: plain | separator | bracket | weight | artistPrefix | artist | prefix | textPrefix | text | quote | error
+//  - `artist:名前`、`artist#` グループ内の項目（ブロックが閉じるまで）は artist
+//  - 項目の先頭の `Text:` 以降は全部 text（画像内テキスト）。"…" は quote（カンマを含んでよい）
+//  - 閉じていない `{` `[` `1.2::` と対応しない `}` `]` `::` は error
+/** 強調の向き（up / down / negative）と段階 1–3。1 付近は null */
+export function emphasisOf(weight: number): { direction: EmphasisDirection; level: 1 | 2 | 3 } | null;
+```
+
 ## Tag DB — オートコンプリート経路 (`src/hooks/use-autocomplete.ts`)
 
 - `category` 未指定時: `ipc-tags.searchTags` → Tag DB FTS5 trigram 検索（全カテゴリ横断）

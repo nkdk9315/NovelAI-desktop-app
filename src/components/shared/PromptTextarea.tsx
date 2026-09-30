@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useLayoutEffect } from "react";
 import { useAutocomplete } from "@/hooks/use-autocomplete";
 import { useTokenDrag } from "@/hooks/use-token-drag";
 import { insertTagAt, tagQueryAt, type TagQuery } from "@/lib/tag-query";
+import PromptHighlight from "./PromptHighlight";
 
 function csvCategoryLabel(id: number): string {
   switch (id) {
@@ -31,6 +32,8 @@ interface PromptTextareaProps {
   /** Grow the textarea while focused (to fit content, at least `expandedRows`). */
   expandOnFocus?: boolean;
   expandedRows?: number;
+  /** Color emphasis, artists, `Text:` etc. (see `prompt-syntax.ts`). Default on. */
+  syntaxHighlight?: boolean;
 }
 
 /** Upper bound for the focused height so the panel never becomes all textarea. */
@@ -40,35 +43,6 @@ const MAX_EXPANDED_VH = 0.6;
  * lands before the layout shifts upward.
  */
 const COLLAPSE_DELAY_MS = 150;
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function renderHighlighted(value: string, tokens: string[]): React.ReactNode[] {
-  if (tokens.length === 0) return [value];
-  const re = new RegExp(tokens.map(escapeRegex).join("|"), "g");
-  const nodes: React.ReactNode[] = [];
-  let last = 0;
-  let key = 0;
-  for (const m of value.matchAll(re)) {
-    if (m.index == null) continue;
-    if (m.index > last) nodes.push(value.slice(last, m.index));
-    nodes.push(
-      <span
-        key={key++}
-        className="rounded bg-primary/25 text-primary"
-      >
-        {m[0]}
-      </span>,
-    );
-    last = m.index + m[0].length;
-  }
-  if (last < value.length) nodes.push(value.slice(last));
-  // Trailing space to preserve final line height when text ends with \n.
-  if (value.endsWith("\n")) nodes.push(" ");
-  return nodes;
-}
 
 export default function PromptTextarea({
   value,
@@ -80,9 +54,14 @@ export default function PromptTextarea({
   highlightTokens,
   expandOnFocus = false,
   expandedRows,
+  syntaxHighlight = true,
 }: PromptTextareaProps) {
   const tokens = highlightTokens ?? [];
-  const hasHighlights = tokens.length > 0 && tokens.some((t) => t.length > 0);
+  const activeTokens = tokens.filter((t) => t.length > 0);
+  const hasOverlay = syntaxHighlight || activeTokens.length > 0;
+  // The IME draws its conversion underline in the text color: show the real text meanwhile
+  const [composing, setComposing] = useState(false);
+  const overlayText = syntaxHighlight && !composing;
   // Artists are managed in their own panel, so plain queries leave them out; `artist:` asks for them
   const tagSearch = useAutocomplete(300, undefined, [1]);
   const artistSearch = useAutocomplete(300, 1);
@@ -105,7 +84,6 @@ export default function PromptTextarea({
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
-  const activeTokens = hasHighlights ? tokens.filter((t) => t.length > 0) : [];
   const tokenDrag = useTokenDrag({ textareaRef, overlayRef, value, tokens: activeTokens, onChange });
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isExpanded = expandOnFocus && expanded;
@@ -124,6 +102,22 @@ export default function PromptTextarea({
     const target = Math.min(el.scrollHeight + border, window.innerHeight * MAX_EXPANDED_VH);
     if (target > el.offsetHeight) el.style.height = `${target}px`;
   }, [isExpanded, value, expandOnFocus, textareaRef]);
+
+  // The overlay must wrap exactly like the textarea: give it a scrollbar
+  // gutter whenever the textarea has one, and the same scroll position.
+  useLayoutEffect(() => {
+    const ta = textareaRef.current;
+    const overlay = overlayRef.current;
+    if (!ta || !overlay) return;
+    const sync = () => {
+      overlay.style.overflowY = ta.scrollHeight > ta.clientHeight ? "scroll" : "hidden";
+      overlay.scrollTop = ta.scrollTop;
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(ta);
+    return () => ro.disconnect();
+  }, [value, isExpanded, hasOverlay, textareaRef]);
 
   // Put the caret right after an inserted tag in the same commit as the new text
   const pendingCursor = useRef<number | null>(null);
@@ -201,23 +195,29 @@ export default function PromptTextarea({
   };
 
   return (
-    <div className={`relative ${hasHighlights ? "rounded-md bg-background" : ""}`}>
-      {hasHighlights && (
+    <div className={`relative ${hasOverlay ? "rounded-md bg-background" : ""}`}>
+      {hasOverlay && (
         <div
           ref={overlayRef}
           aria-hidden
-          className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words rounded-md border border-transparent px-3 py-2 text-sm text-transparent"
+          className={`pointer-events-none absolute inset-0 overflow-hidden whitespace-pre-wrap break-words rounded-md border border-transparent px-3 py-2 text-sm ${
+            overlayText ? "" : "text-transparent"
+          }`}
         >
-          {renderHighlighted(value, tokens.filter((t) => t.length > 0))}
+          <PromptHighlight value={value} tokens={activeTokens} syntax={overlayText} />
         </div>
       )}
       <textarea
         ref={textareaRef}
         className={`relative w-full resize-none rounded-md border border-input px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ${
-          hasHighlights ? "bg-transparent" : "bg-background"
-        } ${tokenDrag.dragging ? "cursor-grabbing" : ""}`}
+          hasOverlay ? "bg-transparent" : "bg-background"
+        } ${overlayText ? "text-transparent caret-foreground selection:bg-primary/30 placeholder:text-muted-foreground" : ""} ${
+          tokenDrag.dragging ? "cursor-grabbing" : ""
+        }`}
         value={value}
         onChange={(e) => handleChange(e.target.value)}
+        onCompositionStart={() => setComposing(true)}
+        onCompositionEnd={() => setComposing(false)}
         onScroll={(e) => {
           if (overlayRef.current) overlayRef.current.scrollTop = e.currentTarget.scrollTop;
         }}

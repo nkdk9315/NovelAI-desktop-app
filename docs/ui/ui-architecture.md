@@ -775,7 +775,8 @@ src/
 │   │
 │   └── shared/
 │       ├── EmptyState.tsx                # 空状態コンポーネント
-│       ├── PromptTextarea.tsx            # オートコンプリート付きテキストエリア
+│       ├── PromptTextarea.tsx            # オートコンプリート + 構文ハイライト付きテキストエリア
+│       ├── PromptHighlight.tsx           # PromptTextarea の下に敷く色付きテキスト（prompt-syntax.ts）
 │       └── TagList.tsx                   # タグリスト（Badge 群）
 │
 └── pages/
