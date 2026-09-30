@@ -25,6 +25,7 @@ const MIGRATION_018: &str = include_str!("../migrations/018_style_preset_folders
 const MIGRATION_019: &str = include_str!("../migrations/019_prompt_group_folders.sql");
 const MIGRATION_020: &str = include_str!("../migrations/020_prompt_group_default_genres.sql");
 const MIGRATION_021: &str = include_str!("../migrations/021_prompt_entry_negative_prompt.sql");
+const MIGRATION_029: &str = include_str!("../migrations/029_sprite_sets.sql");
 
 pub fn setup_test_db() -> Connection {
     let conn = Connection::open_in_memory().unwrap();
@@ -54,6 +55,7 @@ pub fn setup_test_db() -> Connection {
     conn.execute_batch(MIGRATION_019).unwrap();
     conn.execute_batch(MIGRATION_020).unwrap();
     conn.execute_batch(MIGRATION_021).unwrap();
+    conn.execute_batch(MIGRATION_029).unwrap();
     conn
 }
 

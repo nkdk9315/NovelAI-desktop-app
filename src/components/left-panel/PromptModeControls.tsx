@@ -4,6 +4,7 @@ import { BadgeCheck, BookOpen, SquareDashed } from "lucide-react";
 import { useGenerationParamsStore } from "@/stores/generation-params-store";
 import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { useMangaStore } from "@/stores/manga-store";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import { mangaLayout } from "@/lib/manga-layouts";
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue,
@@ -47,6 +48,7 @@ export default function PromptModeControls() {
   const loadCustoms = useQualityTagStore((s) => s.loadCustomQualityTags);
   const [manageOpen, setManageOpen] = useState(false);
   const mangaOn = useMangaStore((s) => s.page.enabled);
+  const workspace = useWorkspaceStore((s) => s.workspace);
   const toggleManga = () => {
     const manga = useMangaStore.getState();
     manga.setEnabled(!mangaOn);
@@ -123,7 +125,8 @@ export default function PromptModeControls() {
         </SelectContent>
       </Select>
 
-      {isV5 && (
+      {/* The sprite page sets the background per set */}
+      {isV5 && workspace !== "sprite" && (
         <ModeButton
           active={transparentBackground}
           onClick={() => setParam("transparentBackground", !transparentBackground)}
@@ -134,10 +137,13 @@ export default function PromptModeControls() {
         </ModeButton>
       )}
 
-      <ModeButton active={mangaOn} onClick={toggleManga} title={t("manga.modeTooltip")}>
-        <BookOpen className="h-2.5 w-2.5" />
-        {t("manga.mode")}
-      </ModeButton>
+      {/* The sprite (差分) page builds its own prompts; manga mode doesn't apply there */}
+      {workspace !== "sprite" && (
+        <ModeButton active={mangaOn} onClick={toggleManga} title={t("manga.modeTooltip")}>
+          <BookOpen className="h-2.5 w-2.5" />
+          {t("manga.mode")}
+        </ModeButton>
+      )}
 
       {manageOpen && <QualityTagsDialog open={manageOpen} onOpenChange={setManageOpen} />}
     </div>

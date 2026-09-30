@@ -23,6 +23,7 @@ import { shouldStripNoText } from "@/lib/generation-request";
 import { useQualityTagStore } from "@/stores/quality-tag-store";
 import { useBubbleStyleStore } from "@/stores/bubble-style-store";
 import DialogueEditor from "./DialogueEditor";
+import { useInImageTextHidden } from "@/hooks/use-in-image-text-hidden";
 import SfxEditor from "./SfxEditor";
 import { useMangaStore } from "@/stores/manga-store";
 import { composeCurrentMangaPage } from "@/lib/manga-request";
@@ -45,6 +46,7 @@ export default function MainPromptSection() {
   const stripNoText = useGenerationParamsStore((s) => s.stripNoTextWithDialogue);
   const autoSfx = useGenerationParamsStore((s) => s.autoSfx);
   const mangaPage = useMangaStore((s) => s.page);
+  const textHidden = useInImageTextHidden();
   const customQualityTags = useQualityTagStore((s) => s.customQualityTags);
   const targets = useSidebarPromptStore((s) => s.targets);
   const initTarget = useSidebarPromptStore((s) => s.initTarget);
@@ -143,7 +145,8 @@ export default function MainPromptSection() {
         placeholder={t("generation.prompt")}
       />
 
-      {!mangaPage.enabled && (
+      {textHidden && <p className="text-[10px] leading-relaxed text-muted-foreground">{t("sprite.noTextHint")}</p>}
+      {!mangaPage.enabled && !textHidden && (
         <>
           <DialogueEditor targetId={MAIN_TARGET_ID} isMain />
           <SfxEditor targetId={MAIN_TARGET_ID} isMain />

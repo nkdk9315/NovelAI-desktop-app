@@ -14,6 +14,8 @@ describe("historyActionOf", () => {
     expect(isToolOutput({ action: { type: "upscale" } })).toBe(true);
     expect(isToolOutput({ action: { type: "img2img" } })).toBe(false);
     expect(historyActionOf({ action: { type: "typeset" } }).kind).toBe("typeset");
+    expect(historyActionOf({ action: { type: "composite" } }).kind).toBe("sprite");
+    expect(isToolOutput({ action: { type: "import" } })).toBe(true);
     expect(isToolOutput({ action: { type: "typeset" } })).toBe(true);
   });
 });

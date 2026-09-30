@@ -84,6 +84,24 @@ export interface RequestOverrides {
   action?: GenerateActionRequest;
   width?: number;
   height?: number;
+  /** Appended to the main prompt, before in-image text and the quality tags (sprite cells) */
+  mainSuffix?: string;
+  /** Appended to the negative prompt */
+  negativeSuffix?: string;
+  seed?: number;
+  /** Merged into the UI snapshot (e.g. `{ sprite: { setId, cellKey } }`) */
+  snapshotExtra?: Record<string, unknown>;
+  /** Used instead of the character reference section's (sprite poses: the first pose's base) */
+  characterReference?: CharacterReferenceRequest;
+  /** Only these left-panel characters take part (sprite poses); all when omitted */
+  characterIds?: string[];
+  /** V5: request a transparent background regardless of the prompt-mode toggle */
+  transparentBackground?: boolean;
+  /**
+   * No in-image text (sprite cells): the dialogue, sound effects and effect
+   * marks of the prompt boxes are left out, and `no text` is always sent
+   */
+  plainImage?: boolean;
 }
 
 export type BuildResult =
@@ -138,7 +156,9 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
   const sidebarArtistTags = useSidebarArtistTagsStore.getState().sidebarArtistTags;
   const isV5 = isV5Model(params.model);
   const activePresets = params.sidebarPresets.filter((p) => p.enabled);
-  const characterReference = currentCharacterReference(params.model);
+  const characterReference = overrides.characterReference && supportsCharacterReference(params.model)
+    ? overrides.characterReference
+    : currentCharacterReference(params.model);
 
   // Vibe Transfer and Character Reference are mutually exclusive: the reference wins
   const allVibes = characterReference ? [] : collectActiveVibes(params);
@@ -166,15 +186,23 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
   const mainContrib = getPresetContributionsForCharacter("main", presetInstances, allPresets);
   const bubbleStyles = useBubbleStyleStore.getState().customBubbleStyles;
   const mainRolled = mainTarget ? rollTargetForGeneration(mainTarget) : { positive: "", negative: "" };
-  const userMain = appendContributions(mainRolled.positive, mainContrib.positive);
+  const userMain = joinPrompt(appendContributions(mainRolled.positive, mainContrib.positive), overrides.mainSuffix);
   // Manga mode: the page and its panels replace the usual dialogue / character prompts
   const manga = mangaModeOn() ? composeCurrentMangaPage(userMain, true) : null;
   const maxChars = maxCharactersFor(params.model);
+  const cast = overrides.characterIds ? params.characters.filter((c) => overrides.characterIds!.includes(c.id)) : params.characters;
   if (manga && manga.characters.length > maxChars) {
     return { ok: false, errorKey: "manga.tooManyAppearances", errorArgs: { max: maxChars, count: manga.characters.length } };
   }
-  const assembledMain = manga ? manga.main : appendTargetExtras(userMain, mainTarget, bubbleStyles, params.autoSfx);
-  const fullPrompt = decorateMainPrompt(artistPrefix + assembledMain, currentPromptDecoration(params));
+  const plain = overrides.plainImage ?? false;
+  const transparent = overrides.transparentBackground ?? params.transparentBackground;
+  const assembledMain = manga ? manga.main : plain ? userMain : appendTargetExtras(userMain, mainTarget, bubbleStyles, params.autoSfx);
+  const decoration: PromptDecoration = {
+    ...currentPromptDecoration(params),
+    transparentBackground: transparent,
+    ...(plain ? { stripNoText: false, forceNoText: true } : {}),
+  };
+  const fullPrompt = decorateMainPrompt(artistPrefix + assembledMain, decoration);
 
   let enabledVibes = allVibes.map((v) => ({ vibeId: v.vibeId, strength: v.strength }));
   if (params.normalizeVibeStrength && enabledVibes.length > 0) {
@@ -182,7 +210,7 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
     enabledVibes = enabledVibes.map((v, i) => ({ ...v, strength: normalized[i] }));
   }
 
-  const mainNegBase = appendContributions(mainRolled.negative, mainContrib.negative);
+  const mainNegBase = joinPrompt(appendContributions(mainRolled.negative, mainContrib.negative), overrides.negativeSuffix);
   const negPresetText = NEGATIVE_PRESETS[params.negativePreset];
   const combinedNeg = negPresetText
     ? (mainNegBase ? `${negPresetText}, ${mainNegBase}` : negPresetText)
@@ -192,19 +220,17 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
     ? (manga.characters.length > 0
       ? manga.characters.map(({ prompt, centerX, centerY, negativePrompt }) => ({ prompt, centerX, centerY, negativePrompt }))
       : undefined)
-    : params.characters.length > 0
-    ? params.characters.map((c) => {
+    : cast.length > 0
+    ? cast.map((c) => {
         const charTarget = sidebarState.targets[c.id];
         const charContrib = getPresetContributionsForCharacter(c.id, presetInstances, allPresets);
         const charRolled = charTarget
           ? rollTargetForGeneration(charTarget)
           : { positive: c.prompt, negative: c.negativePrompt };
         const outfit = currentOutfitText(c, sidebarState.targets, true);
+        const charPrompt = joinPrompt(appendContributions(charRolled.positive, charContrib.positive), outfit?.positive);
         return {
-          prompt: appendTargetExtras(
-            joinPrompt(appendContributions(charRolled.positive, charContrib.positive), outfit?.positive),
-            charTarget, bubbleStyles,
-          ),
+          prompt: plain ? charPrompt : appendTargetExtras(charPrompt, charTarget, bubbleStyles),
           centerX: c.centerX,
           centerY: c.centerY,
           negativePrompt: joinPrompt(appendContributions(charRolled.negative, charContrib.negative), outfit?.negative),
@@ -234,14 +260,17 @@ export function buildGenerateRequest(projectId: string, overrides: RequestOverri
       height: size.height,
       steps: params.steps,
       scale: params.scale,
-      seed: params.seed ?? undefined,
+      seed: overrides.seed ?? params.seed ?? undefined,
       cfgRescale: params.cfgRescale,
       sampler: params.sampler,
       noiseSchedule: params.noiseSchedule,
       model: params.model,
       action,
-      uiSnapshot: buildUiSnapshot(params, sidebarArtistTags, sidebarState.targets, useMangaStore.getState().page),
-      transparentBackground: isV5 ? params.transparentBackground : undefined,
+      uiSnapshot: {
+        ...buildUiSnapshot(params, sidebarArtistTags, sidebarState.targets, useMangaStore.getState().page),
+        ...overrides.snapshotExtra,
+      },
+      transparentBackground: isV5 ? transparent : undefined,
       characterReference,
     },
   };

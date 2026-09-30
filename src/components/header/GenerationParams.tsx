@@ -12,6 +12,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import SeedField from "./SeedField";
+import { useWorkspaceStore } from "@/stores/workspace-store";
 import {
   Popover,
   PopoverContent,
@@ -61,7 +62,8 @@ export default function GenerationParams() {
   const totalPixels = width * height;
   const totalPixelError = totalPixels > MAX_TOTAL_PIXELS;
 
-  const seedFixed = useGenerationParamsStore((s) => s.seed !== null);
+  const spriteMode = useWorkspaceStore((s) => s.workspace === "sprite");
+  const seedFixed = useGenerationParamsStore((s) => s.seed !== null) && !spriteMode;
 
   return (
     <div className="flex items-center gap-2">
@@ -76,6 +78,8 @@ export default function GenerationParams() {
         </SelectContent>
       </Select>
 
+      {/* The sprite page takes size and seed from the sprite set */}
+      {!spriteMode && (<>
       <Select
         value={selectValue}
         onValueChange={(v) => {
@@ -166,6 +170,7 @@ export default function GenerationParams() {
           )}
         </div>
       )}
+      </>)}
 
       <Popover>
         <PopoverTrigger asChild>
@@ -239,7 +244,7 @@ export default function GenerationParams() {
             />
           </div>
 
-          <SeedField />
+          {!spriteMode && <SeedField />}
         </PopoverContent>
       </Popover>
     </div>

@@ -1,0 +1,166 @@
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { AlertTriangle, Eraser, RefreshCcw, Rows3, SquareCheck, SquareDashed, Wand } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useSpriteStore } from "@/stores/sprite-store";
+import { allCells, cellKey, isOrphanKey, isSkipped, levelsOf, parseCellKey } from "@/lib/sprite/cells";
+import * as spriteIpc from "@/lib/ipc-sprite";
+import { toastError } from "@/lib/toast-error";
+import PostProcessDialog from "./PostProcessDialog";
+import { staleKeys } from "@/lib/sprite/status";
+import { useSpriteMaskEditorStore } from "@/stores/sprite-mask-editor-store";
+import { BatchCost, BatchGenerateButton, useSpriteBatch } from "./BatchGenerate";
+import { HelpDot, Tip } from "../Hint";
+
+const NONE = "__none__";
+
+const chip = (on: boolean) =>
+  `rounded-md border px-1.5 py-0.5 text-[10px] transition-colors ${
+    on ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-accent hover:text-foreground"
+  }`;
+
+export default function MatrixToolbar({ visibleKeys }: { visibleKeys: string[] }) {
+  const { t } = useTranslation();
+  const spec = useSpriteStore((s) => s.spec)!;
+  const cells = useSpriteStore((s) => s.cells);
+  const view = useSpriteStore((s) => s.view);
+  const checkedKeys = useSpriteStore((s) => s.checkedKeys);
+  const setView = useSpriteStore((s) => s.setView);
+  const setChecked = useSpriteStore((s) => s.setChecked);
+  const [postOpen, setPostOpen] = useState(false);
+  const [confirmOrphans, setConfirmOrphans] = useState(false);
+  // Cells whose pose / axis / level was removed from the definition
+  const orphans = useMemo(() => Object.keys(cells).filter((k) => isOrphanKey(spec, k)), [spec, cells]);
+  const removeOrphans = () => {
+    const setId = useSpriteStore.getState().activeSetId;
+    if (!setId) return;
+    spriteIpc.deleteSpriteCells(setId, orphans)
+      .then(() => useSpriteStore.getState().reloadCells())
+      .catch((e) => toastError(String(e)));
+  };
+
+  const ungenerated = (keys: string[]) => keys.filter((k) =>
+    !cells[k]?.candidates.length && !cells[k]?.excluded && !isSkipped(spec, parseCellKey(k)));
+  const everyKey = useMemo(() => allCells(spec).map(cellKey), [spec]);
+  // Parents that aren't adopted yet are made first, in the same batch
+  const { problems } = useSpriteBatch(checkedKeys);
+  const stale = useMemo(() => staleKeys(spec, cells), [spec, cells]);
+
+  return (
+    <div className="sticky top-0 z-10 space-y-2 border-b border-border bg-background/95 px-3 py-2 backdrop-blur">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <Rows3 className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-muted-foreground">{t("sprite.matrix.columns")}</span>
+        <HelpDot text={t("sprite.tips.columns")} />
+        <Select value={view.columnAxisId ?? NONE} onValueChange={(v) => setView({ columnAxisId: v === NONE ? null : v })}>
+          <SelectTrigger className="h-7 w-36 text-xs"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE} className="text-xs">{t("sprite.matrix.noColumns")}</SelectItem>
+            {spec.axes.map((a) => <SelectItem key={a.id} value={a.id} className="text-xs">{a.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {spec.axes.filter((a) => a.id !== view.columnAxisId).map((axis) => {
+          const current = view.filter[axis.id] ?? 0;
+          return (
+            <div key={axis.id} className="flex flex-wrap items-center gap-1" role="radiogroup" aria-label={axis.label}>
+              <Tip text={t("sprite.tips.filter", { axis: axis.label })}>
+                <span className="ml-2 text-[10px] font-medium text-muted-foreground">{axis.label}</span>
+              </Tip>
+              {levelsOf(spec, axis).map((l, i) => (
+                <button
+                  key={l.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={current === i}
+                  className={chip(current === i)}
+                  onClick={() => setView({ filter: { ...view.filter, [axis.id]: i } })}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <Tip text={t("sprite.tips.checkHere")}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setChecked(ungenerated(visibleKeys))}>
+            <SquareDashed className="h-3.5 w-3.5" />{t("sprite.matrix.checkUngeneratedHere")}
+          </Button>
+        </Tip>
+        <Tip text={t("sprite.tips.checkAll")}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setChecked(ungenerated(everyKey))}>
+            <SquareCheck className="h-3.5 w-3.5" />{t("sprite.matrix.checkUngeneratedAll", { count: ungenerated(everyKey).length })}
+          </Button>
+        </Tip>
+        {checkedKeys.length > 0 && (
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setChecked([])}>
+            {t("sprite.matrix.uncheck")}
+          </Button>
+        )}
+        <Tip text={t("sprite.tips.post")}>
+          <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setPostOpen(true)}>
+            <Wand className="h-3.5 w-3.5" />{t("sprite.post.open")}
+          </Button>
+        </Tip>
+        {stale.length > 0 && (
+          <Tip text={t("sprite.matrix.staleHint")}>
+            <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-amber-600 dark:text-amber-400" onClick={() => setChecked(stale)}>
+              <RefreshCcw className="h-3.5 w-3.5" />{t("sprite.matrix.checkStale", { count: stale.length })}
+            </Button>
+          </Tip>
+        )}
+        {orphans.length > 0 && (
+          <Tip text={t("sprite.matrix.orphansHint")}>
+            <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-amber-600 dark:text-amber-400" onClick={() => setConfirmOrphans(true)}>
+              <Eraser className="h-3.5 w-3.5" />{t("sprite.matrix.orphans", { count: orphans.length })}
+            </Button>
+          </Tip>
+        )}
+        <div className="flex-1" />
+        <Tip text={t("sprite.matrix.keysHint")}>
+          <span className="hidden text-[10px] text-muted-foreground xl:inline">⌨ {t("sprite.matrix.keys")}</span>
+        </Tip>
+        {checkedKeys.length > 0 && <BatchCost keys={checkedKeys} />}
+        <BatchGenerateButton keys={checkedKeys} tip={t("sprite.tips.generateChecked")}
+          label={(count) => t("sprite.matrix.generateChecked", { count })} onStarted={() => setChecked([])} />
+      </div>
+
+      {(problems.maskMissing.length > 0 || problems.noRegion.length > 0) && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-300">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          {problems.maskMissing.length > 0 && (
+            <>
+              <span>{t("sprite.matrix.warnMasks", { poses: problems.maskMissing.map((id) => spec.poses.find((p) => p.id === id)?.label).join("・") })}</span>
+              <Button size="sm" variant="outline" className="h-6 text-[11px]"
+                onClick={() => useSpriteMaskEditorStore.getState().open({ kind: "regions", poseId: problems.maskMissing[0] })}>
+                {t("sprite.cell.drawRegions")}
+              </Button>
+            </>
+          )}
+          {problems.noRegion.length > 0 && (
+            <span>{t("sprite.matrix.warnRegions", { axes: problems.noRegion.map((id) => spec.axes.find((a) => a.id === id)?.label).join("・") })}</span>
+          )}
+        </div>
+      )}
+      {postOpen && <PostProcessDialog open={postOpen} onOpenChange={setPostOpen} />}
+      <AlertDialog open={confirmOrphans} onOpenChange={setConfirmOrphans}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("sprite.matrix.orphansTitle", { count: orphans.length })}</AlertDialogTitle>
+            <AlertDialogDescription>{t("sprite.matrix.orphansBody")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={removeOrphans}>{t("common.delete")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

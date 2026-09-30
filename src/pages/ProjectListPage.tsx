@@ -60,7 +60,9 @@ export default function ProjectListPage() {
   const handleOpen = async (id: string) => {
     try {
       await openProject(id);
-      navigate(`/project/${id}`);
+      // Sprite (差分) projects open in their own page
+      const type = useProjectStore.getState().currentProject?.projectType;
+      navigate(type === "sprite" ? `/sprite/${id}` : `/project/${id}`);
     } catch (e) {
       toastError(String(e));
     }
@@ -119,6 +121,7 @@ export default function ProjectListPage() {
             <SelectItem value="simple">Simple</SelectItem>
             <SelectItem value="manga">Manga</SelectItem>
             <SelectItem value="cg">CG</SelectItem>
+            <SelectItem value="sprite">{t("project.typeSprite")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -191,7 +194,7 @@ export default function ProjectListPage() {
                       </p>
                     </div>
                     <Badge variant="secondary" className="shrink-0 text-xs">
-                      {p.projectType}
+                      {p.projectType === "sprite" ? t("project.typeSprite") : p.projectType}
                     </Badge>
                   </div>
                 </Card>

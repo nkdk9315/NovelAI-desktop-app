@@ -27,6 +27,10 @@ pub mod tokens;
 pub mod prompt_preset;
 pub mod preset_folder;
 pub mod sidebar_preset_group;
+pub mod sprite;
+pub mod sprite_background;
+pub mod sprite_export;
+pub mod sprite_image_ops;
 
 #[cfg(test)]
 mod live_api_tests;

@@ -43,19 +43,19 @@ NovelAI API を利用した AI イラスト生成・管理デスクトップア�
 
 ```
 main.rs, state.rs, error.rs, db.rs
-├── commands/       # 19 モジュール
-├── services/       # 29 モジュール（テスト除く、generation_snapshot / image_output / image_tools / image_metadata / vibe_import / nax / nax_catalog / nax_thumb を含む）
-├── repositories/   # 19 モジュール（テスト除く）
-└── models/dto.rs   # Row 構造体 + IPC 用 DTO
+├── commands/       # 20 モジュール
+├── services/       # 33 モジュール（テスト除く、generation_snapshot / image_output / image_tools / image_metadata / vibe_import / nax / nax_catalog / nax_thumb / sprite / sprite_export / sprite_image_ops / sprite_background を含む）
+├── repositories/   # 21 モジュール（テスト除く）
+└── models/         # dto.rs（Row 構造体 + IPC 用 DTO）, sprite.rs（差分制作）
 ```
 
 ### Frontend (src/)
 
 ```
 main.tsx, App.tsx
-├── lib/            # 6 IPC (ipc, ipc-assets, ipc-preset, ipc-prompt, ipc-tags, ipc-nax) + ユーティリティ
+├── lib/            # 7 IPC (ipc, ipc-assets, ipc-preset, ipc-prompt, ipc-tags, ipc-nax, ipc-sprite) + ユーティリティ（sprite/ = 差分制作）
 ├── types/          # 型定義
-├── stores/         # 22 stores（layout / theme / image-edit / char-ref / director-tools / nax / nax-view / quality-tag / bubble-style / manga / manga-template / typeset 含む）
+├── stores/         # 27 stores（layout / theme / image-edit / char-ref / director-tools / nax / nax-view / quality-tag / bubble-style / manga / manga-template / typeset / sprite / sprite-queue / sprite-mask-editor / sprite-template / workspace 含む）
 ├── hooks/          # use-debounce, use-autocomplete, use-cost-estimate,
 │                    # use-artist-tag-input, use-prompt-token-counts,
 │                    # use-generation-plan, use-run-generation, use-image-source-actions,
@@ -63,8 +63,8 @@ main.tsx, App.tsx
 │                    # use-project-manga-persistence, use-sidebar-style-persistence,
 │                    # use-token-drag, use-zoom-pan, use-undoable
 ├── components/     # 100+ コンポーネント (ui/, header/, left-panel/, center-panel/,
-│                    # right-panel/, modals/, shared/, canvas-editor/)
-├── pages/          # ProjectListPage, GenerationPage
+│                    # right-panel/, modals/, shared/, canvas-editor/, sprite/)
+├── pages/          # ProjectListPage, GenerationPage, SpritePage（差分制作）
 └── i18n/           # ja.json, en.json
 ```
 
