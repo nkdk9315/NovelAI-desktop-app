@@ -14,6 +14,7 @@
 | [design-decisions.md](design-decisions.md) | 設計上の重要な決定 |
 | [test-strategy.md](test-strategy.md) | テスト方針・テストケース一覧 |
 | [sprite-variants.md](sprite-variants.md) | 差分制作（F13）のデータモデル・コマンド・生成・書き出し |
+| [ai-prompt.md](ai-prompt.md) | AI プロンプト作成のデータモデル・コマンド・依頼文・取り込み |
 
 ## 変更履歴
 
@@ -34,3 +35,4 @@
 | 2026-09-27 | 写植 — `save_typeset_image` コマンド / `image_tools::save_typeset`・`typeset_snapshot`、`SaveTypesetRequest`、履歴アクション `typeset`、`lib/typeset.ts`・`typeset-render.ts`、`typeset-store`、`use-undoable`、`modals/typeset/*`、画像ツールバーと履歴右クリックに「写植」 |
 | 2026-09-29 | 漫画のコマ割り・衣装 — `manga-geometry.ts`（分割・結合・読み順・ラベル）、`manga-template.ts`（斜めコマの線画 img2img）、`MangaPage.layoutId="custom"`/`aspect`・`MangaPanel.shape`、`manga-template-store`、レイアウトエディタ、`Character.outfits/outfitId`・`outfits.ts`・`character-look.ts`、`MangaCast.outfitId/excludeTags`、場面・動作のプロンプトターゲット化（`PromptTargetInput`） |
 | 2026-09-29 | 差分制作（F13）— `sprite-variants.md` を追加。migration 029（`sprite_sets` / `sprite_cells` / `sprite_candidates`）、`project_type = "sprite"`、`commands/sprites.rs`、`RequestOverrides.mainSuffix/negativeSuffix/seed/snapshotExtra` |
+| 2026-10-01 | AI プロンプト作成 — `ai-prompt.md` を追加。migration 030（`ai_providers`）、`commands/ai.rs`、`services/ai_provider` / `ai_client` / `ai_prompt` / `ai_prompt_parse`、`repositories/ai_provider` / `tag_lookup`、`models/ai.rs`、`ipc-ai.ts`・`ai-provider-store`・`modals/ai/*`。`db.rs` のマイグレーションを表にまとめた |

@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import ThemeToggle from "@/components/header/ThemeToggle";
+import AiProvidersDialog from "@/components/modals/ai/AiProvidersDialog";
 import { useSettingsStore } from "@/stores/settings-store";
 import { MODELS, SAMPLERS, DEFAULT_MODEL, DEFAULT_SAMPLER, DEFAULT_STEPS, DEFAULT_SCALE } from "@/lib/constants";
 
@@ -36,6 +37,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
   const [showKey, setShowKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditingKey, setIsEditingKey] = useState(false);
+  const [showAiProviders, setShowAiProviders] = useState(false);
   const hasApiKey = !!settings.api_key;
 
   // Reset editing state when dialog closes
@@ -224,6 +226,12 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
             />
           </div>
 
+          {/* AI providers (prompt writing) */}
+          <div className="flex items-center justify-between gap-3">
+            <Label className="text-xs">{t("ai.providers.title")}</Label>
+            <Button variant="outline" size="sm" onClick={() => setShowAiProviders(true)}>{t("ai.providers.manage")}</Button>
+          </div>
+
           {/* Theme & Language */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
@@ -246,6 +254,7 @@ export default function SettingsDialog({ open, onOpenChange }: SettingsDialogPro
             </div>
           </div>
         </div>
+        <AiProvidersDialog open={showAiProviders} onOpenChange={setShowAiProviders} />
       </DialogContent>
     </Dialog>
   );

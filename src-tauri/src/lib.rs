@@ -261,6 +261,12 @@ pub fn run() {
             commands::tags::count_favorite_descendants_per_group,
             commands::tokens::count_tokens,
             commands::tokens::get_max_prompt_tokens,
+            commands::ai::list_ai_providers,
+            commands::ai::save_ai_provider,
+            commands::ai::delete_ai_provider,
+            commands::ai::build_ai_prompt_request,
+            commands::ai::parse_ai_prompt_response,
+            commands::ai::generate_ai_prompts,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

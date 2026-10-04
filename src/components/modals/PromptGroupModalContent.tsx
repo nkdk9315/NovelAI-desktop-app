@@ -16,6 +16,7 @@ import PromptGroupEditModal from "./prompt-group/PromptGroupEditModal";
 import SystemGroupSettingsModal from "./prompt-group/SystemGroupSettingsModal";
 import SidebarEntryEditModal from "@/components/left-panel/SidebarEntryEditModal";
 import TagDatabaseModal from "./tag-database/TagDatabaseModal";
+import AiPromptDialog from "./ai/AiPromptDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Database, Info } from "lucide-react";
@@ -64,6 +65,7 @@ export default function PromptGroupModalContent(props: Props) {
   const [editingSystemGroup, setEditingSystemGroup] = useState<PromptGroupDto | null>(null);
   const [editingEntry, setEditingEntry] = useState<{ groupId: string; tagId: string; name: string; tag: string; negativePrompt: string } | null>(null);
   const [showTagDb, setShowTagDb] = useState(false);
+  const [showAi, setShowAi] = useState(false);
   const [folderConfirm, setFolderConfirm] = useState<{ folderId: number; count: number } | null>(null);
 
   useEffect(() => { if (!showTagDb) setSystemTree(null); }, [showTagDb, setSystemTree]);
@@ -123,6 +125,12 @@ export default function PromptGroupModalContent(props: Props) {
     } catch (e) { toastError(String(e)); }
   };
 
+  // Errors propagate so the AI dialog stays open and reports them
+  const handleAiCreate = async (name: string, tags: TagInput[]) => {
+    await createPromptGroup({ name, folderId: null, defaultGenreIds: [], tags });
+    loadPromptGroups(searchQuery || undefined);
+  };
+
   const handleCreateFromTagDb = (_title: string, tagNames: string[]) => {
     setAddModalInitialTags(tagNames.map((n) => ({ name: n, tag: n, defaultStrength: 0 }))); setShowAddModal(true);
   };
@@ -147,7 +155,7 @@ export default function PromptGroupModalContent(props: Props) {
       <PromptGroupGrid genres={genres} groups={displayedGroups} folders={promptGroupFolders} systemTree={systemTree ?? undefined}
         searchQuery={searchQuery} showSystem={showSystem} existingGroupIds={existingGroupIds} targetId={targetId}
         onSearchChange={onSearchChange} onShowSystemChange={onShowSystemChange} onOpenTagDb={() => setShowTagDb(true)}
-        onAdd={() => { setAddModalInitialFolderId(null); setShowAddModal(true); }}
+        onAdd={() => { setAddModalInitialFolderId(null); setShowAddModal(true); }} onAiCreate={() => setShowAi(true)}
         onCreateInFolder={(fid) => { setAddModalInitialFolderId(fid); setShowAddModal(true); }}
         onCreateFolder={async (p, title) => { try { await createPromptGroupFolder(title, p); } catch (e) { toastError(String(e)); } }}
         onRenameFolder={async (id, title) => { try { await renamePromptGroupFolder(id, title); } catch (e) { toastError(String(e)); } }}
@@ -179,6 +187,7 @@ export default function PromptGroupModalContent(props: Props) {
       <SidebarEntryEditModal open={editingEntry !== null} onOpenChange={(o) => { if (!o) setEditingEntry(null); }} initialName={editingEntry?.name ?? ""} initialTag={editingEntry?.tag ?? ""} initialNegative={editingEntry?.negativePrompt ?? ""} onSave={handleSaveEntry} />
       <SystemGroupSettingsModal open={editingSystemGroup !== null} onOpenChange={(o) => { if (!o) setEditingSystemGroup(null); }}
         systemGroupId={editingSystemGroup?.id ?? null} systemGroupName={editingSystemGroup?.name ?? ""} genres={genres} contentClassName="max-w-md left-[8.5rem]! translate-x-0!" />
+      <AiPromptDialog open={showAi} onOpenChange={setShowAi} onCreate={handleAiCreate} />
       <TagDatabaseModal open={showTagDb} onOpenChange={setShowTagDb}
         onCreateGroupFromSelection={(names) => { setAddModalInitialTags(names.map((n) => ({ name: n, tag: n, defaultStrength: 0 }))); setShowAddModal(true); }}
         clearSelectionTrigger={tagDbClearTick} />

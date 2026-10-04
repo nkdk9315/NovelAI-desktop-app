@@ -91,6 +91,7 @@ OWASP Top 10に基づき、本アプリケーションへの該当を評価。
 | 通信経路 | 暗号化 |
 |----------|--------|
 | アプリ → NovelAI API | HTTPS (rustls-tls、novelai-api crateが強制) |
+| アプリ → AI プロバイダー | ユーザーが登録したベース URL へ送信。クラウドは HTTPS、ローカルサーバー（Ollama 等）は HTTP も許可。送るのは依頼文のみで、API キーは登録先のプロバイダーにだけ送る |
 | Frontend → Backend (IPC) | Tauri IPC (プロセス内通信、ネットワーク経由なし) |
 
 ### ファイルシステムセキュリティ

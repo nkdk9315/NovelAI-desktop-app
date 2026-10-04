@@ -2073,5 +2073,75 @@
       "copyFailed": "コピーできませんでした",
       "setName": "見本（制服）"
     }
+  },
+  "ai": {
+    "title": "AI でプロンプトを作る",
+    "open": "AI で作る",
+    "description": "作りたい場面を書くと、AI が 1 回の依頼でプロンプトをまとめて作ります。結果はプロンプトグループとして保存できます。",
+    "theme": "作りたいもの",
+    "themePlaceholder": "例: 放課後の教室で過ごす場面 / アイドル系の衣装いろいろ",
+    "characters": "登場人物（任意）",
+    "charactersPlaceholder": "例: 女の子 2 人",
+    "count": "個数",
+    "style": {
+      "label": "書き方",
+      "tags": "タグのみ",
+      "natural": "自然文のみ",
+      "hybrid": "タグ＋自然文"
+    },
+    "detail": {
+      "label": "詳しさ",
+      "short": "短め",
+      "standard": "標準",
+      "detailed": "詳細"
+    },
+    "toggle": {
+      "includeOutfit": "衣装も AI に決めさせる",
+      "includeAppearance": "外見（髪や目の色など）も AI に決めさせる",
+      "adult": "成人向けを許可"
+    },
+    "styleNote": "画風・品質・アーティストのタグは AI に書かせず、混ざっていた場合は取り除きます。",
+    "provider": "使う AI",
+    "generate": "作成",
+    "generating": "作成中...",
+    "copyPaste": {
+      "name": "コピペ（API を使わない）",
+      "hint": "依頼文をコピーして好きな AI のチャットに貼り、返ってきた答えをここに貼り付けます。API キーは不要です。",
+      "copy": "依頼文をコピー",
+      "copied": "依頼文をコピーしました",
+      "paste": "AI の答えを貼り付け",
+      "import": "取り込む"
+    },
+    "result": {
+      "groupName": "グループ名",
+      "selected": "{{total}} 件中 {{count}} 件を保存します",
+      "include": "保存に含める",
+      "entryName": "名前",
+      "entryPrompt": "プロンプト",
+      "unknownTags": "タグ DB にないタグ",
+      "removedTags": "取り除いたタグ",
+      "save": "プロンプトグループとして保存",
+      "saved": "{{count}} 件を保存しました"
+    },
+    "providers": {
+      "title": "AI プロバイダー",
+      "manage": "AI プロバイダーを管理",
+      "description": "OpenAI 互換の API であれば、クラウドでもローカルでも登録できます。API キーはこの PC のアプリ内データベースに保存されます。",
+      "empty": "まだ登録されていません。",
+      "add": "プロバイダーを追加",
+      "preset": "ひな形",
+      "presetPlaceholder": "選ぶと名前と URL が入ります",
+      "local": "ローカル",
+      "name": "名前",
+      "baseUrl": "ベース URL",
+      "model": "モデル名",
+      "modelPlaceholder": "プロバイダーが案内しているモデル ID",
+      "apiKey": "API キー",
+      "apiKeyKeep": "保存済み（変えるときだけ入力）",
+      "apiKeyOptional": "ローカルなら空でかまいません",
+      "jsonMode": "JSON モードを使う",
+      "jsonModeHint": "エラーになるモデルではオフにしてください",
+      "saved": "プロバイダーを保存しました"
+    }
   }
 }
