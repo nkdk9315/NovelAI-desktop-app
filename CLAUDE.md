@@ -43,19 +43,19 @@ NovelAI API を利用した AI イラスト生成・管理デスクトップア�
 
 ```
 main.rs, state.rs, error.rs, db.rs
-├── commands/       # 20 モジュール
-├── services/       # 33 モジュール（テスト除く、generation_snapshot / image_output / image_tools / image_metadata / vibe_import / nax / nax_catalog / nax_thumb / sprite / sprite_export / sprite_image_ops / sprite_background を含む）
-├── repositories/   # 21 モジュール（テスト除く）
-└── models/         # dto.rs（Row 構造体 + IPC 用 DTO）, sprite.rs（差分制作）
+├── commands/       # 21 モジュール
+├── services/       # 38 モジュール（テスト除く、ai_provider / ai_client / ai_prompt / ai_prompt_parse / generation_snapshot / image_output / image_tools / image_metadata / vibe_import / nax / nax_catalog / nax_thumb / sprite / sprite_export / sprite_image_ops / sprite_background を含む）
+├── repositories/   # 23 モジュール（テスト除く）
+└── models/         # dto.rs（Row 構造体 + IPC 用 DTO）, sprite.rs（差分制作）, ai.rs（AI プロンプト作成）
 ```
 
 ### Frontend (src/)
 
 ```
 main.tsx, App.tsx
-├── lib/            # 7 IPC (ipc, ipc-assets, ipc-preset, ipc-prompt, ipc-tags, ipc-nax, ipc-sprite) + ユーティリティ（sprite/ = 差分制作）
+├── lib/            # 8 IPC (ipc, ipc-assets, ipc-preset, ipc-prompt, ipc-tags, ipc-nax, ipc-sprite, ipc-ai) + ユーティリティ（sprite/ = 差分制作）
 ├── types/          # 型定義
-├── stores/         # 27 stores（layout / theme / image-edit / char-ref / director-tools / nax / nax-view / quality-tag / bubble-style / manga / manga-template / typeset / sprite / sprite-queue / sprite-mask-editor / sprite-template / workspace 含む）
+├── stores/         # 28 stores（ai-provider / layout / theme / image-edit / char-ref / director-tools / nax / nax-view / quality-tag / bubble-style / manga / manga-template / typeset / sprite / sprite-queue / sprite-mask-editor / sprite-template / workspace 含む）
 ├── hooks/          # use-debounce, use-autocomplete, use-cost-estimate,
 │                    # use-artist-tag-input, use-prompt-token-counts,
 │                    # use-generation-plan, use-run-generation, use-image-source-actions,

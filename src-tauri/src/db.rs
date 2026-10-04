@@ -2,35 +2,39 @@ use rusqlite::Connection;
 
 use crate::error::AppError;
 
-const MIGRATION_001: &str = include_str!("../migrations/001_init.sql");
-const MIGRATION_002: &str = include_str!("../migrations/002_vibe_ux.sql");
-const MIGRATION_003: &str = include_str!("../migrations/003_vibe_favorite.sql");
-const MIGRATION_004: &str = include_str!("../migrations/004_preset_thumbnail.sql");
-const MIGRATION_005: &str = include_str!("../migrations/005_preset_vibe_strength.sql");
-const MIGRATION_006: &str = include_str!("../migrations/006_preset_favorite.sql");
-const MIGRATION_007: &str = include_str!("../migrations/007_preset_model.sql");
-const MIGRATION_008: &str = include_str!("../migrations/008_project_thumbnail.sql");
-const MIGRATION_009: &str = include_str!("../migrations/009_prompt_group_overhaul.sql");
-const MIGRATION_010: &str = include_str!("../migrations/010_prompt_entry_name.sql");
-const MIGRATION_011: &str = include_str!("../migrations/011_prompt_group_default_strength.sql");
-const MIGRATION_012: &str = include_str!("../migrations/012_add_main_genre.sql");
-const MIGRATION_013: &str = include_str!("../migrations/013_tag_database.sql");
-const MIGRATION_014: &str = include_str!("../migrations/014_tag_group_favorites.sql");
-const MIGRATION_015: &str = include_str!("../migrations/015_system_group_genre_defaults.sql");
-const MIGRATION_016: &str = include_str!("../migrations/016_prompt_group_random_wildcard.sql");
-const MIGRATION_017: &str = include_str!("../migrations/017_vibe_folders.sql");
-const MIGRATION_018: &str = include_str!("../migrations/018_style_preset_folders.sql");
-const MIGRATION_019: &str = include_str!("../migrations/019_prompt_group_folders.sql");
-const MIGRATION_020: &str = include_str!("../migrations/020_prompt_group_default_genres.sql");
-const MIGRATION_021: &str = include_str!("../migrations/021_prompt_entry_negative_prompt.sql");
-const MIGRATION_022: &str = include_str!("../migrations/022_prompt_presets.sql");
-const MIGRATION_023: &str = include_str!("../migrations/023_sidebar_preset_groups.sql");
-const MIGRATION_024: &str = include_str!("../migrations/024_sidebar_preset_group_strength.sql");
-const MIGRATION_025: &str = include_str!("../migrations/025_preset_slot_positions.sql");
-const MIGRATION_026: &str = include_str!("../migrations/026_prompt_preset_sort_key.sql");
-const MIGRATION_027: &str = include_str!("../migrations/027_nax_explorer.sql");
-const MIGRATION_028: &str = include_str!("../migrations/028_nax_first_seen.sql");
-const MIGRATION_029: &str = include_str!("../migrations/029_sprite_sets.sql");
+/// Applied in order; the number is the `schema_version` reached after running it.
+const MIGRATIONS: &[(i64, &str)] = &[
+    (1, include_str!("../migrations/001_init.sql")),
+    (2, include_str!("../migrations/002_vibe_ux.sql")),
+    (3, include_str!("../migrations/003_vibe_favorite.sql")),
+    (4, include_str!("../migrations/004_preset_thumbnail.sql")),
+    (5, include_str!("../migrations/005_preset_vibe_strength.sql")),
+    (6, include_str!("../migrations/006_preset_favorite.sql")),
+    (7, include_str!("../migrations/007_preset_model.sql")),
+    (8, include_str!("../migrations/008_project_thumbnail.sql")),
+    (9, include_str!("../migrations/009_prompt_group_overhaul.sql")),
+    (10, include_str!("../migrations/010_prompt_entry_name.sql")),
+    (11, include_str!("../migrations/011_prompt_group_default_strength.sql")),
+    (12, include_str!("../migrations/012_add_main_genre.sql")),
+    (13, include_str!("../migrations/013_tag_database.sql")),
+    (14, include_str!("../migrations/014_tag_group_favorites.sql")),
+    (15, include_str!("../migrations/015_system_group_genre_defaults.sql")),
+    (16, include_str!("../migrations/016_prompt_group_random_wildcard.sql")),
+    (17, include_str!("../migrations/017_vibe_folders.sql")),
+    (18, include_str!("../migrations/018_style_preset_folders.sql")),
+    (19, include_str!("../migrations/019_prompt_group_folders.sql")),
+    (20, include_str!("../migrations/020_prompt_group_default_genres.sql")),
+    (21, include_str!("../migrations/021_prompt_entry_negative_prompt.sql")),
+    (22, include_str!("../migrations/022_prompt_presets.sql")),
+    (23, include_str!("../migrations/023_sidebar_preset_groups.sql")),
+    (24, include_str!("../migrations/024_sidebar_preset_group_strength.sql")),
+    (25, include_str!("../migrations/025_preset_slot_positions.sql")),
+    (26, include_str!("../migrations/026_prompt_preset_sort_key.sql")),
+    (27, include_str!("../migrations/027_nax_explorer.sql")),
+    (28, include_str!("../migrations/028_nax_first_seen.sql")),
+    (29, include_str!("../migrations/029_sprite_sets.sql")),
+    (30, include_str!("../migrations/030_ai_providers.sql")),
+];
 
 pub fn init_db(path: &str) -> Result<Connection, AppError> {
     let conn = Connection::open(path)?;
@@ -57,236 +61,14 @@ fn run_migrations(conn: &Connection) -> Result<(), AppError> {
         )
         .unwrap_or(0);
 
-    if version < 1 {
-        conn.execute_batch(MIGRATION_001)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "1"],
-        )?;
-    }
-
-    if version < 2 {
-        conn.execute_batch(MIGRATION_002)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "2"],
-        )?;
-    }
-
-    if version < 3 {
-        conn.execute_batch(MIGRATION_003)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "3"],
-        )?;
-    }
-
-    if version < 4 {
-        conn.execute_batch(MIGRATION_004)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "4"],
-        )?;
-    }
-
-    if version < 5 {
-        conn.execute_batch(MIGRATION_005)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "5"],
-        )?;
-    }
-
-    if version < 6 {
-        conn.execute_batch(MIGRATION_006)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "6"],
-        )?;
-    }
-
-    if version < 7 {
-        conn.execute_batch(MIGRATION_007)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "7"],
-        )?;
-    }
-
-    if version < 8 {
-        conn.execute_batch(MIGRATION_008)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "8"],
-        )?;
-    }
-
-    if version < 9 {
-        conn.execute_batch(MIGRATION_009)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "9"],
-        )?;
-    }
-
-    if version < 10 {
-        conn.execute_batch(MIGRATION_010)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "10"],
-        )?;
-    }
-
-    if version < 11 {
-        conn.execute_batch(MIGRATION_011)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "11"],
-        )?;
-    }
-
-    if version < 12 {
-        conn.execute_batch(MIGRATION_012)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "12"],
-        )?;
-    }
-
-    if version < 13 {
-        conn.execute_batch(MIGRATION_013)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "13"],
-        )?;
-    }
-
-    if version < 14 {
-        conn.execute_batch(MIGRATION_014)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "14"],
-        )?;
-    }
-
-    if version < 15 {
-        conn.execute_batch(MIGRATION_015)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "15"],
-        )?;
-    }
-
-    if version < 16 {
-        conn.execute_batch(MIGRATION_016)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "16"],
-        )?;
-    }
-
-    if version < 17 {
-        conn.execute_batch(MIGRATION_017)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "17"],
-        )?;
-    }
-
-    if version < 18 {
-        conn.execute_batch(MIGRATION_018)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "18"],
-        )?;
-    }
-
-    if version < 19 {
-        conn.execute_batch(MIGRATION_019)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "19"],
-        )?;
-    }
-
-    if version < 20 {
-        conn.execute_batch(MIGRATION_020)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "20"],
-        )?;
-    }
-
-    if version < 21 {
-        conn.execute_batch(MIGRATION_021)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "21"],
-        )?;
-    }
-
-    if version < 22 {
-        conn.execute_batch(MIGRATION_022)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "22"],
-        )?;
-    }
-
-    if version < 23 {
-        conn.execute_batch(MIGRATION_023)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "23"],
-        )?;
-    }
-
-    if version < 24 {
-        conn.execute_batch(MIGRATION_024)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "24"],
-        )?;
-    }
-
-    if version < 25 {
-        conn.execute_batch(MIGRATION_025)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "25"],
-        )?;
-    }
-
-    if version < 26 {
-        conn.execute_batch(MIGRATION_026)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "26"],
-        )?;
-    }
-
-    if version < 27 {
-        conn.execute_batch(MIGRATION_027)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "27"],
-        )?;
-    }
-
-    if version < 28 {
-        conn.execute_batch(MIGRATION_028)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "28"],
-        )?;
-    }
-
-    if version < 29 {
-        conn.execute_batch(MIGRATION_029)?;
-        conn.execute(
-            "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-            rusqlite::params!["schema_version", "29"],
-        )?;
+    for (number, sql) in MIGRATIONS {
+        if version < *number {
+            conn.execute_batch(sql)?;
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
+                rusqlite::params!["schema_version", number.to_string()],
+            )?;
+        }
     }
 
     Ok(())

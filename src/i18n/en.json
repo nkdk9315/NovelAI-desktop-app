@@ -2073,5 +2073,75 @@
       "copyFailed": "Couldn't copy",
       "setName": "Sample (uniform)"
     }
+  },
+  "ai": {
+    "title": "Write prompts with AI",
+    "open": "Create with AI",
+    "description": "Describe what you want and the AI writes a batch of prompts in a single request. Save the result as a prompt group.",
+    "theme": "What to make",
+    "themePlaceholder": "e.g. scenes in a classroom after school / assorted idol outfits",
+    "characters": "Characters (optional)",
+    "charactersPlaceholder": "e.g. two girls",
+    "count": "Count",
+    "style": {
+      "label": "Writing style",
+      "tags": "Tags only",
+      "natural": "Natural language only",
+      "hybrid": "Tags + natural language"
+    },
+    "detail": {
+      "label": "Detail",
+      "short": "Short",
+      "standard": "Standard",
+      "detailed": "Detailed"
+    },
+    "toggle": {
+      "includeOutfit": "Let the AI choose outfits",
+      "includeAppearance": "Let the AI choose appearance (hair, eyes, ...)",
+      "adult": "Allow adult content"
+    },
+    "styleNote": "The AI is told not to write art style, quality or artist tags, and any that slip in are removed.",
+    "provider": "AI to use",
+    "generate": "Create",
+    "generating": "Creating...",
+    "copyPaste": {
+      "name": "Copy & paste (no API)",
+      "hint": "Copy the request, paste it into any AI chat, then paste the answer back here. No API key needed.",
+      "copy": "Copy request",
+      "copied": "Request copied",
+      "paste": "Paste the AI's answer",
+      "import": "Import"
+    },
+    "result": {
+      "groupName": "Group name",
+      "selected": "Saving {{count}} of {{total}}",
+      "include": "Include when saving",
+      "entryName": "Name",
+      "entryPrompt": "Prompt",
+      "unknownTags": "Not in the tag database",
+      "removedTags": "Removed tags",
+      "save": "Save as prompt group",
+      "saved": "Saved {{count}} entries"
+    },
+    "providers": {
+      "title": "AI providers",
+      "manage": "Manage AI providers",
+      "description": "Any OpenAI-compatible API works, cloud or local. API keys are stored in the app database on this computer.",
+      "empty": "Nothing registered yet.",
+      "add": "Add provider",
+      "preset": "Template",
+      "presetPlaceholder": "Fills in the name and URL",
+      "local": "local",
+      "name": "Name",
+      "baseUrl": "Base URL",
+      "model": "Model",
+      "modelPlaceholder": "Model ID given by the provider",
+      "apiKey": "API key",
+      "apiKeyKeep": "Stored (type only to change it)",
+      "apiKeyOptional": "Can be empty for local servers",
+      "jsonMode": "Use JSON mode",
+      "jsonModeHint": "Turn off for models that reject it",
+      "saved": "Provider saved"
+    }
   }
 }

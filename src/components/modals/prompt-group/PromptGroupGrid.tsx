@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, Database, FolderPlus, Minus, Plus, Search } from "lucide-react";
+import { ChevronRight, Database, FolderPlus, Minus, Plus, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -41,6 +41,7 @@ interface Props {
   onShowSystemChange: (v: boolean) => void;
   onOpenTagDb: () => void;
   onAdd: () => void;
+  onAiCreate: () => void;
   onCreateInFolder: (folderId: number | null) => void;
   onCreateFolder: (parentId: number | null, title: string) => Promise<void>;
   onRenameFolder: (id: number, title: string) => Promise<void>;
@@ -57,7 +58,7 @@ interface Props {
 
 export default function PromptGroupGrid({
   genres: _genres, groups, folders, searchQuery, showSystem, existingGroupIds, targetId,
-  systemTree, onSearchChange, onShowSystemChange, onOpenTagDb, onAdd,
+  systemTree, onSearchChange, onShowSystemChange, onOpenTagDb, onAdd, onAiCreate,
   onCreateInFolder, onCreateFolder, onRenameFolder, onDeleteFolder,
   onToggleSidebar, onEdit, onDelete, onEditEntry, onDeleteEntry,
   onCreateFromTagDb, onRemoveFromFavorites, onEditSystemGroupSettings,
@@ -204,7 +205,10 @@ export default function PromptGroupGrid({
 
   return (
     <div className="space-y-2">
-      <Input value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} placeholder={t("common.search")} className="h-7 w-full text-xs" />
+      <div className="flex items-center gap-2">
+        <Input value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} placeholder={t("common.search")} className="h-7 min-w-0 flex-1 text-xs" />
+        <Button size="sm" variant="outline" className="h-7 shrink-0 px-2 text-[11px]" onClick={onAiCreate} title={t("ai.title")}><Sparkles className="h-3 w-3 mr-1" />{t("ai.open")}</Button>
+      </div>
       <div className="flex items-center gap-2">
         <Button size="sm" className="h-7 px-2 text-[11px]" onClick={onAdd} title={t("promptGroup.newGroup")}><Plus className="h-3 w-3 mr-1" />{t("promptGroup.newGroup")}</Button>
         <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={() => { setNewFolderInput(""); setNewFolderDialog({ parentId: null }); }} title={t("promptGroup.folder.newFolder")}><FolderPlus className="h-3 w-3 mr-1" />{t("promptGroup.folder.newFolder")}</Button>

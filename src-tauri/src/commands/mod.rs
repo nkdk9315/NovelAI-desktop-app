@@ -18,3 +18,4 @@ pub mod prompt_presets;
 pub mod preset_folders;
 pub mod sidebar_preset_groups;
 pub mod sprites;
+pub mod ai;
